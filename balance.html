@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <div class="balance-badge" id="balanceBadge">
+          <span>€0.00</span>
+        </div>
+        <a href="index.html" class="btn-nav">View Items</a>
+        <button class="btn-sell"><span>Sell Items</span></button>
+        <a href="settings.html" class="btn-nav">Settings</a>
+        <button class="btn-login" id="loginBtn">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+  
+
+      <div class="navbar-search">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search products..." class="search-input">
+        </div>
+        <select class="category-select">
+          <option>All</option>
+          <option>Electronics</option>
+          <option>Clothing</option>
+          <option>Furniture</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="navbar-actions">
+        <div class="balance-badge">€25.00</div>
+        <button class="icon-btn">💬</button>
+        <button class="btn-sell"><span>Sell Item</span> +</button>
+        <button class="btn-logout">⏻</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container">
+    <section>
+      <div class="section-header-centered">
+        <h2 class="section-title">Your Wallet</h2>
+        <p class="section-subtitle">Manage your balance and top-up your account easily.</p>
+      </div>
+
+      <div class="features-section">
+
+        <!-- Current Balance Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-primary);">💰</div>
+          <div class="feature-title">Current Balance</div>
+          <div class="feature-description" style="font-size: 1.5rem; font-weight: 700;">€25.00</div>
+        </div>
+
+        <!-- Top-Up Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-success);">⬆️</div>
+          <div class="feature-title">Top-Up Balance</div>
+          <form class="feature-description" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="number" placeholder="Enter amount" class="chat-input-field">
+            <button class="btn-buy-now">Add Funds</button>
+          </form>
+        </div>
+
+        <!-- Transaction History Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-vibrant);">📜</div>
+          <div class="feature-title">Transaction History</div>
+          <ul class="feature-description">
+            <li>€10.00 - Added Funds - 09/10/2025</li>
+            <li>€5.00 - Sold Item - 08/10/2025</li>
+            <li>€15.00 - Purchased Item - 07/10/2025</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

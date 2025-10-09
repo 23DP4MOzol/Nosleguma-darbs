@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Detail - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <div class="balance-badge" id="balanceBadge">
+          <span>€0.00</span>
+        </div>
+        <a href="index.html" class="btn-nav">View Items</a>
+        <button class="btn-sell"><span>Sell Items</span></button>
+        <a href="settings.html" class="btn-nav">Settings</a>
+        <button class="btn-login" id="loginBtn">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+  
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container">
+
+    <!-- PRODUCT DETAIL CARD -->
+    <div class="product-card-modern">
+      <div class="product-image-container">
+        <img src="https://via.placeholder.com/600x400" alt="Product Image" class="product-image">
+        <span class="product-badge-new">New</span>
+        <button class="product-like-btn">❤️</button>
+      </div>
+      <div class="product-info">
+        <span class="product-category">Electronics</span>
+        <h2 class="product-name">Wireless Headphones</h2>
+        <div class="product-meta">
+          <div class="product-rating">⭐ 4.7</div>
+          <div class="product-views">👁️ 1200</div>
+        </div>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur vitae hendrerit ligula. Proin ac lorem ac justo scelerisque fermentum.</p>
+        <div class="product-footer">
+          <div class="product-price">
+            <span class="price-currency">€</span>
+            <span class="price-amount">89.99</span>
+          </div>
+          <div class="product-actions">
+            <button class="btn-buy-now">Purchase</button>
+            <button class="btn-add-cart">Reserve</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELLER INFO -->
+    <section class="features-section">
+      <div class="feature-card">
+        <div class="feature-icon" style="background: var(--primary);">👤</div>
+        <h3 class="feature-title">Seller: JohnDoe</h3>
+        <p class="feature-description">Location: Riga, Latvia</p>
+      </div>
+    </section>
+
+    <!-- MESSAGES / CONTACT SELLER -->
+    <section class="messaging-section">
+      <h3 class="section-title section-header-centered">Contact Seller</h3>
+      <div class="chat-modern">
+        <div class="chat-sidebar">
+          <div class="chat-list-header">
+            <h3>Conversations</h3>
+            <button class="btn-icon-small">+</button>
+          </div>
+          <div class="chat-list">
+            <div class="chat-list-item active">
+              <div class="chat-avatar">
+                <div class="avatar-circle-small">J</div>
+              </div>
+              <div class="chat-preview">
+                <div class="chat-header-row">
+                  <span class="chat-name">JohnDoe</span>
+                  <span class="chat-time">12:34</span>
+                </div>
+                <div class="chat-last-message">Hi! Is the item still available?</div>
+              </div>
+              <span class="unread-count">1</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-main">
+          <div class="chat-header-bar">
+            <div class="chat-user-info">
+              <div class="chat-avatar">
+                <div class="avatar-circle">J</div>
+              </div>
+              <div>
+                <div class="chat-user-name">JohnDoe</div>
+                <div class="chat-user-status">Online</div>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button class="btn-icon-small">⚙️</button>
+            </div>
+          </div>
+          <div class="chat-messages-area">
+            <div class="message-group receiver">
+              <div class="message-avatar">
+                <div class="avatar-circle-small">J</div>
+              </div>
+              <div class="messages-stack">
+                <div class="message-bubble-modern">Hello! Yes, it’s available.</div>
+                <div class="message-timestamp">12:35</div>
+              </div>
+            </div>
+            <div class="message-group sender">
+              <div class="message-avatar">
+                <div class="avatar-circle-small">Y</div>
+              </div>
+              <div class="messages-stack">
+                <div class="message-bubble-modern sender">Great! I want to reserve it.</div>
+                <div class="message-timestamp sender">12:36</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input type="text" placeholder="Type a message..." class="chat-input-field">
+            <button class="btn-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

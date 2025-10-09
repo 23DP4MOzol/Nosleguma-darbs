@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sell Item - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <div class="balance-badge" id="balanceBadge">
+          <span>€0.00</span>
+        </div>
+        <a href="index.html" class="btn-nav">View Items</a>
+        <button class="btn-sell"><span>Sell Items</span></button>
+        <a href="settings.html" class="btn-nav">Settings</a>
+        <button class="btn-login" id="loginBtn">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+  
+  <main class="main-container">
+    <section>
+      <div class="section-header-centered">
+        <h2 class="section-title">Sell Your Product</h2>
+        <p class="section-subtitle">Add a product to your marketplace store</p>
+      </div>
+
+      <form class="features-section" style="display: flex; flex-direction: column; gap: 2rem;">
+        <input type="text" placeholder="Product Name" class="chat-input-field" required>
+        <textarea placeholder="Product Description" class="chat-input-field" style="height: 120px;" required></textarea>
+        <input type="number" placeholder="Price (€)" class="chat-input-field" required>
+        <input type="file" accept="image/*" class="chat-input-field" required>
+        <select class="category-select">
+          <option selected disabled>Choose Category</option>
+          <option>Electronics</option>
+          <option>Clothing</option>
+          <option>Furniture</option>
+          <option>Other</option>
+        </select>
+        <button class="btn-buy-now">Publish Product</button>
+      </form>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

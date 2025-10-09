@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <div class="balance-badge" id="balanceBadge">
+          <span>€0.00</span>
+        </div>
+        <a href="index.html" class="btn-nav">View Items</a>
+        <button class="btn-sell"><span>Sell Items</span></button>
+        <a href="settings.html" class="btn-nav">Settings</a>
+        <button class="btn-login" id="loginBtn">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container">
+    <section>
+      <div class="section-header-centered">
+        <h2 class="section-title">Account Settings</h2>
+        <p class="section-subtitle">Update your profile and account preferences.</p>
+      </div>
+
+      <div class="features-section">
+
+        <!-- Profile Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-primary);">👤</div>
+          <div class="feature-title">Profile Information</div>
+          <form class="feature-description" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="text" placeholder="Full Name" class="chat-input-field">
+            <input type="email" placeholder="Email Address" class="chat-input-field">
+            <button class="btn-buy-now">Save Changes</button>
+          </form>
+        </div>
+
+        <!-- Password Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-vibrant);">🔒</div>
+          <div class="feature-title">Change Password</div>
+          <form class="feature-description" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="password" placeholder="Current Password" class="chat-input-field">
+            <input type="password" placeholder="New Password" class="chat-input-field">
+            <button class="btn-buy-now">Update Password</button>
+          </form>
+        </div>
+
+        <!-- Preferences Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-success);">⚙️</div>
+          <div class="feature-title">Preferences</div>
+          <form class="feature-description" style="display: flex; flex-direction: column; gap: 1rem;">
+            <label>
+              <input type="checkbox">
+              Enable Notifications
+            </label>
+            <label>
+              <input type="checkbox">
+              Dark Mode
+            </label>
+            <button class="btn-buy-now">Save Preferences</button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

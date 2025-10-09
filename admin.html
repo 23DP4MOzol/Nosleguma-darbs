@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <div class="balance-badge" id="balanceBadge">
+          <span>€0.00</span>
+        </div>
+        <a href="index.html" class="btn-nav">View Items</a>
+        <button class="btn-sell"><span>Sell Items</span></button>
+        <a href="settings.html" class="btn-nav">Settings</a>
+        <button class="btn-login" id="loginBtn">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+  
+
+  <main class="main-container">
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">Dashboard</h2>
+        <p class="section-subtitle">Overview of marketplace activities</p>
+      </div>
+
+      <div class="features-section">
+
+        <!-- Users Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-primary);">👥</div>
+          <div class="feature-title">Registered Users</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">1,234</div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-vibrant);">📦</div>
+          <div class="feature-title">Total Products</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">567</div>
+        </div>
+
+        <!-- Transactions Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-success);">💳</div>
+          <div class="feature-title">Transactions Today</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">89</div>
+        </div>
+
+      </div>
+
+      <section style="margin-top: 4rem;">
+        <div class="section-header">
+          <h3 class="section-title">Recent Activities</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="background: var(--secondary);">
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">User</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Action</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Date</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 0.75rem;">Alice</td>
+              <td style="padding: 0.75rem;">Added Funds</td>
+              <td style="padding: 0.75rem;">09/10/2025</td>
+              <td style="padding: 0.75rem;">€50</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.75rem;">Bob</td>
+              <td style="padding: 0.75rem;">Sold Product</td>
+              <td style="padding: 0.75rem;">09/10/2025</td>
+              <td style="padding: 0.75rem;">€20</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.75rem;">Charlie</td>
+              <td style="padding: 0.75rem;">Purchased Product</td>
+              <td style="padding: 0.75rem;">08/10/2025</td>
+              <td style="padding: 0.75rem;">€15</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </section>
+  </main>
+
+
+<script src="js/app.js"></script>
+</body>
+</html>

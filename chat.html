@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <!-- Logo -->
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <!-- Hamburger for mobile -->
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <!-- Links & actions -->
+    <div class="navbar-links">
+      <div class="balance-badge" id="balanceBadge">
+        <span>€0.00</span>
+      </div>
+      <a href="index.html" class="btn-nav">View Items</a>
+      <button class="btn-sell"><span>Sell Items</span></button>
+      <a href="settings.html" class="btn-nav">Settings</a>
+      <button class="btn-login" id="loginBtn">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+    </div>
+  </div>
+</nav>
+
+  
+  
+
+      <div class="navbar-search">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search products..." class="search-input">
+        </div>
+        <select class="category-select">
+          <option>All</option>
+          <option>Electronics</option>
+          <option>Clothing</option>
+          <option>Furniture</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="navbar-actions">
+        <div class="balance-badge">€25.00</div>
+        <button class="icon-btn">💬</button>
+        <button class="btn-sell"><span>Sell Item</span> +</button>
+        <button class="btn-logout">⏻</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CHAT CONTAINER -->
+  <main class="main-container">
+    <section class="messaging-section">
+      <div class="chat-modern">
+
+        <!-- CHAT SIDEBAR -->
+        <aside class="chat-sidebar">
+          <div class="chat-list-header">
+            <h3>Conversations</h3>
+            <button class="btn-icon-small">➕</button>
+          </div>
+          <div class="chat-list">
+            <div class="chat-list-item active">
+              <div class="chat-avatar">
+                <div class="avatar-circle-small">A</div>
+              </div>
+              <div class="chat-preview">
+                <div class="chat-header-row">
+                  <span class="chat-name">Alice</span>
+                  <span class="chat-time">10:42</span>
+                </div>
+                <div class="chat-last-message">Interested in your laptop...</div>
+              </div>
+              <div class="unread-count">2</div>
+            </div>
+            <div class="chat-list-item">
+              <div class="chat-avatar">
+                <div class="avatar-circle-small">B</div>
+              </div>
+              <div class="chat-preview">
+                <div class="chat-header-row">
+                  <span class="chat-name">Bob</span>
+                  <span class="chat-time">09:30</span>
+                </div>
+                <div class="chat-last-message">Is this still available?</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- CHAT MAIN AREA -->
+        <section class="chat-main">
+          <!-- Chat Header -->
+          <div class="chat-header-bar">
+            <div class="chat-user-info">
+              <div class="chat-avatar">
+                <div class="avatar-circle">A</div>
+              </div>
+              <div>
+                <div class="chat-user-name">Alice</div>
+                <div class="chat-user-status">Online</div>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button class="btn-icon-small">🔔</button>
+              <button class="btn-icon-small">⋮</button>
+            </div>
+          </div>
+
+          <!-- Chat Messages -->
+          <div class="chat-messages-area">
+            <div class="message-group receiver">
+              <div class="message-avatar">
+                <div class="avatar-circle-small">A</div>
+              </div>
+              <div class="messages-stack">
+                <div class="message-bubble-modern">Hi! Is the laptop still available?</div>
+                <div class="message-timestamp">10:40</div>
+              </div>
+            </div>
+            <div class="message-group sender">
+              <div class="messages-stack">
+                <div class="message-bubble-modern sender">Yes, it is. Do you want to reserve it?</div>
+                <div class="message-timestamp sender">10:42</div>
+              </div>
+              <div class="message-avatar">
+                <div class="avatar-circle-small">Y</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <input type="text" placeholder="Type a message..." class="chat-input-field">
+            <button class="btn-send">Send</button>
+          </div>
+
+        </section>
+
+      </div>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>
