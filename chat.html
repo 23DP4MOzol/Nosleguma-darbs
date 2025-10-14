@@ -1,159 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat - Marketplace</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>Marketplace - Chat</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-container">
-    <!-- Logo -->
-    <a href="index.html" class="navbar-logo">
+    <a href="/" class="navbar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0L24 24H0z"/>
       </svg>
       MARKETPLACE
     </a>
 
-    <!-- Hamburger for mobile -->
     <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
 
-    <!-- Links & actions -->
     <div class="navbar-links">
-      <div class="balance-badge" id="balanceBadge">
-        <span>€0.00</span>
-      </div>
-      <a href="index.html" class="btn-nav">View Items</a>
-      <button class="btn-sell"><span>Sell Items</span></button>
-      <a href="settings.html" class="btn-nav">Settings</a>
+      <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
+      <a href="/" class="btn-nav">View Items</a>
+      <a href="/sell.html" class="btn-sell"><span>Sell Items</span></a>
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latvian</option>
+      </select>
+      <button class="icon-btn" id="themeToggle">🌓</button>
       <button class="btn-login" id="loginBtn">Login</button>
       <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
     </div>
   </div>
 </nav>
 
-  
-  
+<!-- MAIN CHAT SECTION -->
+<main class="main-container messaging-section">
+  <div class="chat-modern">
 
-      <div class="navbar-search">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Search products..." class="search-input">
-        </div>
-        <select class="category-select">
-          <option>All</option>
-          <option>Electronics</option>
-          <option>Clothing</option>
-          <option>Furniture</option>
-          <option>Other</option>
-        </select>
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <div class="chat-list-header">
+        <h3>Contacts</h3>
+        <button class="btn-icon-small">+</button>
       </div>
-
-      <div class="navbar-actions">
-        <div class="balance-badge">€25.00</div>
-        <button class="icon-btn">💬</button>
-        <button class="btn-sell"><span>Sell Item</span> +</button>
-        <button class="btn-logout">⏻</button>
+      <div class="chat-list" id="chatList">
+        <!-- Chat contacts populated via JS -->
       </div>
     </div>
-  </nav>
 
-  <!-- MAIN CHAT CONTAINER -->
-  <main class="main-container">
-    <section class="messaging-section">
-      <div class="chat-modern">
-
-        <!-- CHAT SIDEBAR -->
-        <aside class="chat-sidebar">
-          <div class="chat-list-header">
-            <h3>Conversations</h3>
-            <button class="btn-icon-small">➕</button>
+    <!-- Chat main area -->
+    <div class="chat-main">
+      <div class="chat-header-bar">
+        <div class="chat-user-info">
+          <div class="chat-avatar avatar-circle" id="activeUserAvatar">A</div>
+          <div>
+            <div class="chat-user-name" id="activeUserName">Select a chat</div>
+            <div class="chat-user-status" id="activeUserStatus"></div>
           </div>
-          <div class="chat-list">
-            <div class="chat-list-item active">
-              <div class="chat-avatar">
-                <div class="avatar-circle-small">A</div>
-              </div>
-              <div class="chat-preview">
-                <div class="chat-header-row">
-                  <span class="chat-name">Alice</span>
-                  <span class="chat-time">10:42</span>
-                </div>
-                <div class="chat-last-message">Interested in your laptop...</div>
-              </div>
-              <div class="unread-count">2</div>
-            </div>
-            <div class="chat-list-item">
-              <div class="chat-avatar">
-                <div class="avatar-circle-small">B</div>
-              </div>
-              <div class="chat-preview">
-                <div class="chat-header-row">
-                  <span class="chat-name">Bob</span>
-                  <span class="chat-time">09:30</span>
-                </div>
-                <div class="chat-last-message">Is this still available?</div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- CHAT MAIN AREA -->
-        <section class="chat-main">
-          <!-- Chat Header -->
-          <div class="chat-header-bar">
-            <div class="chat-user-info">
-              <div class="chat-avatar">
-                <div class="avatar-circle">A</div>
-              </div>
-              <div>
-                <div class="chat-user-name">Alice</div>
-                <div class="chat-user-status">Online</div>
-              </div>
-            </div>
-            <div class="chat-header-actions">
-              <button class="btn-icon-small">🔔</button>
-              <button class="btn-icon-small">⋮</button>
-            </div>
-          </div>
-
-          <!-- Chat Messages -->
-          <div class="chat-messages-area">
-            <div class="message-group receiver">
-              <div class="message-avatar">
-                <div class="avatar-circle-small">A</div>
-              </div>
-              <div class="messages-stack">
-                <div class="message-bubble-modern">Hi! Is the laptop still available?</div>
-                <div class="message-timestamp">10:40</div>
-              </div>
-            </div>
-            <div class="message-group sender">
-              <div class="messages-stack">
-                <div class="message-bubble-modern sender">Yes, it is. Do you want to reserve it?</div>
-                <div class="message-timestamp sender">10:42</div>
-              </div>
-              <div class="message-avatar">
-                <div class="avatar-circle-small">Y</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Chat Input -->
-          <div class="chat-input-area">
-            <input type="text" placeholder="Type a message..." class="chat-input-field">
-            <button class="btn-send">Send</button>
-          </div>
-
-        </section>
-
+        </div>
+        <div class="chat-header-actions">
+          <button class="icon-btn">💬</button>
+          <button class="icon-btn">⋮</button>
+        </div>
       </div>
-    </section>
-  </main>
-  <script src="js/app.js"></script>
+      <div class="chat-messages-area" id="chatMessages">
+        <!-- Messages populated via JS -->
+      </div>
+      <div class="chat-input-area">
+        <input type="text" placeholder="Type a message..." class="chat-input-field" id="messageInput">
+        <button class="btn-send" id="sendBtn">Send</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script type="module">
+import { supabase } from './js/supabase.js';
+import i18next from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// ============================
+// Language Setup
+// ============================
+i18next.use(LanguageDetector).init({
+  fallbackLng: 'en',
+  resources: {
+    en: { translation: {} },
+    lv: { translation: {} }
+  }
+});
+
+const langSelect = document.getElementById('langSelect');
+langSelect.addEventListener('change', e => i18next.changeLanguage(e.target.value));
+
+// ============================
+// Dark/Light Mode Toggle
+// ============================
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+});
+
+// ============================
+// Hamburger Menu
+// ============================
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  document.querySelector('.navbar-links').classList.toggle('active');
+});
+
+// ============================
+// Supabase Auth
+// ============================
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const balanceBadge = document.getElementById('balanceBadge');
+
+let currentUser = null;
+
+async function loadUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  currentUser = user;
+  if(user) {
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'flex';
+    const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
+    balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+  } else {
+    loginBtn.style.display = 'flex';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+loginBtn.addEventListener('click', async () => {
+  await supabase.auth.signInWithOAuth({ provider: 'google' });
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  location.reload();
+});
+
+// ============================
+// Chat Logic (Placeholder)
+// ============================
+const chatList = document.getElementById('chatList');
+const chatMessages = document.getElementById('chatMessages');
+
+const dummyChats = [
+  { id: 1, name: 'Alice', avatar: 'A', messages: [{ sender: 'Alice', text: 'Hi there!', timestamp: '10:00' }] },
+  { id: 2, name: 'Bob', avatar: 'B', messages: [{ sender: 'Bob', text: 'Hello!', timestamp: '11:00' }] }
+];
+
+function renderChats() {
+  chatList.innerHTML = '';
+  dummyChats.forEach(chat => {
+    const div = document.createElement('div');
+    div.className = 'chat-list-item';
+    div.innerHTML = `
+      <div class="chat-avatar avatar-circle-small">${chat.avatar}</div>
+      <div class="chat-preview">
+        <div class="chat-name">${chat.name}</div>
+        <div class="chat-last-message">${chat.messages[0].text}</div>
+      </div>
+    `;
+    div.addEventListener('click', () => openChat(chat));
+    chatList.appendChild(div);
+  });
+}
+
+function openChat(chat) {
+  document.getElementById('activeUserAvatar').innerText = chat.avatar;
+  document.getElementById('activeUserName').innerText = chat.name;
+  chatMessages.innerHTML = '';
+  chat.messages.forEach(msg => {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message-group ${msg.sender === chat.name ? 'receiver' : 'sender'}`;
+    msgDiv.innerHTML = `
+      <div class="message-avatar avatar-circle">${msg.sender[0]}</div>
+      <div class="messages-stack">
+        <div class="message-bubble-modern ${msg.sender !== chat.name ? 'sender' : ''}">${msg.text}</div>
+        <div class="message-timestamp ${msg.sender !== chat.name ? 'sender' : ''}">${msg.timestamp}</div>
+      </div>
+    `;
+    chatMessages.appendChild(msgDiv);
+  });
+}
+
+renderChats();
+</script>
+
 </body>
 </html>

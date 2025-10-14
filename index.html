@@ -1,149 +1,299 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Marketplace - Home</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar">
-    <div class="navbar-container">
-      <!-- Logo -->
-      <a href="index.html" class="navbar-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 0L24 24H0z"/>
-        </svg>
-        MARKETPLACE
-      </a>
-  
-      <!-- Hamburger for mobile -->
-      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
-  
-      <!-- Links & actions -->
-      <div class="navbar-links">
-        <div class="balance-badge" id="balanceBadge">
-          <span>€0.00</span>
-        </div>
-        <a href="index.html" class="btn-nav">View Items</a>
-        <button class="btn-sell"><span>Sell Items</span></button>
-        <a href="settings.html" class="btn-nav">Settings</a>
-        <button class="btn-login" id="loginBtn">Login</button>
-        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+  <div class="navbar-container">
+    <a href="/" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
+      <a href="/" class="btn-nav">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
+      <a href="/settings.html" class="btn-nav">Settings</a>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latvian</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌓</button>
+
+      <button class="btn-login" id="loginBtn">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO SECTION -->
+<section class="hero-modern">
+  <div class="hero-gradient"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🌟 Featured Marketplace</div>
+    <h1 class="hero-title gradient-text" data-i18n="hero_title">Discover Unique Items</h1>
+    <p class="hero-subtitle" data-i18n="hero_subtitle">Buy and sell with confidence. Explore thousands of products.</p>
+    <div class="hero-actions">
+      <button class="btn-hero-primary" data-i18n="btn_start">Start Shopping</button>
+      <button class="btn-hero-secondary" data-i18n="btn_learn">Learn More</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-value">1.2k+</div>
+        <div class="stat-label" data-i18n="products">Products</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value">900+</div>
+        <div class="stat-label" data-i18n="sellers">Sellers</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value">15k+</div>
+        <div class="stat-label" data-i18n="users">Users</div>
       </div>
     </div>
-  </nav>
-  
+  </div>
+</section>
 
-  <!-- HERO SECTION -->
-  <section class="hero-modern">
-    <div class="hero-gradient"></div>
-    <div class="hero-content">
-      <div class="hero-badge">🌟 Featured Marketplace</div>
-      <h1 class="hero-title gradient-text">Discover Unique Items</h1>
-      <p class="hero-subtitle">Buy and sell with confidence. Explore thousands of products.</p>
-      <div class="hero-actions">
-        <button class="btn-hero-primary">Start Shopping</button>
-        <button class="btn-hero-secondary">Learn More</button>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-item">
-          <div class="stat-value">1.2k+</div>
-          <div class="stat-label">Products</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-value">900+</div>
-          <div class="stat-label">Sellers</div>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <div class="stat-value">15k+</div>
-          <div class="stat-label">Users</div>
-        </div>
-      </div>
+<!-- MAIN CONTAINER -->
+<main class="main-container">
+
+  <!-- Popular Products Section -->
+  <div class="section-header">
+    <div>
+      <h2 class="section-title" data-i18n="popular">Popular Products</h2>
+      <p class="section-subtitle" data-i18n="top_trending">Top trending items on the marketplace</p>
     </div>
-  </section>
-
-  <!-- MAIN CONTAINER -->
-  <main class="main-container">
-
-    <!-- SECTION: Popular Products -->
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Popular Products</h2>
-        <p class="section-subtitle">Top trending items on the marketplace</p>
-      </div>
-      <div class="filter-tabs">
-        <button class="filter-tab active">All</button>
-        <button class="filter-tab">Electronics</button>
-        <button class="filter-tab">Clothing</button>
-        <button class="filter-tab">Furniture</button>
-        <button class="filter-tab">Other</button>
-      </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-category="all">All</button>
+      <button class="filter-tab" data-category="electronics">Electronics</button>
+      <button class="filter-tab" data-category="clothing">Clothing</button>
+      <button class="filter-tab" data-category="furniture">Furniture</button>
+      <button class="filter-tab" data-category="other">Other</button>
     </div>
+  </div>
 
-    <div class="product-grid-modern">
-      <!-- Product Card Example -->
-      <div class="product-card-modern">
-        <div class="product-image-container">
-          <img src="https://via.placeholder.com/300x280" alt="Product" class="product-image">
-          <button class="product-like-btn">❤️</button>
-          <span class="product-badge-new">New</span>
-          <div class="product-overlay">
-            <button class="btn-quick-view">Quick View</button>
+  <div class="product-grid-modern" id="productGrid">
+    <!-- Product Cards inserted dynamically via JS -->
+  </div>
+
+  <!-- Features Section -->
+  <div class="section-header-centered">
+    <h2 class="section-title" data-i18n="why_choose">Why Choose Us?</h2>
+    <p class="section-subtitle" data-i18n="marketplace_experience">Our marketplace offers the best experience for buyers and sellers.</p>
+  </div>
+  <div class="features-section">
+    <div class="feature-card">
+      <div class="feature-icon" style="background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);">💬</div>
+      <h3 class="feature-title" data-i18n="secure_msg">Secure Messaging</h3>
+      <p class="feature-description" data-i18n="msg_desc">Chat with sellers directly with privacy guaranteed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: linear-gradient(135deg,#10b981 0%,#059669 100%);">💰</div>
+      <h3 class="feature-title" data-i18n="balance">Balance Management</h3>
+      <p class="feature-description" data-i18n="balance_desc">Add funds and manage your balance easily for instant purchases.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: linear-gradient(135deg,#f093fb 0%,#f5576c 100%);">⚡</div>
+      <h3 class="feature-title" data-i18n="fast_tx">Fast Transactions</h3>
+      <p class="feature-description" data-i18n="tx_desc">Reserve or buy products quickly without unnecessary delays.</p>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import { supabase } from './js/supabase.js';
+import i18next from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// ============================
+// Language Initialization
+// ============================
+i18next.use(LanguageDetector).init({
+  fallbackLng: 'en',
+  resources: {
+    en: {
+      translation: {
+        hero_title: "Discover Unique Items",
+        hero_subtitle: "Buy and sell with confidence. Explore thousands of products.",
+        btn_start: "Start Shopping",
+        btn_learn: "Learn More",
+        products: "Products",
+        sellers: "Sellers",
+        users: "Users",
+        popular: "Popular Products",
+        top_trending: "Top trending items on the marketplace",
+        why_choose: "Why Choose Us?",
+        marketplace_experience: "Our marketplace offers the best experience for buyers and sellers.",
+        secure_msg: "Secure Messaging",
+        msg_desc: "Chat with sellers directly with privacy guaranteed.",
+        balance: "Balance Management",
+        balance_desc: "Add funds and manage your balance easily for instant purchases.",
+        fast_tx: "Fast Transactions",
+        tx_desc: "Reserve or buy products quickly without unnecessary delays."
+      }
+    },
+    lv: {
+      translation: {
+        hero_title: "Atklājiet unikālus produktus",
+        hero_subtitle: "Pārdodiet un pērkat droši. Izpētiet tūkstošiem produktu.",
+        btn_start: "Sākt iepirkties",
+        btn_learn: "Uzzināt vairāk",
+        products: "Produkti",
+        sellers: "Pārdevēji",
+        users: "Lietotāji",
+        popular: "Populāri produkti",
+        top_trending: "Populārākie produkti tirgū",
+        why_choose: "Kāpēc izvēlēties mūs?",
+        marketplace_experience: "Mūsu tirgus nodrošina labāko pieredzi pircējiem un pārdevējiem.",
+        secure_msg: "Droša ziņošana",
+        msg_desc: "Sazinieties ar pārdevējiem ar garantētu privātumu.",
+        balance: "Bilances pārvaldība",
+        balance_desc: "Pievienojiet līdzekļus un pārvaldiet savu bilanci ātrai pirkšanai.",
+        fast_tx: "Ātras transakcijas",
+        tx_desc: "Rezervējiet vai pērkat produktus ātri, bez liekiem kavējumiem."
+      }
+    }
+  }
+}).then(() => {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.innerText = i18next.t(el.getAttribute('data-i18n'));
+  });
+});
+
+document.getElementById('langSelect').addEventListener('change', (e) => {
+  i18next.changeLanguage(e.target.value).then(() => {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.innerText = i18next.t(el.getAttribute('data-i18n'));
+    });
+  });
+});
+
+// ============================
+// Dark/Light Mode Toggle
+// ============================
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  const html = document.documentElement;
+  if(html.dataset.theme === 'light') {
+    html.dataset.theme = 'dark';
+  } else {
+    html.dataset.theme = 'light';
+  }
+});
+
+// ============================
+// Hamburger Mobile Menu
+// ============================
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const navbarLinks = document.querySelector('.navbar-links');
+hamburgerBtn.addEventListener('click', () => {
+  navbarLinks.classList.toggle('active');
+});
+
+// ============================
+// Supabase Auth
+// ============================
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const balanceBadge = document.getElementById('balanceBadge');
+
+async function checkUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if(user) {
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'flex';
+    // Fetch user balance from Supabase (replace with actual table)
+    const { data, error } = await supabase.from('users').select('balance').eq('id', user.id).single();
+    if(data) balanceBadge.querySelector('span').innerText = `€${data.balance.toFixed(2)}`;
+  } else {
+    loginBtn.style.display = 'flex';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+loginBtn.addEventListener('click', async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  checkUser();
+});
+
+checkUser();
+
+// ============================
+// Dynamic Product Rendering (Example)
+// ============================
+const products = [
+  { id:1, name:'Wireless Headphones', category:'electronics', price:59.99, rating:4.8, views:120, image:'https://via.placeholder.com/300x280', badge:'New'},
+  { id:2, name:'Leather Jacket', category:'clothing', price:149.99, rating:4.7, views:98, image:'https://via.placeholder.com/300x280', badge:'New'},
+  { id:3, name:'Wooden Chair', category:'furniture', price:89.99, rating:4.5, views:54, image:'https://via.placeholder.com/300x280', badge:''},
+];
+
+function renderProducts(category='all') {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  const filtered = category === 'all' ? products : products.filter(p => p.category === category);
+  filtered.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'product-card-modern';
+    div.innerHTML = `
+      <div class="product-image-container">
+        <img src="${p.image}" alt="${p.name}" class="product-image">
+        <button class="product-like-btn">❤️</button>
+        ${p.badge ? `<span class="product-badge-new">${p.badge}</span>` : ''}
+        <div class="product-overlay"><button class="btn-quick-view">Quick View</button></div>
+      </div>
+      <div class="product-info">
+        <span class="product-category">${p.category}</span>
+        <h3 class="product-name">${p.name}</h3>
+        <div class="product-meta">
+          <span class="product-rating">⭐ ${p.rating}</span>
+          <span class="product-views">👁 ${p.views}</span>
+        </div>
+        <div class="product-footer">
+          <div class="product-price"><span class="price-currency">€</span><span class="price-amount">${p.price}</span></div>
+          <div class="product-actions">
+            <button class="btn-add-cart">🛒</button>
+            <button class="btn-buy-now">Buy Now</button>
           </div>
         </div>
-        <div class="product-info">
-          <span class="product-category">Electronics</span>
-          <h3 class="product-name">Wireless Headphones</h3>
-          <div class="product-meta">
-            <span class="product-rating">⭐ 4.8</span>
-            <span class="product-views">👁 120</span>
-          </div>
-          <div class="product-footer">
-            <div class="product-price">
-              <span class="price-currency">€</span>
-              <span class="price-amount">59.99</span>
-            </div>
-            <div class="product-actions">
-              <button class="btn-add-cart">🛒</button>
-              <button class="btn-buy-now">Buy Now</button>
-            </div>
-          </div>
-        </div>
       </div>
-      <!-- Repeat Product Cards as needed -->
-    </div>
+    `;
+    grid.appendChild(div);
+  });
+}
 
-    <!-- SECTION: Features -->
-    <div class="section-header-centered">
-      <h2 class="section-title">Why Choose Us?</h2>
-      <p class="section-subtitle">Our marketplace offers the best experience for buyers and sellers.</p>
-    </div>
-    <div class="features-section">
-      <div class="feature-card">
-        <div class="feature-icon" style="background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);">💬</div>
-        <h3 class="feature-title">Secure Messaging</h3>
-        <p class="feature-description">Chat with sellers directly with privacy guaranteed.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background: linear-gradient(135deg,#10b981 0%,#059669 100%);">💰</div>
-        <h3 class="feature-title">Balance Management</h3>
-        <p class="feature-description">Add funds and manage your balance easily for instant purchases.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background: linear-gradient(135deg,#f093fb 0%,#f5576c 100%);">⚡</div>
-        <h3 class="feature-title">Fast Transactions</h3>
-        <p class="feature-description">Reserve or buy products quickly without unnecessary delays.</p>
-      </div>
-    </div>
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderProducts(tab.dataset.category);
+  });
+});
 
-  </main>
+renderProducts();
+</script>
 
-  <script src="js/app.js"></script>
 </body>
 </html>
