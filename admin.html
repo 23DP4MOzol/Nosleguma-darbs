@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Marketplace</title>
+  <title data-i18n="admin_title">Admin Dashboard - Marketplace</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -42,8 +42,8 @@
   <main class="main-container">
     <section>
       <div class="section-header">
-        <h2 class="section-title">Dashboard</h2>
-        <p class="section-subtitle">Overview of marketplace activities</p>
+        <h2 class="section-title" data-i18n="dashboard">Dashboard</h2>
+        <p class="section-subtitle" data-i18n="overview">Overview of marketplace activities</p>
       </div>
 
       <div class="features-section">
@@ -51,21 +51,21 @@
         <!-- Users Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-primary);">👥</div>
-          <div class="feature-title">Registered Users</div>
+          <div class="feature-title" data-i18n="registered_users">Registered Users</div>
           <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">1,234</div>
         </div>
 
         <!-- Products Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-vibrant);">📦</div>
-          <div class="feature-title">Total Products</div>
+          <div class="feature-title" data-i18n="total_products">Total Products</div>
           <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">567</div>
         </div>
 
         <!-- Transactions Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-success);">💳</div>
-          <div class="feature-title">Transactions Today</div>
+          <div class="feature-title" data-i18n="transactions_today">Transactions Today</div>
           <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">89</div>
         </div>
 
@@ -73,33 +73,33 @@
 
       <section style="margin-top: 4rem;">
         <div class="section-header">
-          <h3 class="section-title">Recent Activities</h3>
+          <h3 class="section-title" data-i18n="recent_activities">Recent Activities</h3>
         </div>
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
             <tr style="background: var(--secondary);">
-              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">User</th>
-              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Action</th>
-              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Date</th>
-              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Amount</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="user">User</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="action">Action</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="date">Date</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="amount">Amount</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td style="padding: 0.75rem;">Alice</td>
-              <td style="padding: 0.75rem;">Added Funds</td>
+              <td style="padding: 0.75rem;" data-i18n="added_funds">Added Funds</td>
               <td style="padding: 0.75rem;">09/10/2025</td>
               <td style="padding: 0.75rem;">€50</td>
             </tr>
             <tr>
               <td style="padding: 0.75rem;">Bob</td>
-              <td style="padding: 0.75rem;">Sold Product</td>
+              <td style="padding: 0.75rem;" data-i18n="sold_product">Sold Product</td>
               <td style="padding: 0.75rem;">09/10/2025</td>
               <td style="padding: 0.75rem;">€20</td>
             </tr>
             <tr>
               <td style="padding: 0.75rem;">Charlie</td>
-              <td style="padding: 0.75rem;">Purchased Product</td>
+              <td style="padding: 0.75rem;" data-i18n="purchased_product">Purchased Product</td>
               <td style="padding: 0.75rem;">08/10/2025</td>
               <td style="padding: 0.75rem;">€15</td>
             </tr>
@@ -111,8 +111,69 @@
   </main>
 
 
-  <script src="js/supabase.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module">
+  import { supabase } from './js/supabase.js';
+  import { i18n } from './js/i18n.js';
+
+  // ============================
+  // Language Setup
+  // ============================
+  document.getElementById('langSelect').addEventListener('change', e => {
+    i18n.setLang(e.target.value);
+  });
+
+  // ============================
+  // Dark/Light Mode Toggle
+  // ============================
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.classList.remove('dark', 'light');
+    html.classList.add(newTheme);
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  });
+
+  // ============================
+  // Hamburger Mobile Menu
+  // ============================
+  document.getElementById('hamburgerBtn').addEventListener('click', () => {
+    document.querySelector('.navbar-links').classList.toggle('active');
+  });
+
+  // ============================
+  // Supabase Auth
+  // ============================
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const balanceBadge = document.getElementById('balanceBadge');
+
+  async function loadUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if(user) {
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'flex';
+      const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
+      balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+    } else {
+      loginBtn.style.display = 'flex';
+      logoutBtn.style.display = 'none';
+    }
+  }
+
+  loginBtn.addEventListener('click', async () => {
+    window.location.href = 'login.html';
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = 'index.html';
+  });
+
+  loadUser();
+  </script>
   
 </body>
 </html>

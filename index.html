@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketplace - Home</title>
+  <title data-i18n="page_title">Marketplace - Home</title>
   <link rel="stylesheet" href="css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +12,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-container">
-    <a href="/" class="navbar-logo">
+    <a href="index.html" class="navbar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0L24 24H0z"/>
       </svg>
@@ -22,22 +22,22 @@
     <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
 
     <div class="navbar-links">
-      <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
-      <a href="/" class="btn-nav">View Items</a>
-      <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
-      <a href="/settings.html" class="btn-nav">Settings</a>
+      <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+      <a href="settings.html" class="btn-nav" data-i18n="settings">Settings</a>
 
       <!-- Language Dropdown -->
       <select id="langSelect" class="category-select">
         <option value="en">English</option>
-        <option value="lv">Latvian</option>
+        <option value="lv">Latviešu</option>
       </select>
 
       <!-- Dark/Light Mode -->
-      <button class="icon-btn" id="themeToggle">🌓</button>
+      <button class="icon-btn" id="themeToggle">🌙</button>
 
-      <button class="btn-login" id="loginBtn">Login</button>
-      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
     </div>
   </div>
 </nav>
@@ -46,7 +46,7 @@
 <section class="hero-modern">
   <div class="hero-gradient"></div>
   <div class="hero-content">
-    <div class="hero-badge">🌟 Featured Marketplace</div>
+    <div class="hero-badge">🌟 <span data-i18n="featuredMarketplace">Featured Marketplace</span></div>
     <h1 class="hero-title gradient-text" data-i18n="hero_title">Discover Unique Items</h1>
     <p class="hero-subtitle" data-i18n="hero_subtitle">Buy and sell with confidence. Explore thousands of products.</p>
     <div class="hero-actions">
@@ -55,17 +55,17 @@
     </div>
     <div class="hero-stats">
       <div class="stat-item">
-        <div class="stat-value">1.2k+</div>
+        <div class="stat-value" id="statsProducts">0</div>
         <div class="stat-label" data-i18n="products">Products</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item">
-        <div class="stat-value">900+</div>
+        <div class="stat-value" id="statsSellers">0</div>
         <div class="stat-label" data-i18n="sellers">Sellers</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item">
-        <div class="stat-value">15k+</div>
+        <div class="stat-value" id="statsUsers">0</div>
         <div class="stat-label" data-i18n="users">Users</div>
       </div>
     </div>
@@ -78,20 +78,23 @@
   <!-- Popular Products Section -->
   <div class="section-header">
     <div>
-      <h2 class="section-title" data-i18n="popular">Popular Products</h2>
-      <p class="section-subtitle" data-i18n="top_trending">Top trending items on the marketplace</p>
+      <h2 class="section-title" data-i18n="popularProducts">Popular Products</h2>
+      <p class="section-subtitle" data-i18n="topTrending">Top trending items on the marketplace</p>
     </div>
     <div class="filter-tabs">
-      <button class="filter-tab active" data-category="all">All</button>
-      <button class="filter-tab" data-category="electronics">Electronics</button>
-      <button class="filter-tab" data-category="clothing">Clothing</button>
-      <button class="filter-tab" data-category="furniture">Furniture</button>
-      <button class="filter-tab" data-category="other">Other</button>
+      <button class="filter-tab active" data-category="all" data-i18n="all">All</button>
+      <button class="filter-tab" data-category="electronics" data-i18n="electronics">Electronics</button>
+      <button class="filter-tab" data-category="clothing" data-i18n="clothing">Clothing</button>
+      <button class="filter-tab" data-category="furniture" data-i18n="furniture">Furniture</button>
+      <button class="filter-tab" data-category="other" data-i18n="other">Other</button>
     </div>
   </div>
 
   <div class="product-grid-modern" id="productGrid">
     <!-- Product Cards inserted dynamically via JS -->
+    <div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">
+      <span data-i18n="loading">Loading products...</span>
+    </div>
   </div>
 
   <!-- Features Section -->
@@ -120,179 +123,256 @@
 </main>
 
 <script type="module">
-import { supabase } from './js/supabase.js';
-import i18next from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import './js/navbar.js';
+import { supabase, getProducts, purchaseProduct, reserveProduct, getCurrentUser } from './js/supabase.js';
+import { i18n } from './js/i18n.js';
 
 // ============================
-// Language Initialization
+// TOAST NOTIFICATION SYSTEM
 // ============================
-i18next.use(LanguageDetector).init({
-  fallbackLng: 'en',
-  resources: {
-    en: {
-      translation: {
-        hero_title: "Discover Unique Items",
-        hero_subtitle: "Buy and sell with confidence. Explore thousands of products.",
-        btn_start: "Start Shopping",
-        btn_learn: "Learn More",
-        products: "Products",
-        sellers: "Sellers",
-        users: "Users",
-        popular: "Popular Products",
-        top_trending: "Top trending items on the marketplace",
-        why_choose: "Why Choose Us?",
-        marketplace_experience: "Our marketplace offers the best experience for buyers and sellers.",
-        secure_msg: "Secure Messaging",
-        msg_desc: "Chat with sellers directly with privacy guaranteed.",
-        balance: "Balance Management",
-        balance_desc: "Add funds and manage your balance easily for instant purchases.",
-        fast_tx: "Fast Transactions",
-        tx_desc: "Reserve or buy products quickly without unnecessary delays."
-      }
-    },
-    lv: {
-      translation: {
-        hero_title: "Atklājiet unikālus produktus",
-        hero_subtitle: "Pārdodiet un pērkat droši. Izpētiet tūkstošiem produktu.",
-        btn_start: "Sākt iepirkties",
-        btn_learn: "Uzzināt vairāk",
-        products: "Produkti",
-        sellers: "Pārdevēji",
-        users: "Lietotāji",
-        popular: "Populāri produkti",
-        top_trending: "Populārākie produkti tirgū",
-        why_choose: "Kāpēc izvēlēties mūs?",
-        marketplace_experience: "Mūsu tirgus nodrošina labāko pieredzi pircējiem un pārdevējiem.",
-        secure_msg: "Droša ziņošana",
-        msg_desc: "Sazinieties ar pārdevējiem ar garantētu privātumu.",
-        balance: "Bilances pārvaldība",
-        balance_desc: "Pievienojiet līdzekļus un pārvaldiet savu bilanci ātrai pirkšanai.",
-        fast_tx: "Ātras transakcijas",
-        tx_desc: "Rezervējiet vai pērkat produktus ātri, bez liekiem kavējumiem."
-      }
-    }
-  }
-}).then(() => {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.innerText = i18next.t(el.getAttribute('data-i18n'));
-  });
-});
-
-document.getElementById('langSelect').addEventListener('change', (e) => {
-  i18next.changeLanguage(e.target.value).then(() => {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      el.innerText = i18next.t(el.getAttribute('data-i18n'));
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    Object.assign(container.style, {
+      position: 'fixed',
+      right: '20px',
+      bottom: '20px',
+      zIndex: '9999',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
     });
-  });
-});
-
-// ============================
-// Dark/Light Mode Toggle
-// ============================
-const themeToggle = document.getElementById('themeToggle');
-themeToggle.addEventListener('click', () => {
-  const html = document.documentElement;
-  if(html.dataset.theme === 'light') {
-    html.dataset.theme = 'dark';
-  } else {
-    html.dataset.theme = 'light';
+    document.body.appendChild(container);
   }
-});
+
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  Object.assign(toast.style, {
+    background: type === 'error' ? '#fee2e2' : '#ecfdf5',
+    color: type === 'error' ? '#ef4444' : '#065f46',
+    padding: '12px 16px',
+    borderRadius: '12px',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.1)',
+    fontWeight: '600',
+    fontSize: '14px',
+    animation: 'slideIn 0.3s ease-out'
+  });
+  
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 
 // ============================
-// Hamburger Mobile Menu
+// STATS UPDATER
 // ============================
-const hamburgerBtn = document.getElementById('hamburgerBtn');
-const navbarLinks = document.querySelector('.navbar-links');
-hamburgerBtn.addEventListener('click', () => {
-  navbarLinks.classList.toggle('active');
-});
-
-// ============================
-// Supabase Auth
-// ============================
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const balanceBadge = document.getElementById('balanceBadge');
-
-async function checkUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if(user) {
-    loginBtn.style.display = 'none';
-    logoutBtn.style.display = 'flex';
-    // Fetch user balance from Supabase (replace with actual table)
-    const { data, error } = await supabase.from('users').select('balance').eq('id', user.id).single();
-    if(data) balanceBadge.querySelector('span').innerText = `€${data.balance.toFixed(2)}`;
-  } else {
-    loginBtn.style.display = 'flex';
-    logoutBtn.style.display = 'none';
+async function updateStats() {
+  try {
+    const products = await getProducts();
+    const { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    const { count: sellersCount } = await supabase.from('products').select('seller_id', { count: 'exact', head: true });
+    
+    document.getElementById('statsProducts').textContent = products.length || '0';
+    document.getElementById('statsUsers').textContent = usersCount || '0';
+    document.getElementById('statsSellers').textContent = sellersCount || '0';
+  } catch (error) {
+    console.error('Error updating stats:', error);
   }
 }
 
-loginBtn.addEventListener('click', async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-});
-
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  checkUser();
-});
-
-checkUser();
-
 // ============================
-// Dynamic Product Rendering (Example)
+// PRODUCT RENDERING
 // ============================
-const products = [
-  { id:1, name:'Wireless Headphones', category:'electronics', price:59.99, rating:4.8, views:120, image:'https://via.placeholder.com/300x280', badge:'New'},
-  { id:2, name:'Leather Jacket', category:'clothing', price:149.99, rating:4.7, views:98, image:'https://via.placeholder.com/300x280', badge:'New'},
-  { id:3, name:'Wooden Chair', category:'furniture', price:89.99, rating:4.5, views:54, image:'https://via.placeholder.com/300x280', badge:''},
-];
+let allProducts = [];
+let currentCategory = 'all';
 
-function renderProducts(category='all') {
+async function loadProducts() {
+  try {
+    allProducts = await getProducts();
+    renderProducts();
+    updateStats();
+  } catch (error) {
+    console.error('Error loading products:', error);
+    showToast('Error loading products', 'error');
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderProducts() {
   const grid = document.getElementById('productGrid');
+  const filtered = currentCategory === 'all' 
+    ? allProducts 
+    : allProducts.filter(p => p.category === currentCategory);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="padding:40px;text-align:center;grid-column:1/-1;color:var(--muted);">
+      <span data-i18n="no_products">No products found</span>
+    </div>`;
+    i18n.setLang(i18n.lang);
+    return;
+  }
+
   grid.innerHTML = '';
-  const filtered = category === 'all' ? products : products.filter(p => p.category === category);
-  filtered.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'product-card-modern';
-    div.innerHTML = `
+  
+  filtered.forEach(product => {
+    const card = document.createElement('div');
+    card.className = 'product-card-modern';
+    card.innerHTML = `
       <div class="product-image-container">
-        <img src="${p.image}" alt="${p.name}" class="product-image">
-        <button class="product-like-btn">❤️</button>
-        ${p.badge ? `<span class="product-badge-new">${p.badge}</span>` : ''}
-        <div class="product-overlay"><button class="btn-quick-view">Quick View</button></div>
+        <img src="${product.image_url || 'https://via.placeholder.com/600x400'}" alt="${escapeHtml(product.name)}" class="product-image">
+        <button class="product-like-btn" data-id="${product.id}">❤️</button>
+        ${product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
+        <div class="product-overlay">
+          <button class="btn-quick-view" data-id="${product.id}" data-i18n="quickView">Quick View</button>
+        </div>
       </div>
       <div class="product-info">
-        <span class="product-category">${p.category}</span>
-        <h3 class="product-name">${p.name}</h3>
+        <span class="product-category">${escapeHtml(product.category || 'other')}</span>
+        <h3 class="product-name">${escapeHtml(product.name)}</h3>
         <div class="product-meta">
-          <span class="product-rating">⭐ ${p.rating}</span>
-          <span class="product-views">👁 ${p.views}</span>
+          <span class="product-views">👁 ${product.stock || 0} <span data-i18n="stock">stock</span></span>
         </div>
         <div class="product-footer">
-          <div class="product-price"><span class="price-currency">€</span><span class="price-amount">${p.price}</span></div>
+          <div class="product-price">
+            <span class="price-currency">€</span>
+            <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+          </div>
           <div class="product-actions">
-            <button class="btn-add-cart">🛒</button>
-            <button class="btn-buy-now">Buy Now</button>
+            ${!product.is_reserved ? `
+              <button class="btn-add-cart" data-id="${product.id}" title="Reserve">🔖</button>
+              <button class="btn-buy-now" data-id="${product.id}" data-i18n="buyNow">Buy Now</button>
+            ` : `
+              <button class="btn-buy-now" disabled style="opacity:0.5" data-i18n="reserved">Reserved</button>
+            `}
           </div>
         </div>
       </div>
     `;
-    grid.appendChild(div);
+    grid.appendChild(card);
+  });
+
+  // Apply translations to newly rendered elements
+  i18n.setLang(i18n.lang);
+
+  // Add event listeners
+  addProductEventListeners();
+}
+
+function addProductEventListeners() {
+  // Buy Now buttons
+  document.querySelectorAll('.btn-buy-now:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const productId = e.currentTarget.dataset.id;
+      await handlePurchase(productId);
+    });
+  });
+
+  // Reserve buttons (cart icon)
+  document.querySelectorAll('.btn-add-cart').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const productId = e.currentTarget.dataset.id;
+      await handleReserve(productId);
+    });
+  });
+
+  // Quick View buttons
+  document.querySelectorAll('.btn-quick-view').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const productId = e.currentTarget.dataset.id;
+      const product = allProducts.find(p => p.id === productId);
+      if (product) {
+        showProductModal(product);
+      }
+    });
   });
 }
 
+async function handlePurchase(productId) {
+  const user = await getCurrentUser();
+  if (!user) {
+    showToast(i18n.t('loginFirst'), 'error');
+    setTimeout(() => window.location.href = 'login.html', 1500);
+    return;
+  }
+
+  try {
+    await purchaseProduct(productId, user.id);
+    showToast(i18n.t('purchaseComplete'), 'success');
+    loadProducts();
+    // Update navbar balance
+    import('./js/navbar.js').then(module => module.updateNavbarAuth());
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+async function handleReserve(productId) {
+  const user = await getCurrentUser();
+  if (!user) {
+    showToast(i18n.t('loginFirst'), 'error');
+    setTimeout(() => window.location.href = 'login.html', 1500);
+    return;
+  }
+
+  try {
+    await reserveProduct(productId, user.id, 0.20);
+    showToast('Product reserved successfully!', 'success');
+    loadProducts();
+    // Update navbar balance
+    import('./js/navbar.js').then(module => module.updateNavbarAuth());
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+function showProductModal(product) {
+  // Simple alert for now - can be enhanced with a proper modal
+  const details = `
+Product: ${product.name}
+Price: €${parseFloat(product.price).toFixed(2)}
+Category: ${product.category}
+Stock: ${product.stock}
+Description: ${product.description || 'No description'}
+${product.is_reserved ? 'Status: RESERVED' : 'Status: Available'}
+  `;
+  alert(details);
+}
+
+// ============================
+// FILTER TABS
+// ============================
 document.querySelectorAll('.filter-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
-    document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    renderProducts(tab.dataset.category);
+    currentCategory = tab.dataset.category;
+    renderProducts();
   });
 });
 
-renderProducts();
+// ============================
+// HERO BUTTONS
+// ============================
+document.querySelector('.btn-hero-primary')?.addEventListener('click', () => {
+  document.querySelector('.main-container').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.querySelector('.btn-hero-secondary')?.addEventListener('click', () => {
+  document.querySelector('.features-section').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ============================
+// INITIALIZE
+// ============================
+window.addEventListener('DOMContentLoaded', () => {
+  loadProducts();
+});
 </script>
 
 </body>

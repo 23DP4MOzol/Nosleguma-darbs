@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="register_title">Register - Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn" style="opacity:0.6; pointer-events:none;"><span data-i18n="sellItems">Sell Items</span></button>
+      <a href="settings.html" class="btn-nav" data-i18n="settings">Settings</a>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<main class="main-container" style="max-width: 400px; margin-top: 8rem;">
+  <section class="section-header-centered">
+    <h2 class="section-title" data-i18n="create_account">Create Account</h2>
+    <p class="section-subtitle" data-i18n="join_marketplace">Join our marketplace and start buying and selling</p>
+  </section>
+
+  <form id="registerForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <input type="text" id="usernameInput" placeholder="Username" data-i18n-placeholder="username" class="chat-input-field" required>
+    <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+    <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required minlength="6">
+    <input type="password" id="confirmPasswordInput" placeholder="Confirm Password" data-i18n-placeholder="confirm_password" class="chat-input-field" required minlength="6">
+    <button type="submit" class="btn-buy-now" data-i18n="register">Register</button>
+    <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
+      <span data-i18n="already_have_account">Already have an account?</span> <a href="login.html" style="color: var(--primary);" data-i18n="sign_in">Sign in</a>
+    </p>
+  </form>
+</main>
+
+<script type="module">
+import { supabase } from './js/supabase.js';
+import { i18n } from './js/i18n.js';
+
+// ============================
+// Language Setup
+// ============================
+document.getElementById('langSelect').addEventListener('change', e => {
+  i18n.setLang(e.target.value);
+});
+
+// ============================
+// Dark/Light Mode Toggle
+// ============================
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.classList.remove('dark', 'light');
+  html.classList.add(newTheme);
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+});
+
+// ============================
+// Hamburger Mobile Menu
+// ============================
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  document.querySelector('.navbar-links').classList.toggle('active');
+});
+
+// ============================
+// Supabase Auth
+// ============================
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const balanceBadge = document.getElementById('balanceBadge');
+
+async function loadUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if(user) {
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'flex';
+    const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
+    balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+    balanceBadge.style.display = 'flex';
+  } else {
+    loginBtn.style.display = 'flex';
+    logoutBtn.style.display = 'none';
+    balanceBadge.style.display = 'none';
+  }
+}
+
+loginBtn.addEventListener('click', async () => {
+  window.location.href = 'login.html';
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  window.location.href = 'index.html';
+});
+
+loadUser();
+
+// ============================
+// Registration Form Submission
+// ============================
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const username = document.getElementById('usernameInput').value.trim();
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+  // Validation
+  if (password !== confirmPassword) {
+    alert(i18n.t('passwords_not_match') || 'Passwords do not match');
+    return;
+  }
+
+  if (password.length < 6) {
+    alert(i18n.t('password_too_short') || 'Password must be at least 6 characters');
+    return;
+  }
+
+  try {
+    // Register user with Supabase
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username
+        }
+      }
+    });
+
+    if (error) throw error;
+
+    alert(i18n.t('registration_success') || 'Registration successful! Please check your email to verify your account.');
+    window.location.href = 'login.html';
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    alert(error.message || 'Registration failed. Please try again.');
+  }
+});
+</script>
+
+</body>
+</html>

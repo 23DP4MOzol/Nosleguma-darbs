@@ -2,6 +2,10 @@
 // NAVBAR FUNCTIONALITY
 // ============================
 
+// Import required modules
+import { supabase } from "./supabase.js";
+import { i18n } from "./i18n.js";
+
 // --- HAMBURGER MENU TOGGLE ---
 const hamburgerBtn = document.getElementById("hamburgerBtn");
 const navbarLinks = document.querySelector(".navbar-links");
@@ -9,21 +13,22 @@ const navbarLinks = document.querySelector(".navbar-links");
 if (hamburgerBtn && navbarLinks) {
   hamburgerBtn.addEventListener("click", () => {
     navbarLinks.classList.toggle("active");
-    if (navbarLinks.style.display === "flex") {
-      navbarLinks.style.display = "none";
-    } else if (window.innerWidth <= 768) {
-      navbarLinks.style.display = "flex";
-      navbarLinks.style.flexDirection = "column";
-    }
   });
 }
 
+// Close navbar when clicking outside
+document.addEventListener("click", (e) => {
+  if (navbarLinks && hamburgerBtn) {
+    if (!navbarLinks.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+      navbarLinks.classList.remove("active");
+    }
+  }
+});
+
 // Close navbar when resizing to desktop
 window.addEventListener("resize", () => {
-  if (window.innerWidth > 768) {
-    navbarLinks.style.display = "flex";
-  } else {
-    navbarLinks.style.display = "none";
+  if (window.innerWidth > 768 && navbarLinks) {
+    navbarLinks.classList.remove("active");
   }
 });
 
@@ -34,72 +39,149 @@ const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 
 if (themeToggle) {
-  // Apply saved theme
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "dark") {
-    html.classList.add("dark");
-    themeToggle.textContent = "☀️";
-  } else {
-    html.classList.remove("dark");
-    themeToggle.textContent = "🌙";
-  }
+  // Apply saved theme on page load
+  const savedTheme = localStorage.getItem("theme") || "light";
+  html.classList.remove("dark", "light");
+  html.classList.add(savedTheme);
+  html.setAttribute("data-theme", savedTheme);
+  themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
 
+  // Toggle theme on button click
   themeToggle.addEventListener("click", () => {
-    html.classList.toggle("dark");
-    const isDark = html.classList.contains("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    themeToggle.textContent = isDark ? "☀️" : "🌙";
+    const currentTheme = html.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    html.classList.remove("dark", "light");
+    html.classList.add(newTheme);
+    html.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    themeToggle.textContent = newTheme === "dark" ? "☀️" : "🌙";
+
+    // Update all theme toggle buttons across the page
+    document.querySelectorAll('#themeToggle, #userThemeToggle').forEach(btn => {
+      btn.textContent = newTheme === "dark" ? "☀️" : "🌙";
+    });
   });
 }
 
 // ============================
 // LANGUAGE SWITCHER
 // ============================
-import i18next from "i18next";
-import { initTranslations, applyTranslations } from "./i18n.js";
-
 const langSelect = document.getElementById("langSelect");
 
 if (langSelect) {
-  langSelect.value = localStorage.getItem("lang") || "en";
+  // Set initial language from localStorage or default to 'en'
+  const savedLang = localStorage.getItem("lang") || "en";
+  langSelect.value = savedLang;
+  i18n.setLang(savedLang);
+
+  // Handle language change
   langSelect.addEventListener("change", (e) => {
     const lang = e.target.value;
     localStorage.setItem("lang", lang);
-    i18next.changeLanguage(lang, applyTranslations);
+    i18n.setLang(lang);
+
+    // Sync all language selectors on the page
+    document.querySelectorAll('#langSelect, #userLang').forEach(select => {
+      select.value = lang;
+    });
   });
 }
-
-// Initialize translations on load
-initTranslations();
 
 // ============================
 // SUPABASE AUTH MANAGEMENT
 // ============================
-import { supabase } from "./supabase.js";
-
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const balanceBadge = document.getElementById("balanceBadge");
+const sellBtn = document.getElementById("sellBtn");
 
 async function updateNavbarAuth() {
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    if (balanceBadge) balanceBadge.style.display = "flex";
-  } else {
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    if (balanceBadge) balanceBadge.style.display = "none";
+    if (user) {
+      // User is logged in
+      if (loginBtn) loginBtn.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+      if (balanceBadge) {
+        balanceBadge.style.display = "flex";
+        
+        // Fetch user balance from database
+        const { data: userData, error } = await supabase
+          .from("users")
+          .select("balance")
+          .eq("id", user.id)
+          .single();
+
+        if (userData && !error) {
+          balanceBadge.querySelector("span").textContent = `€${parseFloat(userData.balance || 0).toFixed(2)}`;
+        } else {
+          balanceBadge.querySelector("span").textContent = "€0.00";
+        }
+      }
+      
+      // Enable sell button
+      if (sellBtn) {
+        sellBtn.style.opacity = "1";
+        sellBtn.style.pointerEvents = "auto";
+      }
+    } else {
+      // User is not logged in
+      if (loginBtn) loginBtn.style.display = "inline-block";
+      if (logoutBtn) logoutBtn.style.display = "none";
+      if (balanceBadge) balanceBadge.style.display = "none";
+      
+      // Disable sell button visually
+      if (sellBtn) {
+        sellBtn.style.opacity = "0.6";
+        sellBtn.style.pointerEvents = "none";
+      }
+    }
+  } catch (error) {
+    console.error("Error updating navbar auth:", error);
   }
 }
 
-logoutBtn?.addEventListener("click", async () => {
-  await supabase.auth.signOut();
-  window.location.href = "login.html";
+// Handle login button click
+if (loginBtn) {
+  loginBtn.addEventListener("click", () => {
+    window.location.href = "login.html";
+  });
+}
+
+// Handle logout button click
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = "index.html";
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  });
+}
+
+// Handle sell button click
+if (sellBtn) {
+  sellBtn.addEventListener("click", async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      window.location.href = "sell.html";
+    } else {
+      alert(i18n.t("loginFirst"));
+      window.location.href = "login.html";
+    }
+  });
+}
+
+// Initialize auth state
+updateNavbarAuth();
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  updateNavbarAuth();
 });
 
-updateNavbarAuth();
-supabase.auth.onAuthStateChange(updateNavbarAuth);
+// Export for use in other modules
+export { updateNavbarAuth };

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketplace - Settings</title>
+  <title data-i18n="settings_title">Marketplace - Settings</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +12,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-container">
-    <a href="/" class="navbar-logo">
+    <a href="index.html" class="navbar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0L24 24H0z"/>
       </svg>
@@ -22,19 +22,22 @@
     <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
 
     <div class="navbar-links">
-      <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
-      <a href="/" class="btn-nav">View Items</a>
-      <a href="/sell.html" class="btn-sell"><span>Sell Items</span></a>
+      <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+      <a href="settings.html" class="btn-nav" data-i18n="settings">Settings</a>
 
+      <!-- Language Dropdown -->
       <select id="langSelect" class="category-select">
         <option value="en">English</option>
-        <option value="lv">Latvian</option>
+        <option value="lv">Latviešu</option>
       </select>
 
-      <button class="icon-btn" id="themeToggle">🌓</button>
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
 
-      <button class="btn-login" id="loginBtn">Login</button>
-      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
     </div>
   </div>
 </nav>
@@ -42,23 +45,23 @@
 <!-- MAIN SETTINGS -->
 <main class="main-container">
   <div class="section-header-centered">
-    <h2 class="section-title">User Settings</h2>
-    <p class="section-subtitle">Manage your profile, preferences, and account.</p>
+    <h2 class="section-title" data-i18n="user_settings">User Settings</h2>
+    <p class="section-subtitle" data-i18n="manage_profile">Manage your profile, preferences, and account.</p>
   </div>
 
   <div class="product-card-modern" style="max-width:600px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:1rem;">
     <label>
-      Email
+      <span data-i18n="email">Email</span>
       <input type="email" id="userEmail" class="chat-input-field" readonly>
     </label>
 
     <label>
-      Balance (€)
+      <span data-i18n="balance">Balance (€)</span>
       <input type="text" id="userBalance" class="chat-input-field" readonly>
     </label>
 
     <label>
-      Language
+      <span data-i18n="language">Language</span>
       <select id="userLang" class="category-select">
         <option value="en">English</option>
         <option value="lv">Latvian</option>
@@ -66,38 +69,29 @@
     </label>
 
     <label>
-      Theme
-      <button class="btn-buy-now" id="userThemeToggle">Toggle Dark/Light Mode</button>
+      <span data-i18n="theme">Theme</span>
+      <button class="btn-buy-now" id="userThemeToggle" data-i18n="toggle_theme">Toggle Dark/Light Mode</button>
     </label>
   </div>
 </main>
 
 <script type="module">
 import { supabase } from './js/supabase.js';
-import i18next from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { i18n } from './js/i18n.js';
 
 // ============================
 // Language Setup
 // ============================
-i18next.use(LanguageDetector).init({
-  fallbackLng: 'en',
-  resources: {
-    en: { translation: {} },
-    lv: { translation: {} }
-  }
-});
-
 // Navbar language selector
 const langSelect = document.getElementById('langSelect');
 langSelect.addEventListener('change', e => {
-  i18next.changeLanguage(e.target.value);
+  i18n.setLang(e.target.value);
 });
 
 // Settings language selector
 const userLang = document.getElementById('userLang');
 userLang.addEventListener('change', e => {
-  i18next.changeLanguage(e.target.value);
+  i18n.setLang(e.target.value);
   langSelect.value = e.target.value;
 });
 
@@ -108,7 +102,13 @@ const themeToggle = document.getElementById('themeToggle');
 const userThemeToggle = document.getElementById('userThemeToggle');
 function toggleTheme() {
   const html = document.documentElement;
-  html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light';
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.classList.remove('dark', 'light');
+  html.classList.add(newTheme);
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
 }
 themeToggle.addEventListener('click', toggleTheme);
 userThemeToggle.addEventListener('click', toggleTheme);
@@ -148,12 +148,12 @@ async function loadUser() {
 }
 
 loginBtn.addEventListener('click', async () => {
-  await supabase.auth.signInWithOAuth({ provider: 'google' });
+  window.location.href = 'login.html';
 });
 
 logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
-  location.reload();
+  window.location.href = 'index.html';
 });
 
 loadUser();

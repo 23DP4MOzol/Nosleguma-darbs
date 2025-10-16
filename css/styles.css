@@ -35,6 +35,29 @@
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark Mode Variables */
+html.dark,
+html[data-theme="dark"] {
+  --bg: #0f172a;
+  --fg: #f1f5f9;
+  --primary: #60a5fa;
+  --primary-dark: #3b82f6;
+  --accent: #a78bfa;
+  --secondary: #1e293b;
+  --muted: #94a3b8;
+  --border: #334155;
+  --card-bg: #1e293b;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -68,6 +91,13 @@ body {
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
+}
+
+/* Dark mode navbar */
+html.dark .navbar,
+html[data-theme="dark"] .navbar {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: var(--border);
 }
 
 .navbar-container {
@@ -1327,4 +1357,3 @@ body {
       margin-bottom: 0.5rem;
     }
   }
-  

@@ -36,7 +36,7 @@ export async function updateNavbar(){
   if(user){
     if(loginBtn) loginBtn.style.display="none";
     if(logoutBtn) logoutBtn.style.display="flex";
-    if(balanceBadge){ 
+    if(balanceBadge){
       balanceBadge.style.display="flex";
       const balance=await getBalance(user.id);
       balanceBadge.querySelector("span").innerText=`€${(+balance).toFixed(2)}`;

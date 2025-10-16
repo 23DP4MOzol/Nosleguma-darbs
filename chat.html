@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketplace - Chat</title>
+  <title data-i18n="chat_title">Marketplace - Chat</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -43,7 +43,7 @@
     <!-- Sidebar -->
     <div class="chat-sidebar">
       <div class="chat-list-header">
-        <h3>Contacts</h3>
+        <h3 data-i18n="contacts">Contacts</h3>
         <button class="btn-icon-small">+</button>
       </div>
       <div class="chat-list" id="chatList">
@@ -57,7 +57,7 @@
         <div class="chat-user-info">
           <div class="chat-avatar avatar-circle" id="activeUserAvatar">A</div>
           <div>
-            <div class="chat-user-name" id="activeUserName">Select a chat</div>
+            <div class="chat-user-name" id="activeUserName" data-i18n="select_chat">Select a chat</div>
             <div class="chat-user-status" id="activeUserStatus"></div>
           </div>
         </div>
@@ -70,8 +70,8 @@
         <!-- Messages populated via JS -->
       </div>
       <div class="chat-input-area">
-        <input type="text" placeholder="Type a message..." class="chat-input-field" id="messageInput">
-        <button class="btn-send" id="sendBtn">Send</button>
+        <input type="text" data-i18n-placeholder="type_message" placeholder="Type a message..." class="chat-input-field" id="messageInput">
+        <button class="btn-send" id="sendBtn" data-i18n="send">Send</button>
       </div>
     </div>
 
@@ -80,29 +80,27 @@
 
 <script type="module">
 import { supabase } from './js/supabase.js';
-import i18next from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { i18n } from './js/i18n.js';
 
 // ============================
 // Language Setup
 // ============================
-i18next.use(LanguageDetector).init({
-  fallbackLng: 'en',
-  resources: {
-    en: { translation: {} },
-    lv: { translation: {} }
-  }
-});
-
 const langSelect = document.getElementById('langSelect');
-langSelect.addEventListener('change', e => i18next.changeLanguage(e.target.value));
+langSelect.addEventListener('change', e => i18n.setLang(e.target.value));
 
 // ============================
 // Dark/Light Mode Toggle
 // ============================
 const themeToggle = document.getElementById('themeToggle');
 themeToggle.addEventListener('click', () => {
-  document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.classList.remove('dark', 'light');
+  html.classList.add(newTheme);
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
 });
 
 // ============================
@@ -136,12 +134,12 @@ async function loadUser() {
 }
 
 loginBtn.addEventListener('click', async () => {
-  await supabase.auth.signInWithOAuth({ provider: 'google' });
+  window.location.href = 'login.html';
 });
 
 logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
-  location.reload();
+  window.location.href = 'index.html';
 });
 
 // ============================

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketplace - Product</title>
+  <title data-i18n="product_title">Marketplace - Product</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -80,22 +80,13 @@
 
 <script type="module">
 import { supabase } from './js/supabase.js';
-import i18next from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { i18n } from './js/i18n.js';
 
 // ============================
 // Language Setup
 // ============================
-i18next.use(LanguageDetector).init({
-  fallbackLng: 'en',
-  resources: {
-    en: { translation: {} },
-    lv: { translation: {} }
-  }
-});
-
 document.getElementById('langSelect').addEventListener('change', e => {
-  i18next.changeLanguage(e.target.value);
+  i18n.setLang(e.target.value);
 });
 
 // ============================
@@ -103,7 +94,13 @@ document.getElementById('langSelect').addEventListener('change', e => {
 // ============================
 document.getElementById('themeToggle').addEventListener('click', () => {
   const html = document.documentElement;
-  html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light';
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.classList.remove('dark', 'light');
+  html.classList.add(newTheme);
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
 });
 
 // ============================
@@ -137,12 +134,12 @@ async function loadUser() {
 }
 
 loginBtn.addEventListener('click', async () => {
-  await supabase.auth.signInWithOAuth({ provider: 'google' });
+  window.location.href = 'login.html';
 });
 
 logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
-  location.reload();
+  window.location.href = 'index.html';
 });
 
 loadUser();
