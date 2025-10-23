@@ -25,7 +25,7 @@
       <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
       <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
       <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
-      <a href="settings.html" class="btn-nav" data-i18n="settings">Settings</a>
+      <a href="settings.html" class="btn-nav" id="settingsBtn" data-i18n="settings">Settings</a>
 
       <!-- Language Dropdown -->
       <select id="langSelect" class="category-select">
@@ -75,89 +75,7 @@
   </div>
 </main>
 
-<script type="module">
-import { supabase } from './js/supabase.js';
-import { i18n } from './js/i18n.js';
-
-// ============================
-// Language Setup
-// ============================
-// Navbar language selector
-const langSelect = document.getElementById('langSelect');
-langSelect.addEventListener('change', e => {
-  i18n.setLang(e.target.value);
-});
-
-// Settings language selector
-const userLang = document.getElementById('userLang');
-userLang.addEventListener('change', e => {
-  i18n.setLang(e.target.value);
-  langSelect.value = e.target.value;
-});
-
-// ============================
-// Dark/Light Mode Toggle
-// ============================
-const themeToggle = document.getElementById('themeToggle');
-const userThemeToggle = document.getElementById('userThemeToggle');
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-}
-themeToggle.addEventListener('click', toggleTheme);
-userThemeToggle.addEventListener('click', toggleTheme);
-
-// ============================
-// Hamburger Mobile Menu
-// ============================
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
-// ============================
-// Supabase Auth
-// ============================
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const balanceBadge = document.getElementById('balanceBadge');
-const userEmailInput = document.getElementById('userEmail');
-const userBalanceInput = document.getElementById('userBalance');
-
-let currentUser = null;
-
-async function loadUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  currentUser = user;
-  if(user) {
-    loginBtn.style.display = 'none';
-    logoutBtn.style.display = 'flex';
-    const { data } = await supabase.from('users').select('balance,email').eq('id', user.id).single();
-    balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
-    userEmailInput.value = data.email;
-    userBalanceInput.value = `€${parseFloat(data.balance).toFixed(2)}`;
-  } else {
-    loginBtn.style.display = 'flex';
-    logoutBtn.style.display = 'none';
-  }
-}
-
-loginBtn.addEventListener('click', async () => {
-  window.location.href = 'login.html';
-});
-
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'index.html';
-});
-
-loadUser();
-</script>
+<script type="module" src="js/main.js"></script>
 
 </body>
 </html>

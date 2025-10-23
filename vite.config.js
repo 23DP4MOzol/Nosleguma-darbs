@@ -22,6 +22,7 @@ export default defineConfig({
         chat: "chat.html",
         login: "login.html",
         product: "product.html",
+        register: "register.html",
         sell: "sell.html",
         settings: "settings.html",
       },

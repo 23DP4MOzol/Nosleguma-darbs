@@ -24,8 +24,8 @@
     <div class="navbar-links">
       <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
       <a href="/" class="btn-nav">View Items</a>
-      <button class="btn-sell"><span>Sell Items</span></button>
-      <a href="/settings.html" class="btn-nav">Settings</a>
+      <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
+      <a href="/settings.html" class="btn-nav" id="settingsBtn">Settings</a>
 
       <select id="langSelect" class="category-select">
         <option value="en">English</option>
@@ -83,101 +83,7 @@
   </form>
 </main>
 
-<script type="module">
-import { supabase } from './js/supabase.js';
-import { i18n } from './js/i18n.js';
-
-// ============================
-// Language Setup
-// ============================
-document.getElementById('langSelect').addEventListener('change', e => {
-  i18n.setLang(e.target.value);
-});
-
-// ============================
-// Dark/Light Mode Toggle
-// ============================
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-});
-
-// ============================
-// Hamburger Mobile Menu
-// ============================
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
-// ============================
-// Supabase Auth
-// ============================
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const balanceBadge = document.getElementById('balanceBadge');
-
-let currentUser = null;
-
-async function loadUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  currentUser = user;
-  if(user) {
-    loginBtn.style.display = 'none';
-    logoutBtn.style.display = 'flex';
-    const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
-    balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
-  } else {
-    loginBtn.style.display = 'flex';
-    logoutBtn.style.display = 'none';
-  }
-}
-
-loginBtn.addEventListener('click', async () => {
-  window.location.href = 'login.html';
-});
-
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'index.html';
-});
-
-loadUser();
-
-// ============================
-// Sell Form Submission
-// ============================
-document.getElementById('sellForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if(!currentUser) {
-    alert(i18n.t('loginFirst'));
-    return;
-  }
-
-  const product = {
-    name: document.getElementById('productNameInput').value,
-    category: document.getElementById('productCategoryInput').value,
-    price: parseFloat(document.getElementById('productPriceInput').value),
-    description: document.getElementById('productDescriptionInput').value,
-    image: document.getElementById('productImageInput').value,
-    user_id: currentUser.id,
-    created_at: new Date()
-  };
-
-  const { data, error } = await supabase.from('products').insert([product]);
-  if(error) {
-    alert('Error listing product: ' + error.message);
-  } else {
-    alert('Product listed successfully!');
-    e.target.reset();
-  }
-});
-</script>
+<script type="module" src="js/main.js"></script>
 
 </body>
 </html>

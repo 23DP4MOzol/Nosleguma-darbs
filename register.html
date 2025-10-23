@@ -74,16 +74,24 @@ document.getElementById('langSelect').addEventListener('change', e => {
 // ============================
 // Dark/Light Mode Toggle
 // ============================
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-});
+// Initialize theme on page load
+const savedTheme = localStorage.getItem("theme") || "light";
+document.documentElement.classList.add(savedTheme);
+document.documentElement.setAttribute("data-theme", savedTheme);
+const themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+  themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+  themeToggle.addEventListener('click', () => {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.classList.remove('dark', 'light');
+    html.classList.add(newTheme);
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  });
+}
 
 // ============================
 // Hamburger Mobile Menu
@@ -149,7 +157,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
   try {
     // Register user with Supabase
-    const { data, error } = await supabase.auth.signUp({
+    const result = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -159,7 +167,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       }
     });
 
-    if (error) throw error;
+    if (result.error) throw result.error;
 
     alert(i18n.t('registration_success') || 'Registration successful! Please check your email to verify your account.');
     window.location.href = 'login.html';

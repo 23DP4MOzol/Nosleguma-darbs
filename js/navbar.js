@@ -38,29 +38,28 @@ window.addEventListener("resize", () => {
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 
+function applyTheme(theme) {
+  html.classList.remove("dark", "light");
+  html.classList.add(theme);
+  html.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+
+  // Update all theme toggle buttons across the page
+  document.querySelectorAll('#themeToggle, #userThemeToggle').forEach(btn => {
+    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
+  });
+}
+
 if (themeToggle) {
   // Apply saved theme on page load
   const savedTheme = localStorage.getItem("theme") || "light";
-  html.classList.remove("dark", "light");
-  html.classList.add(savedTheme);
-  html.setAttribute("data-theme", savedTheme);
-  themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+  applyTheme(savedTheme);
 
   // Toggle theme on button click
   themeToggle.addEventListener("click", () => {
     const currentTheme = html.getAttribute("data-theme") || "light";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
-
-    html.classList.remove("dark", "light");
-    html.classList.add(newTheme);
-    html.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-    themeToggle.textContent = newTheme === "dark" ? "☀️" : "🌙";
-
-    // Update all theme toggle buttons across the page
-    document.querySelectorAll('#themeToggle, #userThemeToggle').forEach(btn => {
-      btn.textContent = newTheme === "dark" ? "☀️" : "🌙";
-    });
+    applyTheme(newTheme);
   });
 }
 
@@ -106,7 +105,7 @@ async function updateNavbarAuth() {
       if (logoutBtn) logoutBtn.style.display = "inline-block";
       if (balanceBadge) {
         balanceBadge.style.display = "flex";
-        
+
         // Fetch user balance from database
         const { data: userData, error } = await supabase
           .from("users")
@@ -120,22 +119,30 @@ async function updateNavbarAuth() {
           balanceBadge.querySelector("span").textContent = "€0.00";
         }
       }
-      
-      // Enable sell button
+
+      // Enable sell button and settings button
       if (sellBtn) {
         sellBtn.style.opacity = "1";
         sellBtn.style.pointerEvents = "auto";
+      }
+      if (settingsBtn) {
+        settingsBtn.style.opacity = "1";
+        settingsBtn.style.pointerEvents = "auto";
       }
     } else {
       // User is not logged in
       if (loginBtn) loginBtn.style.display = "inline-block";
       if (logoutBtn) logoutBtn.style.display = "none";
       if (balanceBadge) balanceBadge.style.display = "none";
-      
-      // Disable sell button visually
+
+      // Disable sell button and settings button visually
       if (sellBtn) {
         sellBtn.style.opacity = "0.6";
         sellBtn.style.pointerEvents = "none";
+      }
+      if (settingsBtn) {
+        settingsBtn.style.opacity = "0.6";
+        settingsBtn.style.pointerEvents = "none";
       }
     }
   } catch (error) {
@@ -168,6 +175,20 @@ if (sellBtn) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       window.location.href = "sell.html";
+    } else {
+      alert(i18n.t("loginFirst"));
+      window.location.href = "login.html";
+    }
+  });
+}
+
+// Handle settings button click
+const settingsBtn = document.getElementById("settingsBtn");
+if (settingsBtn) {
+  settingsBtn.addEventListener("click", async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      window.location.href = "settings.html";
     } else {
       alert(i18n.t("loginFirst"));
       window.location.href = "login.html";
