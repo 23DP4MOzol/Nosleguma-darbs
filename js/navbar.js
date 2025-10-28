@@ -96,58 +96,95 @@ const balanceBadge = document.getElementById("balanceBadge");
 const sellBtn = document.getElementById("sellBtn");
 
 async function updateNavbarAuth() {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
+   try {
+     const { data: { user } } = await supabase.auth.getUser();
 
-    if (user) {
-      // User is logged in
-      if (loginBtn) loginBtn.style.display = "none";
-      if (logoutBtn) logoutBtn.style.display = "inline-block";
-      if (balanceBadge) {
-        balanceBadge.style.display = "flex";
+     // Get navbar links container
+     const navbarLinks = document.querySelector('.navbar-links');
 
-        // Fetch user balance from database
-        const { data: userData, error } = await supabase
-          .from("users")
-          .select("balance")
-          .eq("id", user.id)
-          .single();
+     if (user) {
+       // User is logged in - fetch user role
+       let userRole = 'user';
+       try {
+         const { data: userData, error } = await supabase
+           .from("users")
+           .select("balance, role")
+           .eq("id", user.id)
+           .single();
 
-        if (userData && !error) {
-          balanceBadge.querySelector("span").textContent = `€${parseFloat(userData.balance || 0).toFixed(2)}`;
-        } else {
-          balanceBadge.querySelector("span").textContent = "€0.00";
-        }
-      }
+         if (userData && !error) {
+           userRole = userData.role || 'user';
+           balanceBadge.querySelector("span").textContent = `€${parseFloat(userData.balance || 0).toFixed(2)}`;
+         } else {
+           balanceBadge.querySelector("span").textContent = "€0.00";
+         }
+       } catch (err) {
+         console.error("Error fetching user data:", err);
+         balanceBadge.querySelector("span").textContent = "€0.00";
+       }
 
-      // Enable sell button and settings button
-      if (sellBtn) {
-        sellBtn.style.opacity = "1";
-        sellBtn.style.pointerEvents = "auto";
-      }
-      if (settingsBtn) {
-        settingsBtn.style.opacity = "1";
-        settingsBtn.style.pointerEvents = "auto";
-      }
-    } else {
-      // User is not logged in
-      if (loginBtn) loginBtn.style.display = "inline-block";
-      if (logoutBtn) logoutBtn.style.display = "none";
-      if (balanceBadge) balanceBadge.style.display = "none";
+       // Show logged-in elements
+       if (loginBtn) loginBtn.style.display = "none";
+       if (logoutBtn) logoutBtn.style.display = "inline-block";
+       if (balanceBadge) balanceBadge.style.display = "flex";
 
-      // Disable sell button and settings button visually
-      if (sellBtn) {
-        sellBtn.style.opacity = "0.6";
-        sellBtn.style.pointerEvents = "none";
-      }
-      if (settingsBtn) {
-        settingsBtn.style.opacity = "0.6";
-        settingsBtn.style.pointerEvents = "none";
-      }
-    }
-  } catch (error) {
-    console.error("Error updating navbar auth:", error);
-  }
+       // Enable sell button and settings button
+       if (sellBtn) {
+         sellBtn.style.opacity = "1";
+         sellBtn.style.pointerEvents = "auto";
+       }
+       if (settingsBtn) {
+         settingsBtn.style.opacity = "1";
+         settingsBtn.style.pointerEvents = "auto";
+       }
+
+       // Add chat link if not exists
+       if (navbarLinks && !document.getElementById('chatLink')) {
+         const chatLink = document.createElement('a');
+         chatLink.href = 'chat.html';
+         chatLink.className = 'btn-nav';
+         chatLink.id = 'chatLink';
+         chatLink.setAttribute('data-i18n', 'chat');
+         chatLink.textContent = 'Chat';
+         navbarLinks.insertBefore(chatLink, settingsBtn);
+       }
+
+       // Add admin link only for admin users
+       if (userRole === 'admin' && navbarLinks && !document.getElementById('adminLink')) {
+         const adminLink = document.createElement('a');
+         adminLink.href = 'admin.html';
+         adminLink.className = 'btn-nav';
+         adminLink.id = 'adminLink';
+         adminLink.setAttribute('data-i18n', 'admin');
+         adminLink.textContent = 'Admin';
+         navbarLinks.insertBefore(adminLink, settingsBtn);
+       }
+
+     } else {
+       // User is not logged in
+       if (loginBtn) loginBtn.style.display = "inline-block";
+       if (logoutBtn) logoutBtn.style.display = "none";
+       if (balanceBadge) balanceBadge.style.display = "none";
+
+       // Disable sell button and settings button visually
+       if (sellBtn) {
+         sellBtn.style.opacity = "0.6";
+         sellBtn.style.pointerEvents = "none";
+       }
+       if (settingsBtn) {
+         settingsBtn.style.opacity = "0.6";
+         settingsBtn.style.pointerEvents = "none";
+       }
+
+       // Remove chat and admin links
+       const chatLink = document.getElementById('chatLink');
+       const adminLink = document.getElementById('adminLink');
+       if (chatLink) chatLink.remove();
+       if (adminLink) adminLink.remove();
+     }
+   } catch (error) {
+     console.error("Error updating navbar auth:", error);
+   }
 }
 
 // Handle login button click

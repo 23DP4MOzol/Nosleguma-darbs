@@ -10,32 +10,36 @@
 
 <!-- NAVBAR -->
 <nav class="navbar">
-    <div class="navbar-container">
-      <!-- Logo -->
-      <a href="index.html" class="navbar-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 0L24 24H0z"/>
-        </svg>
-        MARKETPLACE
-      </a>
-  
-      <!-- Hamburger for mobile -->
-      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
-  
-      <!-- Links & actions -->
-      <div class="navbar-links">
-        <div class="balance-badge" id="balanceBadge">
-          <span>€0.00</span>
-        </div>
-        <a href="index.html" class="btn-nav">View Items</a>
-        <button class="btn-sell"><span>Sell Items</span></button>
-        <a href="settings.html" class="btn-nav">Settings</a>
-        <button class="btn-login" id="loginBtn">Login</button>
-        <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
-      </div>
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+      <a href="settings.html" class="btn-nav" id="settingsBtn" data-i18n="settings">Settings</a>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
     </div>
-  </nav>
-  
+  </div>
+</nav>
       
       
 
@@ -47,13 +51,28 @@
     </section>
 
     <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
-        <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required>
-        <button type="submit" class="btn-buy-now" data-i18n="login">Login</button>
-        <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
-          <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
-        </p>
-      </form>
+       <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+       <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required>
+       <button type="submit" class="btn-buy-now" data-i18n="login">Login</button>
+       <div style="text-align: center; color: var(--error); font-size: 0.875rem; margin-bottom: 1rem;">
+         ⚠️ Email validation is enabled in Supabase. Use real emails or disable validation in Authentication Settings.
+       </div>
+       <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+         <button type="button" id="setupUsers" class="btn-buy-now" style="background: #ff6b35;">Create Auth Users</button>
+         <button type="button" id="syncProfiles" class="btn-buy-now" style="background: #4CAF50;">Sync User Profiles</button>
+       </div>
+       <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+         <button type="button" id="quickAdminLogin" class="btn-buy-now">Admin: admin@example.com</button>
+         <button type="button" id="quickUser1Login" class="btn-buy-now">User1: user1@example.com</button>
+         <button type="button" id="quickUser2Login" class="btn-buy-now">User2: user2@example.com</button>
+       </div>
+       <div style="text-align: center; color: var(--muted); font-size: 0.875rem; margin-top: 1rem;">
+         Password for all: password123
+       </div>
+       <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
+         <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
+       </p>
+     </form>
   </main>
 <script type="module">
 import { supabase, loginUser } from './js/supabase.js';
@@ -115,10 +134,139 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     alert('Login failed. Please try again.');
   }
 });
+
+// ============================
+// Create Auth Users
+// ============================
+document.getElementById('setupUsers').addEventListener('click', async () => {
+  try {
+    alert('Creating test users in Supabase Auth... Check console for details.');
+
+    const users = [
+      { email: 'admin@example.com', password: 'password123' },
+      { email: 'user1@example.com', password: 'password123' },
+      { email: 'user2@example.com', password: 'password123' }
+    ];
+
+    alert('Note: If email validation fails, go to Supabase Dashboard → Authentication → Settings and disable "Enable email confirmations" and "Enable email change confirmations".');
+
+    for (const userData of users) {
+      try {
+        console.log('Creating auth user:', userData.email);
+
+        const signUpResult = await supabase.auth.signUp({
+          email: userData.email,
+          password: userData.password
+        });
+
+        console.log('Auth creation result for', userData.email, ':', signUpResult);
+
+        if (signUpResult.error) {
+          console.error('Failed to create auth user', userData.email, ':', signUpResult.error);
+        } else {
+          console.log('Successfully created auth user:', userData.email);
+        }
+      } catch (userError) {
+        console.error('Error creating auth user', userData.email, ':', userError);
+      }
+    }
+
+    alert('Auth users created! Now click "Sync User Profiles" to link them with database profiles.');
+  } catch (error) {
+    console.error('Setup error:', error);
+    alert('Setup failed: ' + error.message);
+  }
+});
+
+// ============================
+// Sync User Profiles
+// ============================
+document.getElementById('syncProfiles').addEventListener('click', async () => {
+  try {
+    alert('Syncing user profiles... Check console for details.');
+
+    // Get current user to check if we can access auth users
+    const { data: currentUser } = await supabase.auth.getUser();
+
+    if (!currentUser.user) {
+      alert('Please login first to sync profiles, or use manual SQL approach.');
+      return;
+    }
+
+    // Since we can't use admin.listUsers from client, let's try a different approach
+    // We'll create a simple SQL query display for the user
+
+    const sqlCommands = `
+-- Run these commands in your Supabase SQL Editor:
+-- First, find the auth user IDs:
+
+SELECT id, email FROM auth.users WHERE email IN ('admin@example.com', 'user1@example.com', 'user2@example.com');
+
+-- Then update your users table with the correct IDs:
+-- (Replace the UUIDs below with the actual IDs from the query above)
+
+-- UPDATE public.users SET id = 'paste-admin-uuid-here' WHERE email = 'admin@example.com';
+-- UPDATE public.users SET id = 'paste-user1-uuid-here' WHERE email = 'user1@example.com';
+-- UPDATE public.users SET id = 'paste-user2-uuid-here' WHERE email = 'user2@example.com';
+`;
+
+    console.log('SQL Commands to run in Supabase:');
+    console.log(sqlCommands);
+
+    alert('Check browser console for SQL commands to run in Supabase SQL Editor. Copy and execute them there.');
+
+  } catch (error) {
+    console.error('Sync error:', error);
+    alert('Sync failed: ' + error.message + '\n\nUse the manual SQL approach shown in console.');
+  }
+});
+
+// ============================
+// Quick Login Buttons
+// ============================
+document.getElementById('quickAdminLogin').addEventListener('click', async () => {
+  try {
+    const result = await loginUser('admin@example.com', 'password123');
+    if (result.error) {
+      alert('Quick Admin Login failed: ' + result.error.message);
+      return;
+    }
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Quick Admin Login error:', error);
+    alert('Quick Admin Login failed. Please try again.');
+  }
+});
+
+document.getElementById('quickUser1Login').addEventListener('click', async () => {
+  try {
+    const result = await loginUser('user1@example.com', 'password123');
+    if (result.error) {
+      alert('Quick User 1 Login failed: ' + result.error.message);
+      return;
+    }
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Quick User 1 Login error:', error);
+    alert('Quick User 1 Login failed. Please try again.');
+  }
+});
+
+document.getElementById('quickUser2Login').addEventListener('click', async () => {
+  try {
+    const result = await loginUser('user2@example.com', 'password123');
+    if (result.error) {
+      alert('Quick User 2 Login failed: ' + result.error.message);
+      return;
+    }
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('Quick User 2 Login error:', error);
+    alert('Quick User 2 Login failed. Please try again.');
+  }
+});
 </script>
 
-  <script src="js/supabase.js"></script>
-  <script src="js/app.js"></script>
 
 </body>
 </html>

@@ -564,35 +564,98 @@ async function initializeIndexPage() {
 
 // Settings page functions
 function initializeSettingsPage() {
-  if (!document.getElementById('userEmail')) return;
+   if (!document.getElementById('userEmail')) return;
 
-  async function loadUserSettings() {
-    try {
-      const { data } = await supabase.auth.getUser();
-      const user = data ? data.user : null;
-      if (!user) {
-        showToast('You must be logged in to access settings.', 'error');
-        setTimeout(() => (window.location.href = 'login.html'), 2000);
-        return;
-      }
+   async function loadUserSettings() {
+     try {
+       const { data } = await supabase.auth.getUser();
+       const user = data ? data.user : null;
+       if (!user) {
+         showToast('You must be logged in to access settings.', 'error');
+         setTimeout(() => (window.location.href = 'login.html'), 2000);
+         return;
+       }
 
-      const resp = await supabase.from('users').select('balance,email').eq('id', user.id).single();
-      if (resp.error) {
-        console.error('Error loading user settings:', resp.error);
-        return;
-      }
-      const dataRow = resp.data;
-      const emailEl = document.getElementById('userEmail');
-      const balanceEl = document.getElementById('userBalance');
+       const resp = await supabase.from('users').select('balance,email').eq('id', user.id).single();
+       if (resp.error) {
+         console.error('Error loading user settings:', resp.error);
+         return;
+       }
+       const dataRow = resp.data;
+       const emailEl = document.getElementById('userEmail');
+       const balanceEl = document.getElementById('userBalance');
 
-      if (emailEl) emailEl.value = dataRow.email || '';
-      if (balanceEl) balanceEl.value = `€${Number.isFinite(Number(dataRow.balance)) ? parseFloat(dataRow.balance).toFixed(2) : '0.00'}`;
-    } catch (error) {
-      console.error('Error in loadUserSettings:', error);
-    }
-  }
+       if (emailEl) emailEl.value = dataRow.email || '';
+       if (balanceEl) balanceEl.value = `€${Number.isFinite(Number(dataRow.balance)) ? parseFloat(dataRow.balance).toFixed(2) : '0.00'}`;
+     } catch (error) {
+       console.error('Error in loadUserSettings:', error);
+     }
+   }
 
-  loadUserSettings();
+   // Theme toggle functionality
+   const userThemeToggle = document.getElementById('userThemeToggle');
+   if (userThemeToggle) {
+     userThemeToggle.addEventListener('click', () => {
+       const html = document.documentElement;
+       const currentTheme = html.getAttribute('data-theme') || 'light';
+       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+       html.classList.remove('dark', 'light');
+       html.classList.add(newTheme);
+       html.setAttribute('data-theme', newTheme);
+       localStorage.setItem('theme', newTheme);
+
+       // Update button text
+       userThemeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+       userThemeToggle.setAttribute('data-i18n', newTheme === 'dark' ? 'toggle_theme' : 'toggle_theme');
+
+       showToast(`Switched to ${newTheme} mode`, 'success');
+     });
+   }
+
+   // Logout button in settings
+   const settingsLogoutBtn = document.getElementById('logoutBtn');
+   if (settingsLogoutBtn) {
+     settingsLogoutBtn.addEventListener('click', async () => {
+       try {
+         await supabase.auth.signOut();
+         showToast('Logged out successfully', 'success');
+         setTimeout(() => (window.location.href = 'index.html'), 1000);
+       } catch (error) {
+         console.error('Error signing out:', error);
+         showToast('Error signing out', 'error');
+       }
+     });
+   }
+
+   // Delete account functionality
+   const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+   if (deleteAccountBtn) {
+     deleteAccountBtn.addEventListener('click', async () => {
+       const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+       if (!confirmed) return;
+
+       try {
+         const { data } = await supabase.auth.getUser();
+         const user = data ? data.user : null;
+         if (!user) return;
+
+         // Delete user profile first
+         await supabase.from('users').delete().eq('id', user.id);
+
+         // Delete auth user
+         await supabase.auth.admin.deleteUser(user.id);
+
+         showToast('Account deleted successfully', 'success');
+         setTimeout(() => (window.location.href = 'index.html'), 1000);
+       } catch (error) {
+         console.error('Error deleting account:', error);
+         showToast('Error deleting account', 'error');
+       }
+     });
+   }
+
+   loadUserSettings();
 }
 
 // Sell page functions
@@ -626,7 +689,8 @@ function initializeSellPage() {
         category: document.getElementById('productCategoryInput')?.value || '',
         price: parseFloat(document.getElementById('productPriceInput')?.value || '0'),
         description: document.getElementById('productDescriptionInput')?.value || '',
-        image_url: document.getElementById('productImageInput')?.value || ''
+        image_url: document.getElementById('productImageInput')?.value || '',
+        stock: parseInt(document.getElementById('productStockInput')?.value || '1')
       };
 
       try {

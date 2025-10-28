@@ -81,6 +81,7 @@ export const i18n = {
         product_description: "Description",
         enter_description: "Enter product description",
         image_url: "Product Image URL",
+        enter_stock: "Enter stock quantity",
         list_product: "List Product",
         welcome_back: "Welcome Back",
         login_account: "Log in to your marketplace account",
@@ -114,7 +115,13 @@ export const i18n = {
         sign_in: "Sign in",
         passwords_not_match: "Passwords do not match",
         password_too_short: "Password must be at least 6 characters",
-        registration_success: "Registration successful! Please check your email to verify your account."
+        registration_success: "Registration successful! Please check your email to verify your account.",
+        chat: "Chat",
+        admin: "Admin",
+        sell_subtitle: "List your products easily and reach thousands of buyers.",
+        settings_title: "Marketplace - Settings",
+        account_actions: "Account Actions",
+        delete_account: "Delete Account"
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -191,6 +198,7 @@ export const i18n = {
         product_description: "Apraksts",
         enter_description: "Ievadiet produkta aprakstu",
         image_url: "Produkta attēla URL",
+        enter_stock: "Ievadiet krājuma daudzumu",
         list_product: "Pievienot produktu",
         welcome_back: "Laipni lūdzam atpakaļ",
         login_account: "Pieslēdzieties savam tirgus kontam",
@@ -224,7 +232,13 @@ export const i18n = {
         sign_in: "Pieslēgties",
         passwords_not_match: "Paroles nesakrīt",
         password_too_short: "Parolei jābūt vismaz 6 rakstzīmēm",
-        registration_success: "Reģistrācija veiksmīga! Lūdzu, pārbaudiet savu e-pastu, lai verificētu kontu."
+        registration_success: "Reģistrācija veiksmīga! Lūdzu, pārbaudiet savu e-pastu, lai verificētu kontu.",
+        chat: "Čats",
+        admin: "Administrācija",
+        sell_subtitle: "Pievienojiet savus produktus viegli un sasniedziet tūkstošiem pircēju.",
+        settings_title: "Tirgus - Iestatījumi",
+        account_actions: "Konta darbības",
+        delete_account: "Dzēst kontu"
       }
     },
   
