@@ -315,9 +315,6 @@ function initializeNavigation() {
 async function initializeIndexPage() {
   if (!document.querySelector('.product-grid-modern')) return;
 
-  // Initialize theme and language
-  initializeTheme();
-  initializeLanguage();
 
   // Stats updater
   async function updateStats() {
@@ -835,6 +832,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize common functionality
   initializeNavigation();
   initializeAuth();
+  initializeTheme();
+  initializeLanguage();
 
   // Initialize page-specific functionality
   // These functions already guard by checking for page-specific elements
