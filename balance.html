@@ -24,7 +24,8 @@
     <div class="navbar-links">
       <div class="balance-badge" id="balanceBadge"><span>€0.00</span></div>
       <a href="/" class="btn-nav">View Items</a>
-      <button class="btn-sell"><span>Sell Items</span></button>
+      <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
+      <a href="/balance.html" class="btn-nav" style="background: var(--primary); color: white;">Balance</a>
       <a href="/settings.html" class="btn-nav">Settings</a>
 
       <!-- Language Dropdown -->
@@ -49,23 +50,42 @@
     <p class="section-subtitle" data-i18n="balance_subtitle">Manage your funds and view transaction history.</p>
   </div>
 
-  <div class="balance-section">
-    <div class="current-balance">
-      <h3 data-i18n="current_balance">Current Balance</h3>
-      <div class="balance-amount" id="currentBalance">€0.00</div>
+  <div class="balance-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+    <div class="current-balance" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+      <h3 data-i18n="current_balance" style="margin-bottom: 1rem; color: var(--text-primary);">Current Balance</h3>
+      <div class="balance-amount" id="currentBalance" style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem;">€0.00</div>
+      <div style="color: var(--muted); font-size: 0.875rem;">Available for purchases</div>
     </div>
 
-    <div class="add-funds">
-      <h3 data-i18n="add_funds">Add Funds</h3>
-      <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €">
-      <button id="addFundsBtn" class="btn-hero-primary" data-i18n="btn_add">Add</button>
+    <div class="add-funds" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <div style="font-size: 2rem; margin-bottom: 1rem; text-align: center;">💳</div>
+      <h3 data-i18n="add_funds" style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Add Funds</h3>
+      <div style="display: flex; gap: 1rem;">
+        <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="1" step="0.01">
+        <button id="addFundsBtn" class="btn-hero-primary" data-i18n="btn_add" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Funds</button>
+      </div>
+      <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center;">
+        Minimum deposit: €1.00
+      </div>
     </div>
   </div>
 
   <div class="section-header-centered">
     <h3 class="section-title" data-i18n="transactions">Transaction History</h3>
+    <p class="section-subtitle">View all your deposits, purchases, and sales</p>
   </div>
-  <div class="transaction-history" id="transactionHistory">
+
+  <div class="transaction-history" id="transactionHistory" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h4 style="margin: 0; color: var(--text-primary);">Recent Transactions</h4>
+      <div style="display: flex; gap: 0.5rem;">
+        <button id="filterAll" class="filter-btn active" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: var(--primary); color: white; font-size: 0.875rem; cursor: pointer;">All</button>
+        <button id="filterDeposits" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Deposits</button>
+        <button id="filterPurchases" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Purchases</button>
+        <button id="filterSales" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Sales</button>
+      </div>
+    </div>
     <!-- Transactions rendered dynamically -->
   </div>
 </main>
@@ -111,9 +131,12 @@ const balanceBadge = document.getElementById('balanceBadge');
 const currentBalanceEl = document.getElementById('currentBalance');
 const transactionHistoryEl = document.getElementById('transactionHistory');
 
+let currentUserId = null;
+
 async function loadUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if(user) {
+    currentUserId = user.id;
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'flex';
     // Fetch user balance
@@ -123,10 +146,12 @@ async function loadUser() {
       balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
       currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
     }
-    loadTransactions(user.id);
+    loadTransactions(user.id, currentTransactionFilter);
   } else {
     loginBtn.style.display = 'flex';
     logoutBtn.style.display = 'none';
+    // Redirect to login if not authenticated
+    window.location.href = 'login.html';
   }
 }
 
@@ -165,19 +190,132 @@ document.getElementById('addFundsBtn').addEventListener('click', async () => {
 // ============================
 // Load Transaction History
 // ============================
-async function loadTransactions(userId) {
-  const { data, error } = await supabase.from('transactions').select().eq('user_id', userId).order('created_at', { ascending: false });
-  transactionHistoryEl.innerHTML = '';
+let currentTransactionFilter = 'all';
+
+async function loadTransactions(userId, filter = 'all') {
+  const { data, error } = await supabase.from('user_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+
+  // Clear existing transactions (but keep the header)
+  const existingTransactions = transactionHistoryEl.querySelectorAll('.transaction-item');
+  existingTransactions.forEach(tx => tx.remove());
+
   if(data && data.length) {
-    data.forEach(tx => {
+    // Filter transactions based on type
+    let filteredData = data;
+    if (filter !== 'all') {
+      switch(filter) {
+        case 'deposits':
+          filteredData = data.filter(tx => tx.transaction_type === 'deposit');
+          break;
+        case 'purchases':
+          filteredData = data.filter(tx => ['purchase', 'escrow_hold'].includes(tx.transaction_type));
+          break;
+        case 'sales':
+          filteredData = data.filter(tx => ['sale', 'escrow_pending'].includes(tx.transaction_type));
+          break;
+      }
+    }
+
+    filteredData.forEach(tx => {
       const div = document.createElement('div');
       div.className = 'transaction-item';
-      div.innerHTML = `<span>${tx.type === 'credit' ? '➕' : '➖'} €${tx.amount.toFixed(2)}</span> <span>${new Date(tx.created_at).toLocaleString()}</span>`;
+      div.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s;
+      `;
+      div.onmouseover = () => div.style.backgroundColor = '#f9fafb';
+      div.onmouseout = () => div.style.backgroundColor = 'transparent';
+
+      const getTransactionIcon = (type) => {
+        switch(type) {
+          case 'deposit': return '💰';
+          case 'purchase': case 'escrow_hold': return '🛒';
+          case 'sale': case 'escrow_pending': return '💸';
+          case 'listing_fee': return '📝';
+          case 'reserve_fee': return '🔖';
+          default: return '💳';
+        }
+      };
+
+      const getTransactionColor = (type) => {
+        switch(type) {
+          case 'deposit': return '#10b981';
+          case 'sale': case 'escrow_pending': return '#10b981';
+          case 'purchase': case 'escrow_hold': case 'listing_fee': case 'reserve_fee': return '#ef4444';
+          default: return '#6b7280';
+        }
+      };
+
+      const amount = Math.abs(parseFloat(tx.amount || 0));
+      const isPositive = ['deposit', 'sale', 'escrow_pending'].includes(tx.transaction_type);
+
+      div.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="font-size: 1.25rem;">${getTransactionIcon(tx.transaction_type)}</div>
+          <div>
+            <div style="font-weight: 500; color: var(--text-primary);">${tx.description || tx.transaction_type.replace('_', ' ')}</div>
+            <div style="font-size: 0.875rem; color: var(--muted);">${new Date(tx.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>
+        <div style="font-weight: 600; color: ${getTransactionColor(tx.transaction_type)};">
+          ${isPositive ? '+' : '-'}${amount.toFixed(2)}€
+        </div>
+      `;
       transactionHistoryEl.appendChild(div);
     });
+
+    if (filteredData.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--muted);';
+      emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>No ${filter} transactions found.`;
+      transactionHistoryEl.appendChild(emptyDiv);
+    }
   } else {
-    transactionHistoryEl.innerHTML = `<p data-i18n="no_tx">No transactions yet.</p>`;
+    const emptyDiv = document.createElement('div');
+    emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--muted);';
+    emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>No transactions yet.`;
+    transactionHistoryEl.appendChild(emptyDiv);
   }
+}
+
+// Transaction filter buttons
+document.getElementById('filterAll').addEventListener('click', () => {
+  setActiveFilter('filterAll');
+  currentTransactionFilter = 'all';
+  loadTransactions(currentUserId, currentTransactionFilter);
+});
+
+document.getElementById('filterDeposits').addEventListener('click', () => {
+  setActiveFilter('filterDeposits');
+  currentTransactionFilter = 'deposits';
+  loadTransactions(currentUserId, currentTransactionFilter);
+});
+
+document.getElementById('filterPurchases').addEventListener('click', () => {
+  setActiveFilter('filterPurchases');
+  currentTransactionFilter = 'purchases';
+  loadTransactions(currentUserId, currentTransactionFilter);
+});
+
+document.getElementById('filterSales').addEventListener('click', () => {
+  setActiveFilter('filterSales');
+  currentTransactionFilter = 'sales';
+  loadTransactions(currentUserId, currentTransactionFilter);
+});
+
+function setActiveFilter(activeId) {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = 'white';
+    btn.style.color = 'var(--text-primary)';
+  });
+  document.getElementById(activeId).classList.add('active');
+  document.getElementById(activeId).style.background = 'var(--primary)';
+  document.getElementById(activeId).style.color = 'white';
 }
 </script>
 

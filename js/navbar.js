@@ -160,6 +160,17 @@ async function updateNavbarAuth() {
          navbarLinks.insertBefore(adminLink, settingsBtn);
        }
 
+       // Add balance link for all logged-in users
+       if (navbarLinks && !document.getElementById('balanceLink')) {
+         const balanceLink = document.createElement('a');
+         balanceLink.href = 'balance.html';
+         balanceLink.className = 'btn-nav';
+         balanceLink.id = 'balanceLink';
+         balanceLink.setAttribute('data-i18n', 'balance');
+         balanceLink.textContent = 'Balance';
+         navbarLinks.insertBefore(balanceLink, settingsBtn);
+       }
+
      } else {
        // User is not logged in
        if (loginBtn) loginBtn.style.display = "inline-block";
@@ -176,11 +187,13 @@ async function updateNavbarAuth() {
          settingsBtn.style.pointerEvents = "none";
        }
 
-       // Remove chat and admin links
+       // Remove chat, admin, and balance links
        const chatLink = document.getElementById('chatLink');
        const adminLink = document.getElementById('adminLink');
+       const balanceLink = document.getElementById('balanceLink');
        if (chatLink) chatLink.remove();
        if (adminLink) adminLink.remove();
+       if (balanceLink) balanceLink.remove();
      }
    } catch (error) {
      console.error("Error updating navbar auth:", error);

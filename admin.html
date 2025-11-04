@@ -28,8 +28,19 @@
           <span>€0.00</span>
         </div>
         <a href="index.html" class="btn-nav">View Items</a>
-        <button class="btn-sell"><span>Sell Items</span></button>
+        <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
+        <a href="admin.html" class="btn-nav" style="background: var(--primary); color: white;">Admin</a>
         <a href="settings.html" class="btn-nav">Settings</a>
+
+        <!-- Language Dropdown -->
+        <select id="langSelect" class="category-select">
+          <option value="en">English</option>
+          <option value="lv">Latvian</option>
+        </select>
+
+        <!-- Dark/Light Mode -->
+        <button class="icon-btn" id="themeToggle">🌓</button>
+
         <button class="btn-login" id="loginBtn">Login</button>
         <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
       </div>
@@ -116,6 +127,33 @@
   import { i18n } from './js/i18n.js';
 
   // ============================
+  // Admin Access Control
+  // ============================
+  async function checkAdminAccess() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert('Please log in first');
+      window.location.href = 'login.html';
+      return false;
+    }
+
+    // Check if user is admin
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !userData || userData.role !== 'admin') {
+      alert('Access denied. Admin privileges required.');
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    return true;
+  }
+
+  // ============================
   // Language Setup
   // ============================
   document.getElementById('langSelect').addEventListener('change', e => {
@@ -144,23 +182,116 @@
   });
 
   // ============================
-  // Supabase Auth
+  // Supabase Auth & Admin Dashboard
   // ============================
   const loginBtn = document.getElementById('loginBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const balanceBadge = document.getElementById('balanceBadge');
+  const sellBtn = document.getElementById('sellBtn');
 
   async function loadUser() {
     const { data: { user } } = await supabase.auth.getUser();
     if(user) {
+      // Check admin access
+      const isAdmin = await checkAdminAccess();
+      if (!isAdmin) return;
+
       loginBtn.style.display = 'none';
       logoutBtn.style.display = 'flex';
       const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
       balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+
+      // Load admin dashboard data
+      loadDashboardStats();
+      loadRecentActivities();
     } else {
       loginBtn.style.display = 'flex';
       logoutBtn.style.display = 'none';
     }
+  }
+
+  // Load dashboard statistics
+  async function loadDashboardStats() {
+    try {
+      // Get user count
+      const { count: userCount, error: userError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+      // Get product count
+      const { count: productCount, error: productError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+      // Get today's transactions
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { count: transactionCount, error: transactionError } = await supabase
+        .from('user_transactions')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today.toISOString());
+
+      // Update dashboard cards
+      if (!userError) {
+        document.querySelector('[data-i18n="registered_users"]').nextElementSibling.textContent = userCount || 0;
+      }
+      if (!productError) {
+        document.querySelector('[data-i18n="total_products"]').nextElementSibling.textContent = productCount || 0;
+      }
+      if (!transactionError) {
+        document.querySelector('[data-i18n="transactions_today"]').nextElementSibling.textContent = transactionCount || 0;
+      }
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    }
+  }
+
+  // Load recent activities
+  async function loadRecentActivities() {
+    try {
+      const { data: transactions, error } = await supabase
+        .from('user_transactions')
+        .select(`
+          *,
+          users(username)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const tbody = document.querySelector('tbody');
+      tbody.innerHTML = '';
+
+      transactions.forEach(tx => {
+        const row = document.createElement('tr');
+        const amount = Math.abs(parseFloat(tx.amount || 0));
+
+        row.innerHTML = `
+          <td style="padding: 0.75rem;">${tx.users?.username || 'Unknown'}</td>
+          <td style="padding: 0.75rem;">${getActivityDescription(tx.transaction_type)}</td>
+          <td style="padding: 0.75rem;">${new Date(tx.created_at).toLocaleDateString()}</td>
+          <td style="padding: 0.75rem;">€${amount.toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    } catch (error) {
+      console.error('Error loading recent activities:', error);
+    }
+  }
+
+  function getActivityDescription(type) {
+    const descriptions = {
+      'deposit': 'Added Funds',
+      'purchase': 'Purchased Product',
+      'sale': 'Sold Product',
+      'listing_fee': 'Listing Fee',
+      'reserve_fee': 'Reserve Fee',
+      'escrow_hold': 'Purchase (Escrow)',
+      'escrow_pending': 'Sale (Escrow)',
+      'escrow_released': 'Escrow Released'
+    };
+    return descriptions[type] || type;
   }
 
   loginBtn.addEventListener('click', async () => {
@@ -172,6 +303,13 @@
     window.location.href = 'index.html';
   });
 
+  if (sellBtn) {
+    sellBtn.addEventListener('click', () => {
+      window.location.href = 'sell.html';
+    });
+  }
+
+  // Initialize admin dashboard
   loadUser();
   </script>
   

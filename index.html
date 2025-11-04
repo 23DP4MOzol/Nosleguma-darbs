@@ -83,10 +83,76 @@
     </div>
     <div class="filter-tabs">
       <button class="filter-tab active" data-category="all" data-i18n="all">All</button>
-      <button class="filter-tab" data-category="electronics" data-i18n="electronics">Electronics</button>
-      <button class="filter-tab" data-category="clothing" data-i18n="clothing">Clothing</button>
-      <button class="filter-tab" data-category="furniture" data-i18n="furniture">Furniture</button>
-      <button class="filter-tab" data-category="other" data-i18n="other">Other</button>
+      <button class="filter-tab" data-category="electronics" data-i18n="electronics">📱 Electronics</button>
+      <button class="filter-tab" data-category="clothing" data-i18n="clothing">👕 Clothing</button>
+      <button class="filter-tab" data-category="furniture" data-i18n="furniture">🪑 Furniture</button>
+      <button class="filter-tab" data-category="books" data-i18n="books">📚 Books</button>
+      <button class="filter-tab" data-category="sports" data-i18n="sports">⚽ Sports</button>
+      <button class="filter-tab" data-category="home" data-i18n="home">🏠 Home</button>
+      <button class="filter-tab" data-category="vehicles" data-i18n="vehicles">🚗 Vehicles</button>
+      <button class="filter-tab" data-category="other" data-i18n="other">📦 Other</button>
+    </div>
+  </div>
+
+  <!-- Advanced Filters -->
+  <div class="advanced-filters" style="background: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+      <div class="filter-group">
+        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;">🔍 Search</label>
+        <input type="text" id="searchInput" placeholder="Search products..." style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+      </div>
+
+      <div class="filter-group">
+        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;">💰 Price Range</label>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="number" id="minPrice" placeholder="Min €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="0">
+          <input type="number" id="maxPrice" placeholder="Max €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="0">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;">📍 Location</label>
+        <select id="locationFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+          <option value="">All locations</option>
+          <option value="riga">Riga</option>
+          <option value="daugavpils">Daugavpils</option>
+          <option value="liepaja">Liepaja</option>
+          <option value="jelgava">Jelgava</option>
+          <option value="jurmala">Jurmala</option>
+          <option value="ventspils">Ventspils</option>
+          <option value="rezekne">Rezekne</option>
+          <option value="valmiera">Valmiera</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;">⭐ Condition</label>
+        <select id="conditionFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+          <option value="">All conditions</option>
+          <option value="new">✨ New</option>
+          <option value="like_new">🔄 Like New</option>
+          <option value="good">👍 Good</option>
+          <option value="fair">😐 Fair</option>
+          <option value="poor">⚠️ Poor</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;">📅 Sort By</label>
+        <select id="sortFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="price_low">Price: Low to High</option>
+          <option value="price_high">Price: High to Low</option>
+          <option value="name">Name A-Z</option>
+        </select>
+      </div>
+
+      <div class="filter-group" style="display: flex; gap: 0.5rem; align-items: end;">
+        <button id="applyFilters" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;">🔍 Apply</button>
+        <button id="clearFilters" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;">🗑️ Clear</button>
+      </div>
     </div>
   </div>
 

@@ -47,48 +47,310 @@
     <p class="section-subtitle" data-i18n="sell_subtitle">List your products easily and reach thousands of buyers.</p>
   </div>
 
-  <form id="sellForm" class="product-card-modern" style="max-width:600px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:1rem;">
-    <label>
-      <span data-i18n="product_name">Product Name</span>
-      <input type="text" id="productNameInput" class="chat-input-field" data-i18n-placeholder="enter_product_name" placeholder="Enter product name" required>
-    </label>
+  <div class="sell-container" style="display: grid; grid-template-columns: 1fr 400px; gap: 2rem; max-width: 1200px; margin: 0 auto; padding: 2rem 1rem;">
 
-    <label>
-      <span data-i18n="category">Category</span>
-      <select id="productCategoryInput" class="category-select" required>
-        <option value="" data-i18n="select_category">Select category</option>
-        <option value="Electronics" data-i18n="electronics">Electronics</option>
-        <option value="Clothing" data-i18n="clothing">Clothing</option>
-        <option value="Furniture" data-i18n="furniture">Furniture</option>
-        <option value="Other" data-i18n="other">Other</option>
-      </select>
-    </label>
+    <!-- FORM SECTION -->
+    <div class="sell-form-section">
+      <form id="sellForm" class="sell-form-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
 
-    <label>
-      <span data-i18n="price">Price (€)</span>
-      <input type="number" id="productPriceInput" class="chat-input-field" data-i18n-placeholder="enter_price" placeholder="Enter price" required min="0" step="0.01">
-    </label>
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="form-field">
+            <span class="form-label">Product Name *</span>
+            <input type="text" id="productNameInput" class="form-input" placeholder="Enter product name" required>
+          </label>
 
-    <label>
-      <span data-i18n="description">Description</span>
-      <textarea id="productDescriptionInput" class="chat-input-field" data-i18n-placeholder="enter_description" placeholder="Enter product description" required></textarea>
-    </label>
+          <label class="form-field">
+            <span class="form-label">Category *</span>
+            <select id="productCategoryInput" class="form-select" required>
+              <option value="">Select category</option>
+              <option value="Electronics">📱 Electronics</option>
+              <option value="Clothing">👕 Clothing</option>
+              <option value="Furniture">🪑 Furniture</option>
+              <option value="Books">📚 Books</option>
+              <option value="Sports">⚽ Sports</option>
+              <option value="Home">🏠 Home & Garden</option>
+              <option value="Vehicles">🚗 Vehicles</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </label>
 
-    <label>
-      <span data-i18n="image_url">Product Image URL</span>
-      <input type="url" id="productImageInput" class="chat-input-field" placeholder="https://example.com/image.jpg" required>
-    </label>
+          <label class="form-field">
+            <span class="form-label">Price (€) *</span>
+            <input type="number" id="productPriceInput" class="form-input" placeholder="0.00" required min="0" step="0.01">
+          </label>
 
-    <label>
-      <span data-i18n="stock">Stock Quantity</span>
-      <input type="number" id="productStockInput" class="chat-input-field" data-i18n-placeholder="enter_stock" placeholder="Enter stock quantity" min="1" value="1" required>
-    </label>
+          <label class="form-field">
+            <span class="form-label">Condition *</span>
+            <select id="productConditionInput" class="form-select" required>
+              <option value="">Select condition</option>
+              <option value="new">✨ New</option>
+              <option value="like_new">🔄 Like New</option>
+              <option value="good">👍 Good</option>
+              <option value="fair">😐 Fair</option>
+              <option value="poor">⚠️ Poor</option>
+            </select>
+          </label>
 
-    <button type="submit" class="btn-buy-now" data-i18n="list_product">List Product</button>
-  </form>
+          <label class="form-field">
+            <span class="form-label">Stock Quantity *</span>
+            <input type="number" id="productStockInput" class="form-input" placeholder="1" min="1" value="1" required>
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Location</span>
+            <input type="text" id="productLocationInput" class="form-input" placeholder="Riga, Latvia">
+          </label>
+        </div>
+
+        <label class="form-field" style="margin-top: 1rem;">
+          <span class="form-label">Description *</span>
+          <textarea id="productDescriptionInput" class="form-textarea" placeholder="Describe your product in detail..." required rows="4"></textarea>
+        </label>
+
+        <label class="form-field" style="margin-top: 1rem;">
+          <span class="form-label">Product Image URL *</span>
+          <input type="url" id="productImageInput" class="form-input" placeholder="https://example.com/image.jpg" required>
+        </label>
+
+        <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
+          <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📤 List Product
+          </button>
+          <button type="button" id="previewBtn" class="btn-secondary" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            👁️ Preview
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- PREVIEW SECTION -->
+    <div class="sell-preview-section">
+      <div class="preview-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1); position: sticky; top: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Live Preview</h3>
+
+        <div class="product-preview-card" id="productPreview" style="border: 2px dashed #d1d5db; border-radius: 12px; padding: 1.5rem; background: var(--bg-primary);">
+          <div class="preview-placeholder" style="text-align: center; color: #6b7280; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+            <p>Fill out the form to see your product preview</p>
+          </div>
+        </div>
+
+        <div class="preview-info" style="margin-top: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #1f2937; font-size: 0.875rem; font-weight: 600;">💡 Tips for Better Listings</h4>
+          <ul style="margin: 0; padding-left: 1rem; color: #4b5563; font-size: 0.875rem; line-height: 1.5;">
+            <li>Use high-quality photos</li>
+            <li>Write detailed descriptions</li>
+            <li>Set competitive prices</li>
+            <li>Choose accurate condition</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 
-<script type="module" src="js/main.js"></script>
+<style>
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.form-input, .form-select, .form-textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+</style>
+
+<script type="module">
+// Import necessary modules
+import { supabase } from './js/supabase.js';
+import { i18n } from './js/i18n.js';
+
+// Form handling and preview functionality
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('sellForm');
+  const previewBtn = document.getElementById('previewBtn');
+  const productPreview = document.getElementById('productPreview');
+
+  // Real-time preview update
+  function updatePreview() {
+    const name = document.getElementById('productNameInput').value || 'Product Name';
+    const category = document.getElementById('productCategoryInput').value || 'Category';
+    const price = document.getElementById('productPriceInput').value || '0.00';
+    const condition = document.getElementById('productConditionInput').value || '';
+    const description = document.getElementById('productDescriptionInput').value || 'Product description...';
+    const imageUrl = document.getElementById('productImageInput').value || 'https://via.placeholder.com/300x200';
+
+    const conditionEmoji = {
+      'new': '✨',
+      'like_new': '🔄',
+      'good': '👍',
+      'fair': '😐',
+      'poor': '⚠️'
+    };
+
+    productPreview.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <div style="width: 100%; height: 200px; border-radius: 8px; overflow: hidden; background: #f3f4f6;">
+          <img src="${imageUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/300x200'">
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <h4 style="margin: 0; color: var(--text-primary); font-size: 1.125rem; font-weight: 600;">${name}</h4>
+            <span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">${category}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">€${parseFloat(price).toFixed(2)}</span>
+            ${condition ? `<span style="font-size: 0.875rem; color: #6b7280;">${conditionEmoji[condition]} ${condition.replace('_', ' ')}</span>` : ''}
+          </div>
+          <p style="margin: 0; color: #6b7280; font-size: 0.875rem; line-height: 1.4;">${description.length > 100 ? description.substring(0, 100) + '...' : description}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update preview on input changes
+  ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+
+  // Preview button
+  previewBtn.addEventListener('click', updatePreview);
+
+  // Form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '⏳ Listing...';
+    submitBtn.disabled = true;
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data ? data.user : null;
+      if (!user) {
+        alert('Please log in first');
+        return;
+      }
+
+      const productData = {
+        name: document.getElementById('productNameInput').value,
+        category: document.getElementById('productCategoryInput').value,
+        price: parseFloat(document.getElementById('productPriceInput').value),
+        description: document.getElementById('productDescriptionInput').value,
+        image_url: document.getElementById('productImageInput').value,
+        stock: parseInt(document.getElementById('productStockInput').value),
+        condition: document.getElementById('productConditionInput').value,
+        location: document.getElementById('productLocationInput').value
+      };
+
+      const { listProduct } = await import('./js/supabase.js');
+      const result = await listProduct(productData, user.id);
+
+      if (result) {
+        alert('✅ Product listed successfully!');
+        form.reset();
+        updatePreview();
+        // Redirect to home page
+        setTimeout(() => window.location.href = '/', 1500);
+      }
+    } catch (error) {
+      console.error('Error listing product:', error);
+      alert('❌ Error listing product: ' + error.message);
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+});
+
+// Initialize theme and language
+document.getElementById('langSelect').addEventListener('change', e => {
+  i18n.setLang(e.target.value);
+});
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.classList.remove('dark', 'light');
+  html.classList.add(newTheme);
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+});
+
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  document.querySelector('.navbar-links').classList.toggle('active');
+});
+
+// Auth handling
+async function updateAuth() {
+  const { data } = await supabase.auth.getUser();
+  const user = data ? data.user : null;
+
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const balanceBadge = document.getElementById('balanceBadge');
+
+  if (user) {
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+
+    // Update balance
+    const { data: userData } = await supabase.from('users').select('balance').eq('id', user.id).single();
+    if (userData && balanceBadge) {
+      balanceBadge.querySelector('span').textContent = `€${parseFloat(userData.balance).toFixed(2)}`;
+    }
+  } else {
+    loginBtn.style.display = 'inline-block';
+    logoutBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click', () => {
+  window.location.href = 'login.html';
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  updateAuth();
+});
+
+updateAuth();
+</script>
 
 </body>
 </html>

@@ -343,9 +343,17 @@ async function initializeIndexPage() {
     }
   }
 
-  // Product rendering
+  // Product rendering and filtering
   let allProducts = [];
   let currentCategory = 'all';
+  let currentFilters = {
+    search: '',
+    minPrice: '',
+    maxPrice: '',
+    location: '',
+    condition: '',
+    sortBy: 'newest'
+  };
 
   async function loadProducts() {
     try {
@@ -356,7 +364,7 @@ async function initializeIndexPage() {
 
       if (error) throw error;
       allProducts = Array.isArray(data) ? data : [];
-      renderProducts();
+      applyFiltersAndRender();
       updateStats();
     } catch (error) {
       console.error('Error loading products:', error);
@@ -364,17 +372,80 @@ async function initializeIndexPage() {
     }
   }
 
-  function renderProducts() {
+  function applyFiltersAndRender() {
+    let filteredProducts = [...allProducts];
+
+    // Category filter
+    if (currentCategory !== 'all') {
+      filteredProducts = filteredProducts.filter(p => (p.category || '').toLowerCase() === currentCategory.toLowerCase());
+    }
+
+    // Search filter
+    if (currentFilters.search) {
+      const searchTerm = currentFilters.search.toLowerCase();
+      filteredProducts = filteredProducts.filter(p =>
+        (p.name || '').toLowerCase().includes(searchTerm) ||
+        (p.description || '').toLowerCase().includes(searchTerm) ||
+        (p.category || '').toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Price filters
+    if (currentFilters.minPrice) {
+      const minPrice = parseFloat(currentFilters.minPrice);
+      filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) >= minPrice);
+    }
+    if (currentFilters.maxPrice) {
+      const maxPrice = parseFloat(currentFilters.maxPrice);
+      filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) <= maxPrice);
+    }
+
+    // Location filter
+    if (currentFilters.location) {
+      filteredProducts = filteredProducts.filter(p =>
+        (p.location || '').toLowerCase().includes(currentFilters.location.toLowerCase())
+      );
+    }
+
+    // Condition filter
+    if (currentFilters.condition) {
+      filteredProducts = filteredProducts.filter(p => (p.condition || '') === currentFilters.condition);
+    }
+
+    // Sorting
+    switch (currentFilters.sortBy) {
+      case 'oldest':
+        filteredProducts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        break;
+      case 'price_low':
+        filteredProducts.sort((a, b) => parseFloat(a.price || 0) - parseFloat(b.price || 0));
+        break;
+      case 'price_high':
+        filteredProducts.sort((a, b) => parseFloat(b.price || 0) - parseFloat(a.price || 0));
+        break;
+      case 'name':
+        filteredProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        break;
+      case 'newest':
+      default:
+        filteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+    }
+
+    renderProducts(filteredProducts);
+  }
+
+  function renderProducts(products = null) {
     const grid = document.getElementById('productGrid');
     if (!grid) return;
 
-    const filtered = currentCategory === 'all'
-      ? allProducts
-      : allProducts.filter(p => (p.category || '').toLowerCase() === (currentCategory || '').toLowerCase());
+    const productsToRender = products || allProducts;
 
-    if (!filtered || filtered.length === 0) {
+    if (!productsToRender || productsToRender.length === 0) {
       grid.innerHTML = `<div style="padding:40px;text-align:center;grid-column:1/-1;color:var(--muted);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
         <span data-i18n="no_products">No products found</span>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem;">Try adjusting your filters or search terms</p>
       </div>`;
       if (i18n && typeof i18n.setLang === 'function') i18n.setLang(i18n.lang || 'en');
       return;
@@ -382,29 +453,43 @@ async function initializeIndexPage() {
 
     grid.innerHTML = '';
 
-    filtered.forEach(product => {
-      const imageUrl = product.image_url || 'https://via.placeholder.com/600x400';
+    productsToRender.forEach(product => {
+      const imageUrl = product.image_url || 'https://via.placeholder.com/300x200';
       const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
       const stock = product.stock != null ? product.stock : 0;
       const categoryText = escapeHtml(product.category || 'other');
       const nameText = escapeHtml(product.name || 'Unnamed Product');
+      const locationText = escapeHtml(product.location || '');
+      const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
+
+      const conditionEmoji = {
+        'new': '✨',
+        'like_new': '🔄',
+        'good': '👍',
+        'fair': '😐',
+        'poor': '⚠️'
+      };
 
       const card = document.createElement('div');
       card.className = 'product-card-modern';
       card.innerHTML = `
         <div class="product-image-container">
-          <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image">
+          <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://via.placeholder.com/300x200'">
           <button class="product-like-btn" data-id="${escapeHtml(product.id)}" aria-label="Like">❤️</button>
           ${product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
           <div class="product-overlay">
-            <button class="btn-quick-view" data-id="${escapeHtml(product.id)}" data-i18n="quickView">Quick View</button>
+            <button class="btn-quick-view" data-id="${escapeHtml(product.id)}" data-i18n="quickView">👁 Quick View</button>
           </div>
         </div>
         <div class="product-info">
-          <span class="product-category">${categoryText}</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span class="product-category">${categoryText}</span>
+            ${conditionText ? `<span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">${conditionEmoji[product.condition]} ${conditionText}</span>` : ''}
+          </div>
           <h3 class="product-name">${nameText}</h3>
           <div class="product-meta">
-            <span class="product-views">👁 ${escapeHtml(stock)} <span data-i18n="stock">stock</span></span>
+            ${locationText ? `<span style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">📍 ${locationText}</span>` : ''}
+            <span class="product-views">📦 ${escapeHtml(stock)} in stock</span>
           </div>
           <div class="product-footer">
             <div class="product-price">
@@ -413,8 +498,8 @@ async function initializeIndexPage() {
             </div>
             <div class="product-actions">
               ${!product.is_reserved ? `
-                <button class="btn-add-cart" data-id="${escapeHtml(product.id)}" title="Reserve">🔖</button>
-                <button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">Buy Now</button>
+                <button class="btn-add-cart" data-id="${escapeHtml(product.id)}" title="Reserve">🔖 Reserve</button>
+                <button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">🛒 Buy Now</button>
               ` : `
                 <button class="btn-buy-now" disabled style="opacity:0.5" data-i18n="reserved">Reserved</button>
               `}
@@ -544,8 +629,68 @@ async function initializeIndexPage() {
         filterTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentCategory = tab.dataset.category || 'all';
-        renderProducts();
+        applyFiltersAndRender();
       });
+    });
+  }
+
+  // Advanced filters
+  const applyFiltersBtn = document.getElementById('applyFilters');
+  const clearFiltersBtn = document.getElementById('clearFilters');
+
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener('click', () => {
+      currentFilters.search = document.getElementById('searchInput')?.value || '';
+      currentFilters.minPrice = document.getElementById('minPrice')?.value || '';
+      currentFilters.maxPrice = document.getElementById('maxPrice')?.value || '';
+      currentFilters.location = document.getElementById('locationFilter')?.value || '';
+      currentFilters.condition = document.getElementById('conditionFilter')?.value || '';
+      currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
+
+      applyFiltersAndRender();
+      showToast('Filters applied successfully!', 'success');
+    });
+  }
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+      currentFilters = {
+        search: '',
+        minPrice: '',
+        maxPrice: '',
+        location: '',
+        condition: '',
+        sortBy: 'newest'
+      };
+
+      // Clear form inputs
+      document.getElementById('searchInput').value = '';
+      document.getElementById('minPrice').value = '';
+      document.getElementById('maxPrice').value = '';
+      document.getElementById('locationFilter').value = '';
+      document.getElementById('conditionFilter').value = '';
+      document.getElementById('sortFilter').value = 'newest';
+
+      // Reset category to all
+      currentCategory = 'all';
+      filterTabs.forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-category="all"]').classList.add('active');
+
+      applyFiltersAndRender();
+      showToast('Filters cleared!', 'info');
+    });
+  }
+
+  // Real-time search
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentFilters.search = searchInput.value;
+        applyFiltersAndRender();
+      }, 300);
     });
   }
 
@@ -606,7 +751,7 @@ function initializeSettingsPage() {
        localStorage.setItem('theme', newTheme);
 
        // Update button text
-       userThemeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+       userThemeToggle.textContent = newTheme === 'dark' ? '🌙 Toggle Dark Mode' : '☀️ Toggle Light Mode';
        userThemeToggle.setAttribute('data-i18n', newTheme === 'dark' ? 'toggle_theme' : 'toggle_theme');
 
        showToast(`Switched to ${newTheme} mode`, 'success');
@@ -690,7 +835,9 @@ function initializeSellPage() {
         price: parseFloat(document.getElementById('productPriceInput')?.value || '0'),
         description: document.getElementById('productDescriptionInput')?.value || '',
         image_url: document.getElementById('productImageInput')?.value || '',
-        stock: parseInt(document.getElementById('productStockInput')?.value || '1')
+        stock: parseInt(document.getElementById('productStockInput')?.value || '1'),
+        condition: document.getElementById('productConditionInput')?.value || '',
+        location: document.getElementById('productLocationInput')?.value || ''
       };
 
       try {
