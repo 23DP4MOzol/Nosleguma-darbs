@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase.js';
 import { i18n } from './i18n.js';
+import './navbar.js';
 
 // ============================
 // UTILITY FUNCTIONS
