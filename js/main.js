@@ -163,37 +163,58 @@ async function updateNavbarAuth() {
     const balanceBadge = document.getElementById('balanceBadge');
     const sellBtn = document.getElementById('sellBtn');
     const settingsBtn = document.getElementById('settingsBtn');
+    const adminBtn = document.getElementById('adminBtn');
 
     if (user) {
-      if (loginBtn) loginBtn.style.display = 'none';
-      if (logoutBtn) logoutBtn.style.display = 'inline-block';
-      if (balanceBadge) {
-        balanceBadge.style.display = 'flex';
-        const span = balanceBadge.querySelector('span');
-        try {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('balance')
-            .eq('id', user.id)
-            .single();
-          if (!error && userData) {
-            const bal = parseFloat(userData.balance || 0);
+      // Get user role
+      let userRole = 'user';
+      try {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('balance, role')
+          .eq('id', user.id)
+          .single();
+        if (!error && userData) {
+          userRole = userData.role || 'user';
+          const bal = parseFloat(userData.balance || 0);
+          if (balanceBadge) {
+            balanceBadge.style.display = 'flex';
+            const span = balanceBadge.querySelector('span');
             if (span) span.textContent = `€${bal.toFixed(2)}`;
-          } else {
+          }
+        } else {
+          if (balanceBadge) {
+            balanceBadge.style.display = 'flex';
+            const span = balanceBadge.querySelector('span');
             if (span) span.textContent = '€0.00';
           }
-        } catch (err) {
+        }
+      } catch (err) {
+        if (balanceBadge) {
+          balanceBadge.style.display = 'flex';
+          const span = balanceBadge.querySelector('span');
           if (span) span.textContent = '€0.00';
         }
       }
+
+      if (loginBtn) loginBtn.style.display = 'none';
+      if (logoutBtn) logoutBtn.style.display = 'inline-block';
 
       if (sellBtn) {
         sellBtn.style.opacity = '1';
         sellBtn.style.pointerEvents = 'auto';
       }
       if (settingsBtn) {
+        settingsBtn.style.display = 'inline-block';
         settingsBtn.style.opacity = '1';
         settingsBtn.style.pointerEvents = 'auto';
+      }
+      if (adminBtn) {
+        if (userRole === 'admin') {
+          adminBtn.style.display = 'inline-block';
+        } else {
+          adminBtn.style.display = 'none';
+        }
       }
     } else {
       if (loginBtn) loginBtn.style.display = 'inline-block';
@@ -205,8 +226,10 @@ async function updateNavbarAuth() {
         sellBtn.style.pointerEvents = 'none';
       }
       if (settingsBtn) {
-        settingsBtn.style.opacity = '0.6';
-        settingsBtn.style.pointerEvents = 'none';
+        settingsBtn.style.display = 'none';
+      }
+      if (adminBtn) {
+        adminBtn.style.display = 'none';
       }
     }
   } catch (error) {

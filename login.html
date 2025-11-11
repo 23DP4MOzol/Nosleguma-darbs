@@ -21,10 +21,22 @@
     <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
 
     <div class="navbar-links">
-      <div class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></div>
+      <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
       <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
       <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
-      <a href="settings.html" class="btn-nav" id="settingsBtn" data-i18n="settings">Settings</a>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn" data-i18n="pages">Pages</button>
+        <div class="dropdown-menu">
+          <a href="index.html" class="dropdown-item" data-i18n="home">Home</a>
+          <a href="balance.html" class="dropdown-item" data-i18n="balance">Balance</a>
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
 
       <!-- Language Dropdown -->
       <select id="langSelect" class="category-select">
