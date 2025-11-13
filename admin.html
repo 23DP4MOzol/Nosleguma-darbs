@@ -30,12 +30,10 @@
  
         <!-- Pages Dropdown -->
         <div class="dropdown" id="pagesDropdown">
-          <button class="dropdown-btn" data-i18n="pages">Pages</button>
+          <button class="dropdown-btn">☰</button>
           <div class="dropdown-menu">
-            <a href="index.html" class="dropdown-item" data-i18n="home">Home</a>
-            <a href="balance.html" class="dropdown-item" data-i18n="balance">Balance</a>
             <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
-            <a href="admin.html" class="dropdown-item" data-i18n="admin">Admin</a>
+            <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
             <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
             <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
           </div>
@@ -240,15 +238,18 @@
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today.toISOString());
 
-      // Update dashboard cards
-      if (!userError) {
-        document.querySelector('[data-i18n="registered_users"]').nextElementSibling.textContent = userCount || 0;
-      }
-      if (!productError) {
-        document.querySelector('[data-i18n="total_products"]').nextElementSibling.textContent = productCount || 0;
-      }
-      if (!transactionError) {
-        document.querySelector('[data-i18n="transactions_today"]').nextElementSibling.textContent = transactionCount || 0;
+      // Update dashboard cards - find by feature-description class
+      const cards = document.querySelectorAll('.feature-card');
+      if (cards.length >= 3) {
+        if (!userError) {
+          cards[0].querySelector('.feature-description').textContent = userCount || 0;
+        }
+        if (!productError) {
+          cards[1].querySelector('.feature-description').textContent = productCount || 0;
+        }
+        if (!transactionError) {
+          cards[2].querySelector('.feature-description').textContent = transactionCount || 0;
+        }
       }
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -272,6 +273,11 @@
       const tbody = document.querySelector('tbody');
       tbody.innerHTML = '';
 
+      if (!transactions || transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding: 1rem; text-align: center; color: #6b7280;">No transactions yet</td></tr>';
+        return;
+      }
+
       transactions.forEach(tx => {
         const row = document.createElement('tr');
         const amount = Math.abs(parseFloat(tx.amount || 0));
@@ -291,14 +297,11 @@
 
   function getActivityDescription(type) {
     const descriptions = {
-      'deposit': 'Added Funds',
+      'topup': 'Added Funds',
       'purchase': 'Purchased Product',
       'sale': 'Sold Product',
-      'listing_fee': 'Listing Fee',
-      'reserve_fee': 'Reserve Fee',
-      'escrow_hold': 'Purchase (Escrow)',
-      'escrow_pending': 'Sale (Escrow)',
-      'escrow_released': 'Escrow Released'
+      'fee': 'Fee',
+      'refund': 'Refund'
     };
     return descriptions[type] || type;
   }

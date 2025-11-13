@@ -174,8 +174,14 @@ async function updateNavbarAuth() {
           .select('balance, role')
           .eq('id', user.id)
           .single();
+        
+        console.log('User data from database:', userData);
+        console.log('User ID:', user.id);
+        console.log('Error fetching user:', error);
+        
         if (!error && userData) {
           userRole = userData.role || 'user';
+          console.log('User role:', userRole);
           const bal = parseFloat(userData.balance || 0);
           if (balanceBadge) {
             balanceBadge.style.display = 'flex';
@@ -183,6 +189,24 @@ async function updateNavbarAuth() {
             if (span) span.textContent = `€${bal.toFixed(2)}`;
           }
         } else {
+          console.warn('No user data found in public.users table - creating entry');
+          // Try to create user entry if it doesn't exist
+          const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert([{
+              id: user.id,
+              email: user.email,
+              username: user.email.split('@')[0],
+              role: 'user',
+              balance: 0
+            }])
+            .select()
+            .single();
+          
+          if (!insertError && newUser) {
+            userRole = newUser.role;
+          }
+          
           if (balanceBadge) {
             balanceBadge.style.display = 'flex';
             const span = balanceBadge.querySelector('span');
@@ -190,12 +214,16 @@ async function updateNavbarAuth() {
           }
         }
       } catch (err) {
+        console.error('Error in updateNavbarAuth:', err);
         if (balanceBadge) {
           balanceBadge.style.display = 'flex';
           const span = balanceBadge.querySelector('span');
           if (span) span.textContent = '€0.00';
         }
       }
+      
+      console.log('Admin button element:', adminBtn);
+      console.log('Setting admin button display for role:', userRole);
 
       if (loginBtn) loginBtn.style.display = 'none';
       if (logoutBtn) logoutBtn.style.display = 'inline-block';
@@ -211,7 +239,7 @@ async function updateNavbarAuth() {
       }
       if (adminBtn) {
         if (userRole === 'admin') {
-          adminBtn.style.display = 'inline-block';
+          adminBtn.style.display = 'block';
         } else {
           adminBtn.style.display = 'none';
         }
@@ -496,6 +524,17 @@ async function initializeIndexPage() {
 
       const card = document.createElement('div');
       card.className = 'product-card-modern';
+      card.style.cursor = 'pointer';
+      card.setAttribute('data-product-id', product.id);
+      
+      // Add click handler to open modal
+      card.addEventListener('click', (e) => {
+        // Don't open modal if clicking action buttons
+        if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve')) {
+          showProductModal(product);
+        }
+      });
+      
       card.innerHTML = `
         <div class="product-image-container">
           <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://via.placeholder.com/300x200'">
@@ -631,18 +670,192 @@ async function initializeIndexPage() {
     }
   }
 
-  function showProductModal(product) {
-    // lightweight quick view — replace with real modal in your app if needed
-    const details = [
-      `Product: ${product.name || 'Unnamed'}`,
-      `Price: €${Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00'}`,
-      `Category: ${product.category || 'N/A'}`,
-      `Stock: ${product.stock != null ? product.stock : 'N/A'}`,
-      `Description: ${product.description || 'No description'}`,
-      product.is_reserved ? 'Status: RESERVED' : 'Status: Available'
-    ].join('\n');
-    // Use alert as simple fallback
-    alert(details);
+  async function showProductModal(product) {
+    const modal = document.getElementById('productModal');
+    if (!modal) return;
+    
+    const modalBody = modal.querySelector('.modal-body');
+    
+    // Get seller information
+    let sellerData = null;
+    let sellerRating = 0;
+    let sellerReviews = 0;
+    
+    if (product.seller_id) {
+      const { data: seller } = await supabase
+        .from('users')
+        .select('id, username, email, created_at')
+        .eq('id', product.seller_id)
+        .single();
+      
+      sellerData = seller;
+      
+      // Get seller rating from reviews (placeholder for now)
+      sellerRating = 4.5;
+      sellerReviews = 23;
+    }
+    
+    // Get product stats (placeholders)
+    const productLikes = Math.floor(Math.random() * 50);
+    const productSaves = Math.floor(Math.random() * 30);
+    const productViews = Math.floor(Math.random() * 200) + 50;
+    
+    const conditionEmoji = {
+      'new': '✨',
+      'like_new': '🔄',
+      'good': '👍',
+      'fair': '😐',
+      'poor': '⚠️'
+    };
+    
+    const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
+    const imageUrl = product.image_url || 'https://via.placeholder.com/600x400';
+    const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
+    
+    modalBody.innerHTML = `
+      <div class="modal-product-grid">
+        <div>
+          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" class="modal-product-image">
+        </div>
+        
+        <div class="modal-product-info">
+          <h1>${escapeHtml(product.name)}</h1>
+          <div class="modal-product-price">€${price}</div>
+          
+          <div class="modal-product-meta">
+            <span class="modal-badge" style="background: #dbeafe; color: #1e40af;">
+              ${conditionEmoji[product.condition] || '📦'} ${escapeHtml(conditionText)}
+            </span>
+            <span class="modal-badge" style="background: #fef3c7; color: #92400e;">
+              📍 ${escapeHtml(product.location) || 'Not specified'}
+            </span>
+            <span class="modal-badge" style="background: #f3e8ff; color: #6b21a8;">
+              📦 ${escapeHtml(product.category) || 'other'}
+            </span>
+            ${product.stock > 0 
+              ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} in stock</span>`
+              : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ Out of stock</span>`
+            }
+          </div>
+          
+          <div class="modal-description">
+            <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">Description</h3>
+            <p>${escapeHtml(product.description) || 'No description provided.'}</p>
+          </div>
+          
+          <!-- Product Stats -->
+          <div class="modal-stats">
+            <div class="modal-stat">
+              <div class="modal-stat-value">❤️ ${productLikes}</div>
+              <div class="modal-stat-label">Likes</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-value">🔖 ${productSaves}</div>
+              <div class="modal-stat-label">Saved</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-value">👁 ${productViews}</div>
+              <div class="modal-stat-label">Views</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Seller Information -->
+      <div class="modal-seller-card">
+        <div class="modal-seller-header">
+          <div class="modal-seller-avatar">
+            ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
+          </div>
+          <div class="modal-seller-info">
+            <h3>${escapeHtml(sellerData?.username) || 'Unknown Seller'}</h3>
+            <div class="modal-seller-rating">
+              ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
+            </div>
+            <div style="font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem;">
+              Member since ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
+            </div>
+          </div>
+        </div>
+        
+        ${sellerData ? `
+          <button class="modal-btn modal-btn-secondary" style="width: 100%; margin-top: 1rem;" id="chatSellerBtn" data-seller="${product.seller_id}" data-product="${product.id}">
+            💬 Chat with Seller
+          </button>
+        ` : ''}
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-secondary" id="saveProductBtn">
+          🔖 Save for Later
+        </button>
+        <button class="modal-btn modal-btn-secondary" id="likeProductBtn">
+          ❤️ Like Product
+        </button>
+        ${product.stock > 0 && !product.is_reserved ? `
+          <button class="modal-btn modal-btn-secondary" id="modalReserveBtn" data-id="${product.id}">
+            🔖 Reserve (€0.20)
+          </button>
+          <button class="modal-btn modal-btn-primary" id="modalBuyBtn" data-id="${product.id}">
+            🛒 Buy Now - €${price}
+          </button>
+        ` : ''}
+      </div>
+    `;
+    
+    // Show modal
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Close modal handlers
+    const closeModal = () => {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    };
+    
+    const closeBtn = document.getElementById('modalClose');
+    const overlay = document.getElementById('modalOverlay');
+    if (closeBtn) closeBtn.onclick = closeModal;
+    if (overlay) overlay.onclick = closeModal;
+    
+    // Action button handlers
+    const chatBtn = document.getElementById('chatSellerBtn');
+    if (chatBtn) {
+      chatBtn.onclick = () => {
+        window.location.href = `chat.html?seller=${product.seller_id}&product=${product.id}`;
+      };
+    }
+    
+    const saveBtn = document.getElementById('saveProductBtn');
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        showToast('Product saved for later!', 'success');
+      };
+    }
+    
+    const likeBtn = document.getElementById('likeProductBtn');
+    if (likeBtn) {
+      likeBtn.onclick = () => {
+        showToast('Product liked!', 'success');
+      };
+    }
+    
+    const modalReserveBtn = document.getElementById('modalReserveBtn');
+    if (modalReserveBtn) {
+      modalReserveBtn.onclick = async () => {
+        await handleReserve(product.id);
+        closeModal();
+      };
+    }
+    
+    const modalBuyBtn = document.getElementById('modalBuyBtn');
+    if (modalBuyBtn) {
+      modalBuyBtn.onclick = async () => {
+        await handlePurchase(product.id);
+        closeModal();
+      };
+    }
   }
 
   // Filter tabs
@@ -729,6 +942,21 @@ async function initializeIndexPage() {
 
   // Load products on page load
   loadProducts();
+  
+  // Listen for purchase/reserve events from modal
+  document.addEventListener('purchaseProduct', async (e) => {
+    await handlePurchase(e.detail.productId);
+    // Close modal
+    document.getElementById('productModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+  });
+  
+  document.addEventListener('reserveProduct', async (e) => {
+    await handleReserve(e.detail.productId);
+    // Close modal
+    document.getElementById('productModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+  });
 }
 
 // Settings page functions

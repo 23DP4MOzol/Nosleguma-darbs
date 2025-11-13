@@ -127,8 +127,8 @@ export async function updateBalance(userId, newBalance) {
   }
 }
 
-// Add balance (deposit)
-export async function addBalance(userId, amount, description = 'Deposit') {
+// Add balance (topup)
+export async function addBalance(userId, amount, description = 'Balance top-up') {
   try {
     // Get current balance
     const currentBalance = await getBalance(userId);
@@ -143,7 +143,7 @@ export async function addBalance(userId, amount, description = 'Deposit') {
       .insert({
         user_id: userId,
         amount: parseFloat(amount),
-        transaction_type: 'deposit',
+        transaction_type: 'topup',
         description,
         created_at: new Date().toISOString()
       });
@@ -231,34 +231,33 @@ export async function purchaseProduct(productId, userId) {
 
     if (productError) throw productError;
 
-    // Record escrow transaction for buyer (funds held)
-    const escrowId = crypto.randomUUID(); // Generate unique escrow ID
+    // Record purchase transaction for buyer
     await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -price,
-      transaction_type: 'escrow_hold',
-      description: `Escrow hold for ${product.name}`,
+      transaction_type: 'purchase',
+      description: `Purchase: ${product.name}`,
       reference_id: productId,
-      escrow_id: escrowId,
-      escrow_status: 'pending',
       created_at: new Date().toISOString()
     });
 
-    // Record pending sale for seller (not yet credited)
+    // Record sale for seller
     if (product.seller_id) {
+      // Get seller balance and update it
+      const sellerBalance = await getBalance(product.seller_id);
+      await updateBalance(product.seller_id, sellerBalance + price);
+      
       await supabase.from('user_transactions').insert({
         user_id: product.seller_id,
         amount: price,
-        transaction_type: 'escrow_pending',
-        description: `Pending sale of ${product.name}`,
+        transaction_type: 'sale',
+        description: `Sale: ${product.name}`,
         reference_id: productId,
-        escrow_id: escrowId,
-        escrow_status: 'pending',
         created_at: new Date().toISOString()
       });
     }
 
-    return { success: true, escrowId };
+    return { success: true };
   } catch (error) {
     console.error('Error purchasing product:', error);
     throw error;
@@ -285,7 +284,7 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
     await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -fee,
-      transaction_type: 'reserve_fee',
+      transaction_type: 'fee',
       description: `Reserve fee for ${product.name}`,
       reference_id: productId,
       created_at: new Date().toISOString()
@@ -324,35 +323,60 @@ export async function listProduct(productData, userId) {
     }
 
     const price = parseFloat(productData.price);
-    const listingFee = Math.max(price * 0.005, 0.50);
+    // Listing fee ranges from €0.50 to €1.00 based on price
+    // Linear scale: €0-€100 = €0.50, €100+ = €1.00
+    const listingFee = price >= 100 ? 1.00 : Math.max(0.50, 0.50 + (price / 100) * 0.50);
 
     // Check balance for listing fee
     const currentBalance = await getBalance(userId);
     if (currentBalance < listingFee) {
-      throw new Error('Insufficient balance for listing fee');
+      throw new Error('Insufficient balance for listing fee. You need at least €' + listingFee.toFixed(2));
     }
 
-    // Deduct listing fee
+    // Deduct listing fee from user
     const newBalance = currentBalance - listingFee;
     await updateBalance(userId, newBalance);
 
-    // Record listing fee transaction
+    // Record listing fee transaction for user
     await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -listingFee,
-      transaction_type: 'listing_fee',
+      transaction_type: 'fee',
       description: `Listing fee for ${productData.name}`,
       created_at: new Date().toISOString()
     });
 
-    // Insert product with mandatory condition
+    // Credit listing fee to admin account
+    const { data: adminUser } = await supabase
+      .from('users')
+      .select('id, balance')
+      .eq('role', 'admin')
+      .limit(1)
+      .single();
+    
+    if (adminUser) {
+      const adminBalance = parseFloat(adminUser.balance || 0);
+      await updateBalance(adminUser.id, adminBalance + listingFee);
+      
+      // Record income for admin
+      await supabase.from('user_transactions').insert({
+        user_id: adminUser.id,
+        amount: listingFee,
+        transaction_type: 'topup',
+        description: `Listing fee from ${productData.name}`,
+        reference_id: userId,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // Insert product - match database schema
     const { data, error } = await supabase.from('products').insert([{
       seller_id: userId,
       name: productData.name,
       description: productData.description || '',
       price: price,
       category: productData.category || 'other',
-      condition: productData.condition.toLowerCase(), // Normalize to lowercase
+      condition: productData.condition.toLowerCase(),
       location: productData.location || '',
       image_url: productData.image_url || '',
       stock: parseInt(productData.stock) || 1,

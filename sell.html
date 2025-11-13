@@ -12,7 +12,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-container">
-    <a href="/" class="navbar-logo">
+    <a href="index.html" class="navbar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0L24 24H0z"/>
       </svg>
@@ -28,12 +28,10 @@
 
       <!-- Pages Dropdown -->
       <div class="dropdown" id="pagesDropdown">
-        <button class="dropdown-btn" data-i18n="pages">Pages</button>
+        <button class="dropdown-btn">☰</button>
         <div class="dropdown-menu">
-          <a href="index.html" class="dropdown-item" data-i18n="home">Home</a>
-          <a href="balance.html" class="dropdown-item" data-i18n="balance">Balance</a>
           <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
-          <a href="admin.html" class="dropdown-item" data-i18n="admin">Admin</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
           <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
           <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
         </div>
@@ -66,65 +64,100 @@
     <!-- FORM SECTION -->
     <div class="sell-form-section">
       <form id="sellForm" class="sell-form-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
+        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
+        
+        <!-- Listing Fee Info -->
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.25rem;">💰</span>
+            <strong style="color: #92400e;">Listing Fee</strong>
+          </div>
+          <p style="margin: 0; font-size: 0.875rem; color: #78350f;">
+            <span data-i18n="listing_fee_description">Listing fee: €0.50 - €1.00 (based on price)</span>
+          </p>
+          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #92400e;">
+            Current fee: €0.50
+          </p>
+        </div>
 
         <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <label class="form-field">
-            <span class="form-label">Product Name *</span>
-            <input type="text" id="productNameInput" class="form-input" placeholder="Enter product name" required>
+            <span class="form-label" data-i18n="sell_product_name">Product Name *</span>
+            <input type="text" id="productNameInput" class="form-input" data-i18n-placeholder="sell_enter_name" placeholder="Enter product name" required>
           </label>
 
           <label class="form-field">
-            <span class="form-label">Category *</span>
+            <span class="form-label" data-i18n="sell_category">Category *</span>
             <select id="productCategoryInput" class="form-select" required>
-              <option value="">Select category</option>
-              <option value="Electronics">📱 Electronics</option>
-              <option value="Clothing">👕 Clothing</option>
-              <option value="Furniture">🪑 Furniture</option>
-              <option value="Books">📚 Books</option>
-              <option value="Sports">⚽ Sports</option>
-              <option value="Home">🏠 Home & Garden</option>
-              <option value="Vehicles">🚗 Vehicles</option>
-              <option value="Other">📦 Other</option>
+              <option value="" data-i18n="sell_select_category">Select category</option>
+              <option value="Electronics" data-i18n="electronics">📱 Electronics</option>
+              <option value="Clothing" data-i18n="clothing">👕 Clothing</option>
+              <option value="Furniture" data-i18n="furniture">🪑 Furniture</option>
+              <option value="Books" data-i18n="books">📚 Books</option>
+              <option value="Sports" data-i18n="sports">⚽ Sports</option>
+              <option value="Home" data-i18n="home">🏠 Home & Garden</option>
+              <option value="Vehicles" data-i18n="vehicles">🚗 Vehicles</option>
+              <option value="Other" data-i18n="other">📦 Other</option>
             </select>
           </label>
 
           <label class="form-field">
-            <span class="form-label">Price (€) *</span>
-            <input type="number" id="productPriceInput" class="form-input" placeholder="0.00" required min="0" step="0.01">
+            <span class="form-label" data-i18n="sell_price">Price (€) *</span>
+            <input type="number" id="productPriceInput" class="form-input" data-i18n-placeholder="sell_enter_price" placeholder="0.00" required min="0" step="0.01">
           </label>
 
           <label class="form-field">
-            <span class="form-label">Condition *</span>
+            <span class="form-label" data-i18n="sell_condition">Condition *</span>
             <select id="productConditionInput" class="form-select" required>
-              <option value="">Select condition</option>
-              <option value="new">✨ New</option>
-              <option value="like_new">🔄 Like New</option>
-              <option value="good">👍 Good</option>
-              <option value="fair">😐 Fair</option>
-              <option value="poor">⚠️ Poor</option>
+              <option value="" data-i18n="sell_select_condition">Select condition</option>
+              <option value="new" data-i18n="condition_new">✨ New</option>
+              <option value="like_new" data-i18n="condition_like_new">🔄 Like New</option>
+              <option value="good" data-i18n="condition_good">👍 Good</option>
+              <option value="fair" data-i18n="condition_fair">😐 Fair</option>
+              <option value="poor" data-i18n="condition_poor">⚠️ Poor</option>
             </select>
           </label>
 
           <label class="form-field">
-            <span class="form-label">Stock Quantity *</span>
-            <input type="number" id="productStockInput" class="form-input" placeholder="1" min="1" value="1" required>
+            <span class="form-label" data-i18n="sell_stock">Stock Quantity *</span>
+            <input type="number" id="productStockInput" class="form-input" data-i18n-placeholder="sell_enter_stock" placeholder="1" min="1" value="1" required>
           </label>
 
           <label class="form-field">
-            <span class="form-label">Location</span>
-            <input type="text" id="productLocationInput" class="form-input" placeholder="Riga, Latvia">
+            <span class="form-label" data-i18n="sell_location">Location *</span>
+            <select id="productLocationInput" class="form-select" required>
+              <option value="" data-i18n="sell_select_location">Select location</option>
+              <option value="riga" data-i18n="location_riga">Riga</option>
+              <option value="daugavpils" data-i18n="location_daugavpils">Daugavpils</option>
+              <option value="liepaja" data-i18n="location_liepaja">Liepaja</option>
+              <option value="jelgava" data-i18n="location_jelgava">Jelgava</option>
+              <option value="jurmala" data-i18n="location_jurmala">Jurmala</option>
+              <option value="ventspils" data-i18n="location_ventspils">Ventspils</option>
+              <option value="rezekne" data-i18n="location_rezekne">Rezekne</option>
+              <option value="valmiera" data-i18n="location_valmiera">Valmiera</option>
+              <option value="other" data-i18n="location_other">Other</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span class="form-label" data-i18n="sell_brand">Brand (Optional)</span>
+            <input type="text" id="productBrandInput" class="form-input" data-i18n-placeholder="sell_enter_brand" placeholder="Enter brand name">
+          </label>
+
+          <label class="form-field">
+            <span class="form-label" data-i18n="sell_color">Color (Optional)</span>
+            <input type="text" id="productColorInput" class="form-input" data-i18n-placeholder="sell_enter_color" placeholder="Enter color">
           </label>
         </div>
 
         <label class="form-field" style="margin-top: 1rem;">
-          <span class="form-label">Description *</span>
-          <textarea id="productDescriptionInput" class="form-textarea" placeholder="Describe your product in detail..." required rows="4"></textarea>
+          <span class="form-label" data-i18n="sell_description">Description *</span>
+          <textarea id="productDescriptionInput" class="form-textarea" data-i18n-placeholder="sell_enter_description" placeholder="Describe your product in detail..." required rows="4"></textarea>
         </label>
 
         <label class="form-field" style="margin-top: 1rem;">
-          <span class="form-label">Product Image URL *</span>
-          <input type="url" id="productImageInput" class="form-input" placeholder="https://example.com/image.jpg" required>
+          <span class="form-label" data-i18n="sell_image_url">Product Image URL *</span>
+          <input type="url" id="productImageInput" class="form-input" data-i18n-placeholder="sell_enter_image_url" placeholder="https://example.com/image.jpg" required>
         </label>
 
         <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
@@ -221,10 +254,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePreview() {
     const name = document.getElementById('productNameInput').value || 'Product Name';
     const category = document.getElementById('productCategoryInput').value || 'Category';
-    const price = document.getElementById('productPriceInput').value || '0.00';
+    const price = parseFloat(document.getElementById('productPriceInput').value) || 0;
     const condition = document.getElementById('productConditionInput').value || '';
     const description = document.getElementById('productDescriptionInput').value || 'Product description...';
     const imageUrl = document.getElementById('productImageInput').value || 'https://via.placeholder.com/300x200';
+    
+    // Calculate and display listing fee (€0.50 to €1.00)
+    const listingFee = price >= 100 ? 1.00 : Math.max(0.50, 0.50 + (price / 100) * 0.50);
+    const feeElement = document.getElementById('calculatedFee');
+    if (feeElement) {
+      feeElement.textContent = `Current fee: €${listingFee.toFixed(2)}`;
+    }
 
     const conditionEmoji = {
       'new': '✨',
@@ -256,7 +296,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Update preview on input changes
   ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updatePreview);
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', updatePreview);
+      // Also trigger on keyup for immediate feedback
+      if (id === 'productPriceInput') {
+        element.addEventListener('keyup', updatePreview);
+      }
+    }
   });
 
   // Preview button
@@ -281,13 +328,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const productData = {
         name: document.getElementById('productNameInput').value,
-        category: document.getElementById('productCategoryInput').value,
+        category: document.getElementById('productCategoryInput').value.toLowerCase(),
         price: parseFloat(document.getElementById('productPriceInput').value),
         description: document.getElementById('productDescriptionInput').value,
         image_url: document.getElementById('productImageInput').value,
         stock: parseInt(document.getElementById('productStockInput').value),
         condition: document.getElementById('productConditionInput').value,
-        location: document.getElementById('productLocationInput').value
+        location: document.getElementById('productLocationInput').value,
+        brand: document.getElementById('productBrandInput')?.value || '',
+        color: document.getElementById('productColorInput')?.value || ''
       };
 
       const { listProduct } = await import('./js/supabase.js');

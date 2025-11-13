@@ -12,7 +12,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-container">
-    <a href="/" class="navbar-logo">
+    <a href="index.html" class="navbar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0L24 24H0z"/>
       </svg>
@@ -28,12 +28,10 @@
 
       <!-- Pages Dropdown -->
       <div class="dropdown" id="pagesDropdown">
-        <button class="dropdown-btn" data-i18n="pages">Pages</button>
+        <button class="dropdown-btn">☰</button>
         <div class="dropdown-menu">
-          <a href="index.html" class="dropdown-item" data-i18n="home">Home</a>
-          <a href="balance.html" class="dropdown-item" data-i18n="balance">Balance</a>
           <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
-          <a href="admin.html" class="dropdown-item" data-i18n="admin">Admin</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
           <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
           <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
         </div>
@@ -187,15 +185,47 @@ document.getElementById('addFundsBtn').addEventListener('click', async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if(!user) return alert("Please login first");
 
-  // Update balance in Supabase
-  const { data, error } = await supabase.from('users').update({ balance: supabase.raw('balance + ?', [amount]) }).eq('id', user.id).select().single();
-  if(error) return alert("Failed to add funds");
+  try {
+    // Get current balance
+    const { data: userData, error: balanceError } = await supabase
+      .from('users')
+      .select('balance')
+      .eq('id', user.id)
+      .single();
+    
+    if (balanceError) throw balanceError;
+    
+    const currentBalance = parseFloat(userData.balance || 0);
+    const newBalance = currentBalance + amount;
 
-  // Optionally insert into transactions table
-  await supabase.from('transactions').insert([{ user_id: user.id, type: 'credit', amount, created_at: new Date() }]);
+    // Update balance in Supabase
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+    
+    if(updateError) throw updateError;
 
-  loadUser();
-  document.getElementById('fundAmount').value = '';
+    // Insert transaction record
+    const { error: txError } = await supabase
+      .from('user_transactions')
+      .insert([{ 
+        user_id: user.id, 
+        amount: amount,
+        transaction_type: 'topup',
+        description: 'Balance top-up',
+        created_at: new Date().toISOString()
+      }]);
+
+    if(txError) throw txError;
+
+    loadUser();
+    document.getElementById('fundAmount').value = '';
+    alert('Funds added successfully!');
+  } catch (error) {
+    console.error('Error adding funds:', error);
+    alert('Failed to add funds: ' + error.message);
+  }
 });
 
 // ============================
@@ -216,13 +246,13 @@ async function loadTransactions(userId, filter = 'all') {
     if (filter !== 'all') {
       switch(filter) {
         case 'deposits':
-          filteredData = data.filter(tx => tx.transaction_type === 'deposit');
+          filteredData = data.filter(tx => tx.transaction_type === 'topup');
           break;
         case 'purchases':
-          filteredData = data.filter(tx => ['purchase', 'escrow_hold'].includes(tx.transaction_type));
+          filteredData = data.filter(tx => tx.transaction_type === 'purchase');
           break;
         case 'sales':
-          filteredData = data.filter(tx => ['sale', 'escrow_pending'].includes(tx.transaction_type));
+          filteredData = data.filter(tx => tx.transaction_type === 'sale');
           break;
       }
     }
@@ -243,26 +273,27 @@ async function loadTransactions(userId, filter = 'all') {
 
       const getTransactionIcon = (type) => {
         switch(type) {
-          case 'deposit': return '💰';
-          case 'purchase': case 'escrow_hold': return '🛒';
-          case 'sale': case 'escrow_pending': return '💸';
-          case 'listing_fee': return '📝';
-          case 'reserve_fee': return '🔖';
+          case 'topup': return '💰';
+          case 'purchase': return '🛒';
+          case 'sale': return '💸';
+          case 'fee': return '📝';
+          case 'refund': return '↩️';
           default: return '💳';
         }
       };
 
       const getTransactionColor = (type) => {
         switch(type) {
-          case 'deposit': return '#10b981';
-          case 'sale': case 'escrow_pending': return '#10b981';
-          case 'purchase': case 'escrow_hold': case 'listing_fee': case 'reserve_fee': return '#ef4444';
+          case 'topup': return '#10b981';
+          case 'sale': return '#10b981';
+          case 'refund': return '#10b981';
+          case 'purchase': case 'fee': return '#ef4444';
           default: return '#6b7280';
         }
       };
 
       const amount = Math.abs(parseFloat(tx.amount || 0));
-      const isPositive = ['deposit', 'sale', 'escrow_pending'].includes(tx.transaction_type);
+      const isPositive = ['topup', 'sale', 'refund'].includes(tx.transaction_type);
 
       div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.75rem;">
