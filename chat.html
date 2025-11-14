@@ -95,8 +95,25 @@
 </main>
 
 <script type="module">
-import { supabase } from './js/supabase.js';
+import { supabase, getOrCreateConversation } from './js/supabase.js';
 import { i18n } from './js/i18n.js';
+
+// small HTML escape helper used throughout the chat UI
+function escapeHtml(unsafe) {
+  if (!unsafe && unsafe !== 0) return '';
+  return String(unsafe).replace(/[&<>\"'`=\/]/g, function (s) {
+    return ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '/': '&#x2F;',
+      '`': '&#x60;',
+      '=': '&#x3D;'
+    })[s];
+  });
+}
 
 // ============================
 // Language Setup
@@ -138,73 +155,278 @@ let currentUser = null;
 async function loadUser() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
-  if(user) {
+  if (user) {
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'flex';
-    const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
-    balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+    // show balance if available
+    try {
+      const { data } = await supabase.from('users').select('balance, username').eq('id', user.id).maybeSingle();
+      if (data && data.balance !== undefined) {
+        balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance||0).toFixed(2)}`;
+      }
+    } catch(e){ /* ignore */ }
+    await loadConversations();
   } else {
     loginBtn.style.display = 'flex';
     logoutBtn.style.display = 'none';
   }
 }
 
-loginBtn.addEventListener('click', async () => {
-  window.location.href = 'login.html';
-});
+// Ensure login button navigates to login page
+if (loginBtn && !loginBtn._hasHandler) {
+  loginBtn.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'login.html'; });
+  loginBtn._hasHandler = true;
+}
 
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'index.html';
-});
+// Single logout handler
+if (logoutBtn && !logoutBtn._hasHandler) {
+  logoutBtn.addEventListener('click', async (e) => {
+    e && e.preventDefault();
+    try { await supabase.auth.signOut(); } catch (err) { console.warn('Sign out failed', err); }
+    window.location.href = 'index.html';
+  });
+  logoutBtn._hasHandler = true;
+}
+
+// Dropdown toggle (single handler)
+(function setupDropdown() {
+  const dropdownBtnLocal = document.querySelector('.dropdown-btn');
+  if (!dropdownBtnLocal) return;
+  dropdownBtnLocal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = e.target.closest('.dropdown');
+    if (dropdown) dropdown.classList.toggle('open');
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+})();
 
 // ============================
-// Chat Logic (Placeholder)
+// Chat Logic (real implementation)
 // ============================
 const chatList = document.getElementById('chatList');
 const chatMessages = document.getElementById('chatMessages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
 
-const dummyChats = [
-  { id: 1, name: 'Alice', avatar: 'A', messages: [{ sender: 'Alice', text: 'Hi there!', timestamp: '10:00' }] },
-  { id: 2, name: 'Bob', avatar: 'B', messages: [{ sender: 'Bob', text: 'Hello!', timestamp: '11:00' }] }
-];
+let activeConversation = null;
+let messageSub = null;
+let globalMessageSub = null;
+let knownConversationIds = new Set();
+let knownMessageIds = new Set(); // track messages we've already rendered to avoid duplicates
 
-function renderChats() {
+// Load user's conversations
+async function loadConversations() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select(`*, product:products(id,name), buyer:users!buyer_id(id,username), seller:users!seller_id(id,username)`)
+      .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+      .order('last_message_at', { ascending: false });
+    if (error) throw error;
+    renderConversations(data || []);
+    knownConversationIds = new Set((data || []).map(d => d.id));
+    await ensureGlobalMessageListener();
+  } catch (err) {
+    console.error('Failed to load conversations', err);
+    chatList.innerHTML = '<div style="padding:1rem;color:var(--muted)">Failed to load conversations.</div>';
+  }
+}
+
+function renderConversations(convs) {
   chatList.innerHTML = '';
-  dummyChats.forEach(chat => {
-    const div = document.createElement('div');
-    div.className = 'chat-list-item';
-    div.innerHTML = `
-      <div class="chat-avatar avatar-circle-small">${chat.avatar}</div>
+  if (!convs || convs.length === 0) {
+    chatList.innerHTML = '<div style="padding:1rem;color:var(--muted)">No conversations yet.</div>';
+    return;
+  }
+  convs.forEach(conv => {
+    const other = conv.buyer?.id === currentUser.id ? conv.seller : conv.buyer;
+    const lastMsgTime = conv.last_message_at ? new Date(conv.last_message_at).toLocaleString() : '';
+    const lastText = conv.last_message || (conv.product?.name ? `Regarding: ${conv.product.name}` : 'New conversation');
+    const item = document.createElement('div');
+    item.className = 'chat-list-item';
+    item.innerHTML = `
+      <div class="chat-avatar avatar-circle-small">${(other?.username||'U').charAt(0).toUpperCase()}</div>
       <div class="chat-preview">
-        <div class="chat-name">${chat.name}</div>
-        <div class="chat-last-message">${chat.messages[0].text}</div>
+        <div class="chat-name">${other?.username || 'Unknown'}</div>
+        <div class="chat-last-message">${escapeHtml(lastText)} <span class="chat-time">${lastMsgTime}</span></div>
       </div>
     `;
-    div.addEventListener('click', () => openChat(chat));
-    chatList.appendChild(div);
+    item.addEventListener('click', () => openConversation(conv));
+    chatList.appendChild(item);
   });
 }
 
-function openChat(chat) {
-  document.getElementById('activeUserAvatar').innerText = chat.avatar;
-  document.getElementById('activeUserName').innerText = chat.name;
+async function openConversation(conv) {
+  // unsubscribe previous per-conversation channel
+  if (messageSub) {
+    try { await supabase.removeChannel(messageSub); } catch (e) { /* ignore */ }
+    messageSub = null;
+  }
+  activeConversation = conv;
+  const other = conv.buyer?.id === currentUser.id ? conv.seller : conv.buyer;
+  document.getElementById('activeUserAvatar').innerText = (other?.username||'U').charAt(0).toUpperCase();
+  document.getElementById('activeUserName').innerText = other?.username || 'Unknown';
+  document.getElementById('activeUserStatus').innerText = conv.product?.name ? `Regarding: ${conv.product.name}` : '';
+  chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">Loading messages…</div>';
+  try {
+    const { data: messages, error } = await supabase
+      .from('messages')
+      .select('*, sender:users(id,username)')
+      .eq('conversation_id', conv.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    renderMessages(messages || []);
+    // subscribe to new messages for this conversation
+    messageSub = supabase.channel(`conversation-${conv.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conv.id}` }, async (payload) => {
+        const newMsg = payload.new;
+        try {
+          // fetch full message including sender to ensure username is available
+          const { data: fullMsg, error: msgErr } = await supabase.from('messages').select('*, sender:users(id,username)').eq('id', newMsg.id).maybeSingle();
+          const messageToAppend = fullMsg || (Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } }));
+          appendMessage(messageToAppend);
+        } catch (e) {
+          console.warn('Error handling per-conversation incoming message', e);
+          // fallback: append minimal message
+          appendMessage(Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } }));
+        }
+      })
+      .subscribe();
+  } catch (err) {
+    console.error('Failed to load messages', err);
+    chatMessages.innerHTML = '<div style="padding:1rem;color:crimson">Failed to load messages.</div>';
+  }
+}
+
+function renderMessages(messages) {
   chatMessages.innerHTML = '';
-  chat.messages.forEach(msg => {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message-group ${msg.sender === chat.name ? 'receiver' : 'sender'}`;
-    msgDiv.innerHTML = `
-      <div class="message-avatar avatar-circle">${msg.sender[0]}</div>
-      <div class="messages-stack">
-        <div class="message-bubble-modern ${msg.sender !== chat.name ? 'sender' : ''}">${msg.text}</div>
-        <div class="message-timestamp ${msg.sender !== chat.name ? 'sender' : ''}">${msg.timestamp}</div>
-      </div>
-    `;
-    chatMessages.appendChild(msgDiv);
-  });
+  if (!messages || messages.length === 0) {
+    chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">No messages yet. Start the conversation!</div>';
+    return;
+  }
+  messages.forEach(m => appendMessage(m));
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-renderChats();
+function appendMessage(m) {
+  // If message has an id and we've already rendered it, skip to avoid duplicates
+  if (m && m.id && knownMessageIds.has(m.id)) return;
+  if (m && m.id) knownMessageIds.add(m.id);
+
+  const isSender = m.sender?.id === currentUser?.id || m.sender_id === currentUser?.id;
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message-group ${isSender ? 'sender' : 'receiver'}`;
+  const senderName = (m.sender && m.sender.username) ? m.sender.username : (isSender ? 'You' : 'User');
+  msgDiv.innerHTML = `
+    <div class="message-avatar avatar-circle">${(senderName||'U').charAt(0).toUpperCase()}</div>
+    <div class="messages-stack">
+      <div class="message-bubble-modern ${isSender ? 'sender' : ''}">${escapeHtml(m.content)}</div>
+      <div class="message-timestamp ${isSender ? 'sender' : ''}">${new Date(m.created_at).toLocaleString()}</div>
+    </div>
+  `;
+  chatMessages.appendChild(msgDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send message (use server RPC to insert and update conversation atomically)
+sendBtn.removeEventListener && sendBtn.removeEventListener('click', () => {});
+sendBtn.addEventListener('click', async () => {
+  const text = messageInput.value.trim();
+  if (!text || !activeConversation || !currentUser) return;
+  const optimistic = {
+    conversation_id: activeConversation.id,
+    sender_id: currentUser.id,
+    content: text,
+    message_type: 'text',
+    is_read: false,
+    created_at: new Date().toISOString()
+  };
+  // optimistic UI (no id yet)
+  appendMessage({ ...optimistic, sender: { id: currentUser.id, username: 'You' } });
+  messageInput.value = '';
+  try {
+    // Call the secure RPC which inserts message and updates conversation atomically
+    const { data, error } = await supabase.rpc('rpc_send_message', { p_conversation_id: activeConversation.id, p_content: text });
+    if (error) throw error;
+    const inserted = Array.isArray(data) ? data[0] : data;
+    // rpc may return message_id (avoid ambiguous 'id' column); fall back to id if present
+    const insertedId = inserted?.message_id ?? inserted?.id ?? null;
+    if (insertedId) knownMessageIds.add(insertedId);
+    // refresh conversations so sidebar preview and ordering update
+    try { await loadConversations(); } catch (e) { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to send message via RPC', err);
+    alert('Failed to send message: ' + (err.message || err));
+  }
+});
+
+// Enter to send
+messageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
+});
+
+// Global listener: verifies participant and routes message
+async function ensureGlobalMessageListener() {
+  if (globalMessageSub) return;
+  try {
+    globalMessageSub = supabase.channel('global-messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+        const newMsg = payload.new;
+        try {
+          const { data: convData, error: convError } = await supabase.from('conversations').select('id,buyer_id,seller_id').eq('id', newMsg.conversation_id).maybeSingle();
+          if (convError || !convData) return;
+          const isParticipant = (convData.buyer_id === currentUser?.id) || (convData.seller_id === currentUser?.id);
+          if (!isParticipant) return;
+
+          // fetch full message with sender info
+          const { data: fullMsg, error: msgErr } = await supabase.from('messages').select('*, sender:users(id,username)').eq('id', newMsg.id).maybeSingle();
+          const messageToHandle = fullMsg || Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } });
+
+          if (activeConversation && messageToHandle.conversation_id === activeConversation.id) {
+            appendMessage(messageToHandle);
+          } else {
+            // refresh conversations list to show unread preview
+            await loadConversations();
+          }
+        } catch (e) { console.warn('Error handling incoming message', e); }
+      })
+      .subscribe();
+  } catch (e) { console.warn('Failed to subscribe to global messages', e); }
+}
+
+// '+' new chat button
+const newChatBtn = document.querySelector('.chat-list-header .btn-icon-small');
+if (newChatBtn && !newChatBtn._hasHandler) {
+  newChatBtn.addEventListener('click', async () => {
+    if (!currentUser) return alert('Please log in first');
+    const email = prompt('Enter recipient email to start chat:');
+    if (!email) return;
+    try {
+      const { data: userRow, error } = await supabase.from('users').select('id,username,email').eq('email', email).maybeSingle();
+      if (error) throw error;
+      if (!userRow) return alert('User not found');
+      const recipientId = userRow.id;
+      const conv = await getOrCreateConversation(null, currentUser.id, recipientId);
+      if (conv) { await loadConversations(); openConversation(conv); }
+    } catch (err) {
+      console.error('Failed to create/open chat', err);
+      alert('Failed to start chat: ' + (err.message || err));
+    }
+  });
+  newChatBtn._hasHandler = true;
+}
+
+// Initialize
+(async function initChat() {
+  try {
+    await loadUser();
+  } catch (e) { console.warn('loadUser failed on init', e); }
+  try { await ensureGlobalMessageListener(); } catch (e) { console.warn('global listener init failed', e); }
+})();
+
 </script>
 
 </body>

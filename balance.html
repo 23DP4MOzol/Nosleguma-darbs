@@ -73,6 +73,7 @@
       <div style="display: flex; gap: 1rem;">
         <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="1" step="0.01">
         <button id="addFundsBtn" class="btn-hero-primary" data-i18n="btn_add" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Funds</button>
+        <button id="withdrawBtn" class="btn-hero-secondary" style="margin-left:0.5rem;padding:0.75rem 1rem;border-radius:8px; background:#ef4444;color:white;border:none; cursor:pointer;">Withdraw</button>
       </div>
       <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center;">
         Minimum deposit: €1.00
@@ -96,6 +97,15 @@
       </div>
     </div>
     <!-- Transactions rendered dynamically -->
+  </div>
+
+  <!-- Manage User Listings Section (initially hidden) -->
+  <div class="section-header-centered" id="listingsSection" style="display:none;">
+    <h3 class="section-title" data-i18n="my_listings">Manage My Listings</h3>
+    <p class="section-subtitle" data-i18n="listings_subtitle">Edit or remove your product listings.</p>
+  </div>
+  <div class="listings-container" id="myListingsContainer" style="display:none; background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <!-- User listings will be injected here by JavaScript -->
   </div>
 </main>
 
@@ -142,95 +152,7 @@ const transactionHistoryEl = document.getElementById('transactionHistory');
 
 let currentUserId = null;
 
-async function loadUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if(user) {
-    currentUserId = user.id;
-    loginBtn.style.display = 'none';
-    logoutBtn.style.display = 'flex';
-    // Fetch user balance
-    const { data, error } = await supabase.from('users').select('balance').eq('id', user.id).single();
-    if(data) {
-      const balance = parseFloat(data.balance);
-      balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
-      currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
-    }
-    loadTransactions(user.id, currentTransactionFilter);
-  } else {
-    loginBtn.style.display = 'flex';
-    logoutBtn.style.display = 'none';
-    // Redirect to login if not authenticated
-    window.location.href = 'login.html';
-  }
-}
-
-loginBtn.addEventListener('click', async () => {
-  window.location.href = 'login.html';
-});
-
-logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'index.html';
-});
-
-loadUser();
-
-// ============================
-// Add Funds
-// ============================
-document.getElementById('addFundsBtn').addEventListener('click', async () => {
-  const amount = parseFloat(document.getElementById('fundAmount').value);
-  if(isNaN(amount) || amount <= 0) return alert("Enter a valid amount");
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return alert("Please login first");
-
-  try {
-    // Get current balance
-    const { data: userData, error: balanceError } = await supabase
-      .from('users')
-      .select('balance')
-      .eq('id', user.id)
-      .single();
-    
-    if (balanceError) throw balanceError;
-    
-    const currentBalance = parseFloat(userData.balance || 0);
-    const newBalance = currentBalance + amount;
-
-    // Update balance in Supabase
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ balance: newBalance, updated_at: new Date().toISOString() })
-      .eq('id', user.id);
-    
-    if(updateError) throw updateError;
-
-    // Insert transaction record
-    const { error: txError } = await supabase
-      .from('user_transactions')
-      .insert([{ 
-        user_id: user.id, 
-        amount: amount,
-        transaction_type: 'topup',
-        description: 'Balance top-up',
-        created_at: new Date().toISOString()
-      }]);
-
-    if(txError) throw txError;
-
-    loadUser();
-    document.getElementById('fundAmount').value = '';
-    alert('Funds added successfully!');
-  } catch (error) {
-    console.error('Error adding funds:', error);
-    alert('Failed to add funds: ' + error.message);
-  }
-});
-
-// ============================
-// Load Transaction History
-// ============================
+// Keep transaction filter state and loader above loadUser so loadUser can call it
 let currentTransactionFilter = 'all';
 
 async function loadTransactions(userId, filter = 'all') {
@@ -324,6 +246,184 @@ async function loadTransactions(userId, filter = 'all') {
   }
 }
 
+async function loadUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if(user) {
+    currentUserId = user.id;
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'flex';
+    // Fetch user balance and role
+    const { data, error } = await supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
+    if (error) console.warn('Error fetching user balance:', error);
+    if (data) {
+      const balance = parseFloat(data.balance || 0);
+      balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
+      currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
+
+      // Show admin controls if user is admin
+      if (data.role === 'admin') {
+        const adminBtnEl = document.getElementById('adminBtn');
+        if (adminBtnEl) adminBtnEl.style.display = 'flex';
+      }
+    } else {
+      balanceBadge.querySelector('span').innerText = `€0.00`;
+      currentBalanceEl.innerText = `€0.00`;
+    }
+    loadTransactions(user.id, currentTransactionFilter);
+    // Also load user's own products for management
+    loadUserProducts(user.id);
+  } else {
+    loginBtn.style.display = 'flex';
+    logoutBtn.style.display = 'none';
+    // Redirect to login if not authenticated
+    window.location.href = 'login.html';
+  }
+}
+
+loginBtn.addEventListener('click', async () => {
+  window.location.href = 'login.html';
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  window.location.href = 'index.html';
+});
+
+// ============================
+// Add Funds / Withdraw
+// ============================
+const addFundsContainer = document.querySelector('.add-funds');
+const fundControls = addFundsContainer?.querySelector('div'); // the controls row containing input + add button
+
+// Ensure withdraw button exists and is visible next to the Add Funds button
+let withdrawBtn = document.getElementById('withdrawBtn');
+if (!withdrawBtn) {
+  withdrawBtn = document.createElement('button');
+  withdrawBtn.id = 'withdrawBtn';
+  withdrawBtn.className = 'btn-hero-secondary';
+  withdrawBtn.style.cssText = 'margin-left:0.5rem;padding:0.75rem 1rem;border-radius:8px; background:#ef4444;color:white;border:none; cursor:pointer;';
+  withdrawBtn.textContent = 'Withdraw';
+  fundControls?.appendChild(withdrawBtn);
+}
+
+// Deposit (Add Funds) handler - calls server RPC rpc_topup
+const addFundsBtn = document.getElementById('addFundsBtn');
+if (addFundsBtn) {
+  addFundsBtn.addEventListener('click', async () => {
+    const amount = parseFloat(document.getElementById('fundAmount').value);
+    if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alert('Please login first');
+
+    try {
+      const { data, error } = await supabase.rpc('rpc_topup', { amount });
+      if (error) throw error;
+      await loadUser();
+      document.getElementById('fundAmount').value = '';
+      alert('Deposit successful. New balance updated.');
+    } catch (err) {
+      console.error('Error adding funds:', err);
+      alert('Failed to add funds: ' + (err.message || err));
+    }
+  });
+}
+
+// Withdraw handler - calls server RPC rpc_withdraw
+if (withdrawBtn) {
+  withdrawBtn.addEventListener('click', async () => {
+    const amount = parseFloat(document.getElementById('fundAmount').value);
+    if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alert('Please login first');
+
+    try {
+      const { data, error } = await supabase.rpc('rpc_withdraw', { amount });
+      if (error) throw error;
+      await loadUser();
+      document.getElementById('fundAmount').value = '';
+      alert('Withdrawal successful. New balance updated.');
+    } catch (error) {
+      console.error('Error withdrawing funds:', error);
+      alert('Failed to withdraw: ' + (error.message || error));
+    }
+  });
+}
+
+// ============================
+// Manage User Listings
+// ============================
+// Insert a section container after the transaction history if not present
+if (!document.getElementById('myListings')) {
+  const listingsSection = document.createElement('section');
+  listingsSection.id = 'myListings';
+  listingsSection.style.cssText = 'margin-top:2rem; background: var(--card-bg); padding:1.5rem; border-radius:16px;';
+  listingsSection.innerHTML = `
+    <h3 style="margin-top:0;">My Listings</h3>
+    <div id="myListingsContainer">Loading your listings...</div>
+  `;
+  document.querySelector('main.main-container').appendChild(listingsSection);
+}
+
+async function loadUserProducts(userId) {
+  try {
+    const { data, error } = await supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false });
+    const container = document.getElementById('myListingsContainer');
+    container.innerHTML = '';
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);">You have no listings yet.</div>';
+      return;
+    }
+    data.forEach(p => {
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-bottom:1px solid #e5e7eb;';
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:600">${p.name}</div>
+          <div style="font-size:0.85rem;color:var(--muted)">€${parseFloat(p.price||0).toFixed(2)} • ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button data-id="${p.id}" class="editListingBtn">Edit</button>
+          <button data-id="${p.id}" class="deleteListingBtn">Delete</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    // attach handlers
+    container.querySelectorAll('.deleteListingBtn').forEach(btn => {
+      btn.onclick = async (e) => {
+        const id = e.target.getAttribute('data-id');
+        if (!confirm('Delete this listing?')) return;
+        try {
+          const { error } = await supabase.from('products').delete().eq('id', id);
+          if (error) throw error;
+          alert('Listing deleted');
+          loadUserProducts(userId);
+        } catch (err) {
+          console.error('Error deleting listing', err);
+          alert('Failed to delete listing: ' + (err.message || err));
+        }
+      };
+    });
+
+    container.querySelectorAll('.editListingBtn').forEach(btn => {
+      btn.onclick = (e) => {
+        const id = e.target.getAttribute('data-id');
+        // redirect to product page with id param for editing
+        window.location.href = `product.html?id=${id}`;
+      };
+    });
+
+  } catch (err) {
+    console.error('Error loading user products', err);
+    const container = document.getElementById('myListingsContainer');
+    if (container) container.innerHTML = '<div style="color:crimson;">Failed to load listings.</div>';
+  }
+}
+
 // Transaction filter buttons
 document.getElementById('filterAll').addEventListener('click', () => {
   setActiveFilter('filterAll');
@@ -359,6 +459,11 @@ function setActiveFilter(activeId) {
   document.getElementById(activeId).style.background = 'var(--primary)';
   document.getElementById(activeId).style.color = 'white';
 }
+
+// Call loadUser after all functions are defined
+loadUser();
+// Admin panel quick links (adminBtn already in DOM)
+// ...existing code...
 </script>
 
 </body>
