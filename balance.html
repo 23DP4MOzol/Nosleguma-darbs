@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="balance_title">Marketplace - Balance</title>
+  <title>Marketplace - Balance</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
@@ -60,22 +60,26 @@
   </div>
 
   <div class="balance-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
-    <div class="current-balance" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center;">
+    <div class="current-balance" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border); text-align: center;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
-      <h3 data-i18n="current_balance" style="margin-bottom: 1rem; color: var(--text-primary);">Current Balance</h3>
+      <h3 data-i18n="current_balance" style="margin-bottom: 1rem; color: var(--fg);">Current Balance</h3>
       <div class="balance-amount" id="currentBalance" style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem;">€0.00</div>
-      <div style="color: var(--muted); font-size: 0.875rem;">Available for purchases</div>
+      <div style="color: var(--muted); font-size: 0.875rem;" data-i18n="available_for_purchases">Available for purchases</div>
     </div>
 
-    <div class="add-funds" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <div class="add-funds" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
       <div style="font-size: 2rem; margin-bottom: 1rem; text-align: center;">💳</div>
-      <h3 data-i18n="add_funds" style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Add Funds</h3>
+      <h3 data-i18n="add_funds" style="margin-bottom: 1.5rem; color: var(--fg); text-align: center;">Add Funds</h3>
       <div style="display: flex; gap: 1rem;">
-        <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="1" step="0.01">
-        <button id="addFundsBtn" class="btn-hero-primary" data-i18n="btn_add" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Funds</button>
-        <button id="withdrawBtn" class="btn-hero-secondary" style="margin-left:0.5rem;padding:0.75rem 1rem;border-radius:8px; background:#ef4444;color:white;border:none; cursor:pointer;">Withdraw</button>
+        <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €" style="flex: 1; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);" min="1" step="0.01">
+        <button id="addFundsBtn" class="btn-hero-primary" style="background: var(--gradient-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm);">
+          <span data-i18n="btn_add">Add Funds</span>
+        </button>
+        <button id="withdrawBtn" class="btn-hero-secondary" style="padding:0.75rem 1rem; border-radius:8px; background:#ef4444; color:white; border:none; cursor:pointer; font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm);">
+          <span data-i18n="btn_withdraw">Withdraw</span>
+        </button>
       </div>
-      <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center;">
+      <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center;" data-i18n="minimum_deposit">
         Minimum deposit: €1.00
       </div>
     </div>
@@ -83,29 +87,32 @@
 
   <div class="section-header-centered">
     <h3 class="section-title" data-i18n="transactions">Transaction History</h3>
-    <p class="section-subtitle">View all your deposits, purchases, and sales</p>
+    <p class="section-subtitle" data-i18n="view_all_deposits">View all your deposits, purchases, and sales</p>
   </div>
 
-  <div class="transaction-history" id="transactionHistory" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  <div class="transaction-history" id="transactionHistory" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-      <h4 style="margin: 0; color: var(--text-primary);">Recent Transactions</h4>
+      <h4 style="margin: 0; color: var(--fg);" data-i18n="recent_transactions">Recent Transactions</h4>
       <div style="display: flex; gap: 0.5rem;">
-        <button id="filterAll" class="filter-btn active" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: var(--primary); color: white; font-size: 0.875rem; cursor: pointer;">All</button>
-        <button id="filterDeposits" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Deposits</button>
-        <button id="filterPurchases" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Purchases</button>
-        <button id="filterSales" class="filter-btn" style="padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">Sales</button>
+        <button id="filterAll" class="filter-btn active" data-i18n="filter_all_tx" style="padding: 0.5rem 1rem; border: 1px solid var(--primary); border-radius: 6px; background: var(--primary); color: white; font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">All</button>
+        <button id="filterDeposits" class="filter-btn" data-i18n="filter_deposits" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Deposits</button>
+        <button id="filterPurchases" class="filter-btn" data-i18n="filter_purchases" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Purchases</button>
+        <button id="filterSales" class="filter-btn" data-i18n="filter_sales" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Sales</button>
       </div>
     </div>
     <!-- Transactions rendered dynamically -->
   </div>
 
-  <!-- Manage User Listings Section (initially hidden) -->
-  <div class="section-header-centered" id="listingsSection" style="display:none;">
+  <!-- Manage User Listings Section -->
+  <div class="section-header-centered" id="listingsSection" style="margin-top: 3rem;">
     <h3 class="section-title" data-i18n="my_listings">Manage My Listings</h3>
     <p class="section-subtitle" data-i18n="listings_subtitle">Edit or remove your product listings.</p>
   </div>
-  <div class="listings-container" id="myListingsContainer" style="display:none; background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-    <!-- User listings will be injected here by JavaScript -->
+  <div class="listings-container" id="myListingsContainer" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
+    <div style="text-align: center; padding: 2rem; color: var(--muted);">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">📦</div>
+      <div data-i18n="loading">Loading your listings...</div>
+    </div>
   </div>
 </main>
 
@@ -114,10 +121,36 @@ import { supabase } from './js/supabase.js';
 import { i18n } from './js/i18n.js';
 
 // ============================
-// Language Initialization
+// Initialize Theme from localStorage
+// ============================
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  const html = document.documentElement;
+  html.classList.remove('light', 'dark');
+  html.classList.add(savedTheme);
+  html.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeToggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+}
+
+// ============================
+// Initialize Language from localStorage
+// ============================
+function initializeLanguage() {
+  const savedLang = localStorage.getItem('lang') || 'en';
+  const langSelect = document.getElementById('langSelect');
+  if (langSelect) {
+    langSelect.value = savedLang;
+  }
+  i18n.setLang(savedLang);
+}
+
+// ============================
+// Language Change Handler
 // ============================
 document.getElementById('langSelect').addEventListener('change', (e) => {
-  i18n.setLang(e.target.value);
+  const lang = e.target.value;
+  localStorage.setItem('lang', lang);
+  i18n.setLang(lang);
 });
 
 // ============================
@@ -133,6 +166,12 @@ document.getElementById('themeToggle').addEventListener('click', () => {
   localStorage.setItem('theme', newTheme);
   document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
 });
+
+// ============================
+// Initialize on page load
+// ============================
+initializeTheme();
+initializeLanguage();
 
 // ============================
 // Hamburger Mobile Menu
@@ -187,10 +226,16 @@ async function loadTransactions(userId, filter = 'all') {
         justify-content: space-between;
         align-items: center;
         padding: 1rem;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--border);
         transition: background-color 0.2s;
+        border-radius: 8px;
       `;
-      div.onmouseover = () => div.style.backgroundColor = '#f9fafb';
+      
+      // Dark mode aware hover
+      div.onmouseover = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        div.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--secondary)';
+      };
       div.onmouseout = () => div.style.backgroundColor = 'transparent';
 
       const getTransactionIcon = (type) => {
@@ -200,6 +245,7 @@ async function loadTransactions(userId, filter = 'all') {
           case 'sale': return '💸';
           case 'fee': return '📝';
           case 'refund': return '↩️';
+          case 'withdraw': return '💳';
           default: return '💳';
         }
       };
@@ -209,9 +255,36 @@ async function loadTransactions(userId, filter = 'all') {
           case 'topup': return '#10b981';
           case 'sale': return '#10b981';
           case 'refund': return '#10b981';
-          case 'purchase': case 'fee': return '#ef4444';
+          case 'purchase': case 'fee': case 'withdraw': return '#ef4444';
           default: return '#6b7280';
         }
+      };
+
+      // Translate transaction descriptions
+      const getTransactionDescription = (tx) => {
+        // Check if description contains known patterns
+        const desc = tx.description || '';
+        
+        // Common transaction patterns
+        if (desc.toLowerCase().includes('top-up') || desc.toLowerCase().includes('topup')) {
+          return i18n.t('transaction_topup');
+        } else if (desc.toLowerCase().includes('withdrawal') || desc.toLowerCase().includes('withdraw')) {
+          return i18n.t('transaction_withdraw');
+        } else if (desc.toLowerCase().includes('listing fee')) {
+          const match = desc.match(/listing fee for (.+)/i);
+          return match ? `${i18n.t('transaction_listing_fee')}: ${match[1]}` : i18n.t('transaction_listing_fee');
+        } else if (desc.toLowerCase().includes('purchase')) {
+          const match = desc.match(/purchase[:\s]+(.+)/i);
+          return match ? `${i18n.t('transaction_purchase')}: ${match[1]}` : i18n.t('transaction_purchase');
+        } else if (desc.toLowerCase().includes('sale')) {
+          const match = desc.match(/sale[:\s]+(.+)/i);
+          return match ? `${i18n.t('transaction_sale')}: ${match[1]}` : i18n.t('transaction_sale');
+        } else if (desc.toLowerCase().includes('refund')) {
+          return i18n.t('transaction_refund');
+        }
+        
+        // Fallback to original description or transaction type
+        return desc || tx.transaction_type.replace('_', ' ');
       };
 
       const amount = Math.abs(parseFloat(tx.amount || 0));
@@ -221,12 +294,12 @@ async function loadTransactions(userId, filter = 'all') {
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <div style="font-size: 1.25rem;">${getTransactionIcon(tx.transaction_type)}</div>
           <div>
-            <div style="font-weight: 500; color: var(--text-primary);">${tx.description || tx.transaction_type.replace('_', ' ')}</div>
+            <div style="font-weight: 500; color: var(--fg);">${getTransactionDescription(tx)}</div>
             <div style="font-size: 0.875rem; color: var(--muted);">${new Date(tx.created_at).toLocaleDateString()}</div>
           </div>
         </div>
         <div style="font-weight: 600; color: ${getTransactionColor(tx.transaction_type)};">
-          ${isPositive ? '+' : '-'}${amount.toFixed(2)}€
+          ${isPositive ? '+' : '-'}€${amount.toFixed(2)}
         </div>
       `;
       transactionHistoryEl.appendChild(div);
@@ -235,13 +308,13 @@ async function loadTransactions(userId, filter = 'all') {
     if (filteredData.length === 0) {
       const emptyDiv = document.createElement('div');
       emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--muted);';
-      emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>No ${filter} transactions found.`;
+      emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>${i18n.t('no_filter_transactions').replace('{filter}', filter)}`;
       transactionHistoryEl.appendChild(emptyDiv);
     }
   } else {
     const emptyDiv = document.createElement('div');
     emptyDiv.style.cssText = 'text-align: center; padding: 2rem; color: var(--muted);';
-    emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>No transactions yet.`;
+    emptyDiv.innerHTML = `<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>${i18n.t('no_transactions_found')}`;
     transactionHistoryEl.appendChild(emptyDiv);
   }
 }
@@ -311,17 +384,17 @@ const addFundsBtn = document.getElementById('addFundsBtn');
 if (addFundsBtn) {
   addFundsBtn.addEventListener('click', async () => {
     const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount');
+    if (isNaN(amount) || amount <= 0) return alert(i18n.t('enter_valid_amount'));
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert('Please login first');
+    if (!user) return alert(i18n.t('loginFirst'));
 
     try {
       const { data, error } = await supabase.rpc('rpc_topup', { amount });
       if (error) throw error;
       await loadUser();
       document.getElementById('fundAmount').value = '';
-      alert('Deposit successful. New balance updated.');
+      alert(i18n.t('deposit_success'));
     } catch (err) {
       console.error('Error adding funds:', err);
       alert('Failed to add funds: ' + (err.message || err));
@@ -333,17 +406,17 @@ if (addFundsBtn) {
 if (withdrawBtn) {
   withdrawBtn.addEventListener('click', async () => {
     const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount');
+    if (isNaN(amount) || amount <= 0) return alert(i18n.t('enter_valid_amount'));
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert('Please login first');
+    if (!user) return alert(i18n.t('loginFirst'));
 
     try {
       const { data, error } = await supabase.rpc('rpc_withdraw', { amount });
       if (error) throw error;
       await loadUser();
       document.getElementById('fundAmount').value = '';
-      alert('Withdrawal successful. New balance updated.');
+      alert(i18n.t('withdrawal_success'));
     } catch (error) {
       console.error('Error withdrawing funds:', error);
       alert('Failed to withdraw: ' + (error.message || error));
@@ -354,74 +427,147 @@ if (withdrawBtn) {
 // ============================
 // Manage User Listings
 // ============================
-// Insert a section container after the transaction history if not present
-if (!document.getElementById('myListings')) {
-  const listingsSection = document.createElement('section');
-  listingsSection.id = 'myListings';
-  listingsSection.style.cssText = 'margin-top:2rem; background: var(--card-bg); padding:1.5rem; border-radius:16px;';
-  listingsSection.innerHTML = `
-    <h3 style="margin-top:0;">My Listings</h3>
-    <div id="myListingsContainer">Loading your listings...</div>
-  `;
-  document.querySelector('main.main-container').appendChild(listingsSection);
-}
-
 async function loadUserProducts(userId) {
   try {
     const { data, error } = await supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false });
     const container = document.getElementById('myListingsContainer');
-    container.innerHTML = '';
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      container.innerHTML = '<div style="color:var(--muted);">You have no listings yet.</div>';
+    
+    if (error) {
+      console.error('Error loading user products:', error);
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+          <div style="color: #ef4444;">Failed to load listings.</div>
+        </div>
+      `;
       return;
     }
+    
+    container.innerHTML = '';
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">📦</div>
+          <div data-i18n="no_listings">${i18n.t('no_listings')}</div>
+        </div>
+      `;
+      return;
+    }
+    
+    // Create a header for the listings table
+    const header = document.createElement('div');
+    header.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 200px; gap: 1rem; padding: 1rem; border-bottom: 2px solid var(--border); font-weight: 600; color: var(--fg); font-size: 0.875rem;';
+    header.innerHTML = `
+      <div>Product</div>
+      <div>Price</div>
+      <div>Stock</div>
+      <div>Actions</div>
+    `;
+    container.appendChild(header);
+    
+    // Add each product listing
     data.forEach(p => {
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-bottom:1px solid #e5e7eb;';
+      div.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 200px; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); transition: background-color 0.2s;';
+      
+      div.onmouseover = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        div.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--secondary)';
+      };
+      div.onmouseout = () => div.style.backgroundColor = 'transparent';
+      
+      const conditionEmoji = {
+        'new': '✨',
+        'like_new': '🔄',
+        'good': '👍',
+        'fair': '😐',
+        'poor': '⚠️'
+      };
+      
       div.innerHTML = `
         <div>
-          <div style="font-weight:600">${p.name}</div>
-          <div style="font-size:0.85rem;color:var(--muted)">€${parseFloat(p.price||0).toFixed(2)} • ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
+          <div style="font-weight: 600; color: var(--fg); margin-bottom: 0.25rem;">${escapeHtml(p.name)}</div>
+          <div style="font-size: 0.875rem; color: var(--muted);">
+            ${p.category ? `📦 ${p.category}` : ''} 
+            ${p.condition ? `• ${conditionEmoji[p.condition] || ''} ${p.condition.replace('_', ' ')}` : ''}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+            ${p.created_at ? `Created: ${new Date(p.created_at).toLocaleDateString()}` : ''}
+          </div>
         </div>
-        <div style="display:flex;gap:0.5rem;">
-          <button data-id="${p.id}" class="editListingBtn">Edit</button>
-          <button data-id="${p.id}" class="deleteListingBtn">Delete</button>
+        <div style="font-weight: 600; color: var(--fg);">€${parseFloat(p.price||0).toFixed(2)}</div>
+        <div style="color: var(--fg);">
+          ${parseInt(p.stock || 0) > 0 
+            ? `<span style="color: #10b981;">✓ ${p.stock}</span>` 
+            : `<span style="color: #ef4444;">✗ 0</span>`
+          }
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button data-id="${p.id}" class="editListingBtn" style="flex: 1; padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: var(--transition);">
+            ✏️ ${i18n.t('edit_listing')}
+          </button>
+          <button data-id="${p.id}" class="deleteListingBtn" style="flex: 1; padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: var(--transition);">
+            🗑️ ${i18n.t('delete_listing')}
+          </button>
         </div>
       `;
       container.appendChild(div);
     });
 
-    // attach handlers
+    // Attach delete handlers
     container.querySelectorAll('.deleteListingBtn').forEach(btn => {
       btn.onclick = async (e) => {
+        e.stopPropagation();
         const id = e.target.getAttribute('data-id');
-        if (!confirm('Delete this listing?')) return;
+        if (!confirm(i18n.t('delete_listing_confirm'))) return;
+        
+        // Show loading state
+        btn.textContent = '⏳...';
+        btn.disabled = true;
+        
         try {
           const { error } = await supabase.from('products').delete().eq('id', id);
           if (error) throw error;
-          alert('Listing deleted');
+          alert(i18n.t('listing_deleted'));
           loadUserProducts(userId);
         } catch (err) {
           console.error('Error deleting listing', err);
-          alert('Failed to delete listing: ' + (err.message || err));
+          alert(i18n.t('failed_to_delete') + ': ' + (err.message || err));
+          btn.textContent = `🗑️ ${i18n.t('delete_listing')}`;
+          btn.disabled = false;
         }
       };
     });
 
+    // Attach edit handlers
     container.querySelectorAll('.editListingBtn').forEach(btn => {
       btn.onclick = (e) => {
+        e.stopPropagation();
         const id = e.target.getAttribute('data-id');
-        // redirect to product page with id param for editing
-        window.location.href = `product.html?id=${id}`;
+        window.location.href = `sell.html?edit=${id}`;
       };
     });
 
   } catch (err) {
     console.error('Error loading user products', err);
     const container = document.getElementById('myListingsContainer');
-    if (container) container.innerHTML = '<div style="color:crimson;">Failed to load listings.</div>';
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+          <div style="color: #ef4444;">Failed to load listings: ${err.message}</div>
+        </div>
+      `;
+    }
   }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Transaction filter buttons
@@ -452,18 +598,25 @@ document.getElementById('filterSales').addEventListener('click', () => {
 function setActiveFilter(activeId) {
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.classList.remove('active');
-    btn.style.background = 'white';
-    btn.style.color = 'var(--text-primary)';
+    btn.style.background = 'var(--card-bg)';
+    btn.style.color = 'var(--fg)';
+    btn.style.border = '1px solid var(--border)';
   });
   document.getElementById(activeId).classList.add('active');
   document.getElementById(activeId).style.background = 'var(--primary)';
   document.getElementById(activeId).style.color = 'white';
+  document.getElementById(activeId).style.border = '1px solid var(--primary)';
 }
 
 // Call loadUser after all functions are defined
 loadUser();
 // Admin panel quick links (adminBtn already in DOM)
 // ...existing code...
+</script>
+
+<!-- Import navbar functionality -->
+<script type="module">
+  import './js/navbar.js';
 </script>
 
 </body>

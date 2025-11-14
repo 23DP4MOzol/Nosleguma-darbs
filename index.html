@@ -104,40 +104,92 @@
     </div>
   </div>
 
-  <!-- Advanced Filters -->
-  <div class="advanced-filters" style="background: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+  <!-- Advanced Filters Toggle Button -->
+  <div style="margin-bottom: 1rem; text-align: center;">
+    <button id="toggleFiltersBtn" style="background: var(--gradient-primary); color: white; border: none; padding: 0.875rem 2rem; border-radius: var(--radius); font-weight: 600; font-size: 1rem; cursor: pointer; box-shadow: var(--shadow-md); transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem;">
+      <span style="font-size: 1.25rem;">🔎</span>
+      <span data-i18n="show_filters">Show Advanced Filters</span>
+      <span id="filterArrow" style="transition: transform 0.3s;">▼</span>
+    </button>
+  </div>
+
+  <!-- Advanced Filters (Hidden by default) -->
+  <div id="advancedFiltersContainer" class="advanced-filters" style="display: none; background: var(--card-bg); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); animation: slideDown 0.3s ease-out;">
+    <!-- Filter Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--fg); margin-bottom: 0.25rem;">
+          <span>🔎 </span><span data-i18n="advanced_filters">Advanced Filters</span>
+        </h3>
+        <p style="font-size: 0.875rem; color: var(--muted);" data-i18n="advanced_filters_subtitle">Refine your search to find exactly what you need</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="applyFilters" style="background: var(--gradient-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition); display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔍</span>
+          <span data-i18n="btn_apply_filters">Apply Filters</span>
+        </button>
+        <button id="clearFilters" style="background: var(--secondary); color: var(--fg); border: 1px solid var(--border); padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 0.5rem;">
+          <span>✖️</span>
+          <span data-i18n="btn_clear_filters">Clear</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters Grid -->
+    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+      <!-- Search Filter -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_search">🔍 Search</label>
-        <input type="text" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Search products..." style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>🔍 </span><span data-i18n="filter_search">Search</span>
+        </label>
+        <input type="text" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Search products..." 
+          style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);">
       </div>
 
+      <!-- Category Filter -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_category">📦 Category</label>
-        <select id="categoryFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>📦 </span><span data-i18n="filter_category">Category</span>
+        </label>
+        <select id="categoryFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
           <option value="" data-i18n="filter_all_categories">All Categories</option>
-          <option value="electronics" data-i18n="electronics">Electronics</option>
-          <option value="clothing" data-i18n="clothing">Clothing</option>
-          <option value="furniture" data-i18n="furniture">Furniture</option>
-          <option value="books" data-i18n="books">Books</option>
-          <option value="sports" data-i18n="sports">Sports</option>
-          <option value="home" data-i18n="home">Home</option>
-          <option value="vehicles" data-i18n="vehicles">Vehicles</option>
-          <option value="other" data-i18n="other">Other</option>
+          <option value="electronics" data-i18n="electronics">📱 Electronics</option>
+          <option value="clothing" data-i18n="clothing">👕 Clothing</option>
+          <option value="furniture" data-i18n="furniture">🪑 Furniture</option>
+          <option value="books" data-i18n="books">📚 Books</option>
+          <option value="sports" data-i18n="sports">⚽ Sports</option>
+          <option value="home" data-i18n="home">🏠 Home</option>
+          <option value="vehicles" data-i18n="vehicles">🚗 Vehicles</option>
+          <option value="other" data-i18n="other">📦 Other</option>
         </select>
       </div>
 
+      <!-- Min Price -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_price_range">💰 Price Range</label>
-        <div style="display: flex; gap: 0.5rem;">
-          <input type="number" id="minPrice" data-i18n-placeholder="min_price" placeholder="Min €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="0">
-          <input type="number" id="maxPrice" data-i18n-placeholder="max_price" placeholder="Max €" style="flex: 1; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;" min="0">
-        </div>
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>💰 </span><span data-i18n="min_price">Min Price (€)</span>
+        </label>
+        <input type="number" id="minPrice" placeholder="0.00" 
+          style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);" 
+          min="0" step="0.01">
       </div>
 
+      <!-- Max Price -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_condition">⭐ Condition</label>
-        <select id="conditionFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>💸 </span><span data-i18n="max_price">Max Price (€)</span>
+        </label>
+        <input type="number" id="maxPrice" placeholder="9999.00" 
+          style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);" 
+          min="0" step="0.01">
+      </div>
+
+      <!-- Condition Filter -->
+      <div class="filter-group">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>⭐ </span><span data-i18n="filter_condition">Condition</span>
+        </label>
+        <select id="conditionFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
           <option value="" data-i18n="filter_all_conditions">All Conditions</option>
           <option value="new" data-i18n="condition_new">✨ New</option>
           <option value="like_new" data-i18n="condition_like_new">🔄 Like New</option>
@@ -147,48 +199,179 @@
         </select>
       </div>
 
+      <!-- Location Filter -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_location">📍 Location</label>
-        <select id="locationFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>📍 </span><span data-i18n="filter_location">Location</span>
+        </label>
+        <select id="locationFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
           <option value="" data-i18n="filter_all_locations">All Locations</option>
-          <option value="riga" data-i18n="location_riga">Riga</option>
-          <option value="daugavpils" data-i18n="location_daugavpils">Daugavpils</option>
-          <option value="liepaja" data-i18n="location_liepaja">Liepaja</option>
-          <option value="jelgava" data-i18n="location_jelgava">Jelgava</option>
-          <option value="jurmala" data-i18n="location_jurmala">Jurmala</option>
-          <option value="ventspils" data-i18n="location_ventspils">Ventspils</option>
-          <option value="rezekne" data-i18n="location_rezekne">Rezekne</option>
-          <option value="valmiera" data-i18n="location_valmiera">Valmiera</option>
-          <option value="other" data-i18n="location_other">Other</option>
+          <option value="riga" data-i18n="location_riga">🏛️ Riga</option>
+          <option value="daugavpils" data-i18n="location_daugavpils">🏭 Daugavpils</option>
+          <option value="liepaja" data-i18n="location_liepaja">⚓ Liepaja</option>
+          <option value="jelgava" data-i18n="location_jelgava">🌾 Jelgava</option>
+          <option value="jurmala" data-i18n="location_jurmala">🏖️ Jurmala</option>
+          <option value="ventspils" data-i18n="location_ventspils">🚢 Ventspils</option>
+          <option value="rezekne" data-i18n="location_rezekne">🏰 Rezekne</option>
+          <option value="valmiera" data-i18n="location_valmiera">🌲 Valmiera</option>
+          <option value="other" data-i18n="location_other">🌍 Other</option>
         </select>
       </div>
 
+      <!-- Stock Filter -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_availability">📦 Availability</label>
-        <select id="availabilityFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-          <option value="" data-i18n="filter_all">All</option>
-          <option value="in_stock" data-i18n="filter_in_stock">In Stock</option>
-          <option value="reserved" data-i18n="filter_reserved">Reserved</option>
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>📊 </span><span data-i18n="filter_stock">Stock Level</span>
+        </label>
+        <select id="stockFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
+          <option value="" data-i18n="stock_all">All Stock Levels</option>
+          <option value="in_stock" data-i18n="stock_in_stock">✅ In Stock (1+)</option>
+          <option value="low_stock" data-i18n="stock_low">⚠️ Low Stock (1-5)</option>
+          <option value="high_stock" data-i18n="stock_high">📦 High Stock (10+)</option>
+          <option value="out_of_stock" data-i18n="stock_out">❌ Out of Stock</option>
         </select>
       </div>
 
+      <!-- Availability Filter -->
       <div class="filter-group">
-        <label style="display: block; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.875rem;" data-i18n="filter_sort">📅 Sort By</label>
-        <select id="sortFilter" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem;">
-          <option value="newest" data-i18n="sort_newest">Newest First</option>
-          <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
-          <option value="price_low" data-i18n="sort_price_low">Price: Low to High</option>
-          <option value="price_high" data-i18n="sort_price_high">Price: High to Low</option>
-          <option value="name" data-i18n="sort_name">Name A-Z</option>
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>🔖 </span><span data-i18n="filter_availability">Availability</span>
+        </label>
+        <select id="availabilityFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
+          <option value="" data-i18n="availability_all">All Items</option>
+          <option value="available" data-i18n="availability_available">✅ Available Now</option>
+          <option value="reserved" data-i18n="availability_reserved">🔖 Reserved</option>
         </select>
       </div>
 
-      <div class="filter-group" style="display: flex; gap: 0.5rem; align-items: end;">
-        <button id="applyFilters" data-i18n="btn_apply_filters" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;">🔍 Apply</button>
-        <button id="clearFilters" data-i18n="btn_clear_filters" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;">🗑️ Clear</button>
+      <!-- Brand Filter -->
+      <div class="filter-group">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>🏷️ </span><span data-i18n="filter_brand">Brand</span>
+        </label>
+        <input type="text" id="brandFilter" data-i18n-placeholder="brand_placeholder" placeholder="Enter brand..." 
+          style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);">
+      </div>
+
+      <!-- Color Filter -->
+      <div class="filter-group">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>🎨 </span><span data-i18n="filter_color">Color</span>
+        </label>
+        <input type="text" id="colorFilter" data-i18n-placeholder="color_placeholder" placeholder="Enter color..." 
+          style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);">
+      </div>
+
+      <!-- Date Added Filter -->
+      <div class="filter-group">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>📅 </span><span data-i18n="filter_date">Date Added</span>
+        </label>
+        <select id="dateFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
+          <option value="" data-i18n="date_all">All Time</option>
+          <option value="today" data-i18n="date_today">📆 Today</option>
+          <option value="week" data-i18n="date_week">📅 This Week</option>
+          <option value="month" data-i18n="date_month">🗓️ This Month</option>
+          <option value="3months" data-i18n="date_3months">📊 Last 3 Months</option>
+        </select>
+      </div>
+
+      <!-- Sort Filter -->
+      <div class="filter-group">
+        <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <span>🔄 </span><span data-i18n="filter_sort">Sort By</span>
+        </label>
+        <select id="sortFilter" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); cursor: pointer; transition: var(--transition);">
+          <option value="newest" data-i18n="sort_newest">🆕 Newest First</option>
+          <option value="oldest" data-i18n="sort_oldest">📜 Oldest First</option>
+          <option value="price_low" data-i18n="sort_price_low">💵 Price: Low to High</option>
+          <option value="price_high" data-i18n="sort_price_high">💰 Price: High to Low</option>
+          <option value="name" data-i18n="sort_name">🔤 Name A-Z</option>
+          <option value="name_desc" data-i18n="sort_name_desc">🔡 Name Z-A</option>
+          <option value="popular" data-i18n="sort_popular">⭐ Most Popular</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    <div id="activeFilters" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: none;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <span style="font-weight: 600; font-size: 0.875rem; color: var(--muted);" data-i18n="active_filters">Active Filters:</span>
+        <div id="filterTags" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
       </div>
     </div>
   </div>
+
+  <style>
+    /* Slide down animation */
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Toggle button hover */
+    #toggleFiltersBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+  </style>
+
+  <style>
+    /* Filter Input Focus States */
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Button Hover States */
+    #applyFilters:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    #clearFilters:hover {
+      background: var(--border);
+    }
+
+    /* Filter Tag Styling */
+    .filter-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: var(--primary);
+      color: white;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .filter-tag:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .filter-tag .remove-tag {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      font-size: 10px;
+    }
+  </style>
 
   <div class="product-grid-modern" id="productGrid">
     <!-- Product Cards inserted dynamically via JS -->

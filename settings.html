@@ -61,60 +61,95 @@
 
   <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-bottom: 3rem;">
     
-    <!-- Left Column: Profile Card & Settings -->
+    <!-- Left Column: Profile Card & Edit Profile -->
     <div style="display: flex; flex-direction: column; gap: 2rem;">
       
       <!-- Profile Card -->
       <div class="product-card-modern" style="padding: 2rem; text-align: center;">
-        <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700;" id="userAvatar">
-          U
+        <div style="position: relative; width: 120px; margin: 0 auto 1rem;">
+          <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; overflow: hidden;" id="userAvatarContainer">
+            <img id="userAvatar" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            <span id="userAvatarText">U</span>
+          </div>
+          <button id="changeAvatarBtn" style="position: absolute; bottom: 0; right: 0; width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; border: 2px solid var(--card-bg); cursor: pointer; font-size: 1.125rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md);">
+            📷
+          </button>
         </div>
-        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700;" id="userName">Username</h3>
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--fg);" id="userName">Username</h3>
         <p style="margin: 0; color: var(--muted); font-size: 0.875rem;" id="userEmailDisplay">email@example.com</p>
-        <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--secondary); border-radius: 12px;">
           <div style="font-size: 2rem; font-weight: 700; color: var(--primary);" id="userBalanceDisplay">€0.00</div>
           <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="current_balance">Current Balance</div>
         </div>
         <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
           <div>
-            <div style="font-size: 1.25rem; font-weight: 700;" id="userProductCount">0</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--fg);" id="userProductCount">0</div>
             <div style="font-size: 0.75rem; color: var(--muted);" data-i18n="products">Products</div>
           </div>
           <div>
-            <div style="font-size: 1.25rem; font-weight: 700;" id="userSalesCount">0</div>
-            <div style="font-size: 0.75rem; color: var(--muted);" data-i18n="sales">Sales</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--fg);" id="userSalesCount">0</div>
+            <div style="font-size: 0.75rem; color: var(--muted);">Sales</div>
           </div>
           <div>
-            <div style="font-size: 1.25rem; font-weight: 700;" id="userRating">0.0</div>
-            <div style="font-size: 0.75rem; color: var(--muted);" data-i18n="rating">Rating</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--fg);" id="userRating">0.0</div>
+            <div style="font-size: 0.75rem; color: var(--muted);">⭐</div>
           </div>
         </div>
       </div>
 
-      <!-- Account Settings -->
+      <!-- Edit Profile -->
       <div class="product-card-modern" style="padding: 2rem;">
-        <h3 style="margin: 0 0 1.5rem 0; font-size: 1.125rem; font-weight: 600;" data-i18n="account_settings">Account Settings</h3>
+        <h3 style="margin: 0 0 1.5rem 0; font-size: 1.125rem; font-weight: 600; color: var(--fg);" data-i18n="edit_profile">Edit Profile</h3>
         
         <label style="display: block; margin-bottom: 1rem;">
-          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem;" data-i18n="email">Email</span>
-          <input type="email" id="userEmail" class="chat-input-field" readonly>
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="username">Username</span>
+          <input type="text" id="usernameInput" placeholder="Your username" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);">
         </label>
 
         <label style="display: block; margin-bottom: 1rem;">
-          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem;" data-i18n="language">Language</span>
-          <select id="userLang" class="category-select">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="profile_picture_url">Profile Picture URL</span>
+          <input type="url" id="avatarUrlInput" placeholder="https://example.com/avatar.jpg" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);">
+        </label>
+
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="bio">Bio</span>
+          <textarea id="bioInput" placeholder="Tell others about yourself..." rows="4" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg); resize: vertical;"></textarea>
+        </label>
+
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="what_i_sell">What I Sell</span>
+          <input type="text" id="whatISellInput" placeholder="e.g., Electronics, Vintage Clothing, Handmade Items" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);">
+        </label>
+
+        <button id="saveProfileBtn" style="width: 100%; padding: 0.875rem; background: var(--gradient-primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm); margin-top: 0.5rem;">
+          💾 <span data-i18n="save_profile">Save Profile</span>
+        </button>
+      </div>
+
+      <!-- Account Settings -->
+      <div class="product-card-modern" style="padding: 2rem;">
+        <h3 style="margin: 0 0 1.5rem 0; font-size: 1.125rem; font-weight: 600; color: var(--fg);" data-i18n="account_settings">Account Settings</h3>
+        
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="email">Email</span>
+          <input type="email" id="userEmail" class="chat-input-field" readonly style="background: var(--secondary); color: var(--muted);">
+        </label>
+
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="language">Language</span>
+          <select id="userLang" class="category-select" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg);">
             <option value="en">English</option>
             <option value="lv">Latvian</option>
           </select>
         </label>
 
         <label style="display: block; margin-bottom: 1rem;">
-          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem;" data-i18n="theme">Theme</span>
-          <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%;">🌙 Toggle Dark/Light Mode</button>
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="theme">Theme</span>
+          <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%; padding: 0.75rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;">🌙 Toggle Dark/Light Mode</button>
         </label>
 
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-          <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 0.875rem; font-weight: 600;" data-i18n="account_actions">Account Actions</h4>
+          <h4 style="margin-bottom: 1rem; color: var(--fg); font-size: 0.875rem; font-weight: 600;" data-i18n="account_actions">Account Actions</h4>
           <button class="btn-buy-now" id="logoutBtn" style="background: #dc3545; width: 100%; margin-bottom: 0.5rem;" data-i18n="logout">Logout</button>
           <button class="btn-buy-now" id="deleteAccountBtn" style="background: #6c757d; width: 100%;" data-i18n="delete_account">Delete Account</button>
         </div>

@@ -1137,3 +1137,178 @@ export async function getUserConversations(userId) {
     return [];
   }
 }
+
+// ============================
+// PRODUCT MANAGEMENT (EDIT/DELETE)
+// ============================
+
+// Check if user can manage product (is owner or admin)
+export async function canManageProduct(productId, userId) {
+  try {
+    // Get user role
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    
+    // Admin can manage any product
+    if (userData?.role === 'admin') {
+      return { canManage: true, isAdmin: true };
+    }
+    
+    // Check if user is the product owner
+    const { data: product } = await supabase
+      .from('products')
+      .select('seller_id')
+      .eq('id', productId)
+      .single();
+    
+    if (product?.seller_id === userId) {
+      return { canManage: true, isOwner: true };
+    }
+    
+    return { canManage: false };
+  } catch (error) {
+    console.error('Error checking product management permissions:', error);
+    return { canManage: false };
+  }
+}
+
+// Delete product
+export async function deleteProduct(productId, userId) {
+  try {
+    // Check permissions
+    const permissions = await canManageProduct(productId, userId);
+    if (!permissions.canManage) {
+      throw new Error('You do not have permission to delete this product');
+    }
+    
+    // Delete the product
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+}
+
+// Update product
+export async function updateProduct(productId, userId, productData) {
+  try {
+    // Check permissions
+    const permissions = await canManageProduct(productId, userId);
+    if (!permissions.canManage) {
+      throw new Error('You do not have permission to edit this product');
+    }
+    
+    // Validate condition if provided
+    if (productData.condition) {
+      const validConditions = ['new', 'like_new', 'good', 'fair', 'poor'];
+      if (!validConditions.includes(productData.condition.toLowerCase())) {
+        throw new Error('Invalid condition. Must be one of: new, like_new, good, fair, poor');
+      }
+    }
+    
+    // Build update object
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+    
+    // Only include fields that are provided
+    if (productData.name !== undefined) updateData.name = productData.name;
+    if (productData.description !== undefined) updateData.description = productData.description;
+    if (productData.price !== undefined) updateData.price = parseFloat(productData.price);
+    if (productData.category !== undefined) updateData.category = productData.category.toLowerCase();
+    if (productData.condition !== undefined) updateData.condition = productData.condition.toLowerCase();
+    if (productData.location !== undefined) updateData.location = productData.location;
+    if (productData.image_url !== undefined) updateData.image_url = productData.image_url;
+    if (productData.stock !== undefined) updateData.stock = parseInt(productData.stock);
+    if (productData.brand !== undefined) updateData.brand = productData.brand;
+    if (productData.color !== undefined) updateData.color = productData.color;
+    
+    // Update the product
+    const { data, error } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', productId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
+}
+
+// Get user's role
+export async function getUserRole(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    return data?.role || 'user';
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return 'user';
+  }
+}
+
+// ============================
+// USER PROFILE MANAGEMENT
+// ============================
+
+// Update user profile
+export async function updateUserProfile(userId, profileData) {
+  try {
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+    
+    if (profileData.username !== undefined) updateData.username = profileData.username;
+    if (profileData.avatar_url !== undefined) updateData.avatar_url = profileData.avatar_url;
+    if (profileData.bio !== undefined) updateData.bio = profileData.bio;
+    if (profileData.what_i_sell !== undefined) updateData.what_i_sell = profileData.what_i_sell;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+}
+
+// Get user profile
+export async function getUserProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return null;
+  }
+}

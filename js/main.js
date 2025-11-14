@@ -404,6 +404,11 @@ async function initializeIndexPage() {
     maxPrice: '',
     location: '',
     condition: '',
+    stock: '',
+    availability: '',
+    brand: '',
+    color: '',
+    date: '',
     sortBy: 'newest'
   };
 
@@ -464,6 +469,76 @@ async function initializeIndexPage() {
       filteredProducts = filteredProducts.filter(p => (p.condition || '') === currentFilters.condition);
     }
 
+    // Stock filter
+    if (currentFilters.stock) {
+      filteredProducts = filteredProducts.filter(p => {
+        const stock = parseInt(p.stock || 0);
+        switch (currentFilters.stock) {
+          case 'in_stock':
+            return stock > 0;
+          case 'low_stock':
+            return stock >= 1 && stock <= 5;
+          case 'high_stock':
+            return stock >= 10;
+          case 'out_of_stock':
+            return stock === 0;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Availability filter
+    if (currentFilters.availability) {
+      filteredProducts = filteredProducts.filter(p => {
+        if (currentFilters.availability === 'available') {
+          return !p.is_reserved && (p.stock || 0) > 0;
+        } else if (currentFilters.availability === 'reserved') {
+          return p.is_reserved;
+        }
+        return true;
+      });
+    }
+
+    // Brand filter
+    if (currentFilters.brand) {
+      const brandTerm = currentFilters.brand.toLowerCase();
+      filteredProducts = filteredProducts.filter(p =>
+        (p.brand || '').toLowerCase().includes(brandTerm)
+      );
+    }
+
+    // Color filter
+    if (currentFilters.color) {
+      const colorTerm = currentFilters.color.toLowerCase();
+      filteredProducts = filteredProducts.filter(p =>
+        (p.color || '').toLowerCase().includes(colorTerm)
+      );
+    }
+
+    // Date filter
+    if (currentFilters.date) {
+      const now = new Date();
+      filteredProducts = filteredProducts.filter(p => {
+        const createdDate = new Date(p.created_at);
+        const diffTime = now - createdDate;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        
+        switch (currentFilters.date) {
+          case 'today':
+            return diffDays < 1;
+          case 'week':
+            return diffDays < 7;
+          case 'month':
+            return diffDays < 30;
+          case '3months':
+            return diffDays < 90;
+          default:
+            return true;
+        }
+      });
+    }
+
     // Sorting
     switch (currentFilters.sortBy) {
       case 'oldest':
@@ -478,6 +553,16 @@ async function initializeIndexPage() {
       case 'name':
         filteredProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         break;
+      case 'name_desc':
+        filteredProducts.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+        break;
+      case 'popular':
+        filteredProducts.sort((a, b) => {
+          const viewsA = parseInt(a.views || 0);
+          const viewsB = parseInt(b.views || 0);
+          return viewsB - viewsA;
+        });
+        break;
       case 'newest':
       default:
         filteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -487,7 +572,7 @@ async function initializeIndexPage() {
     renderProducts(filteredProducts);
   }
 
-  function renderProducts(products = null) {
+  async function renderProducts(products = null) {
     const grid = document.getElementById('productGrid');
     if (!grid) return;
 
@@ -501,6 +586,24 @@ async function initializeIndexPage() {
       </div>`;
       if (i18n && typeof i18n.setLang === 'function') i18n.setLang(i18n.lang || 'en');
       return;
+    }
+
+    // Get current user info for permission checks
+    const { data } = await supabase.auth.getUser();
+    const currentUser = data?.user;
+    let userRole = 'user';
+    
+    if (currentUser) {
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single();
+        userRole = userData?.role || 'user';
+      } catch (err) {
+        console.error('Error fetching user role:', err);
+      }
     }
 
     grid.innerHTML = '';
@@ -521,6 +624,9 @@ async function initializeIndexPage() {
         'fair': '😐',
         'poor': '⚠️'
       };
+      
+      // Check if user can manage this product
+      const canManage = currentUser && (userRole === 'admin' || product.seller_id === currentUser.id);
 
       const card = document.createElement('div');
       card.className = 'product-card-modern';
@@ -568,9 +674,41 @@ async function initializeIndexPage() {
               `}
             </div>
           </div>
+          ${canManage ? `
+            <div class="product-management-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+              <button class="btn-edit-product" data-product-id="${escapeHtml(product.id)}" style="flex: 1; padding: 0.5rem; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                ✏️ Edit
+              </button>
+              <button class="btn-delete-product" data-product-id="${escapeHtml(product.id)}" style="flex: 1; padding: 0.5rem; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                🗑️ Delete
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
       grid.appendChild(card);
+      
+      // Add management button handlers
+      if (canManage) {
+        const editBtn = card.querySelector('.btn-edit-product');
+        const deleteBtn = card.querySelector('.btn-delete-product');
+        
+        if (editBtn) {
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showEditProductModal(product);
+          });
+        }
+        
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+              await handleDeleteProduct(product.id);
+            }
+          });
+        }
+      }
     });
 
     // Apply translations to newly rendered elements (if i18n supports it)
@@ -882,9 +1020,15 @@ async function initializeIndexPage() {
       currentFilters.maxPrice = document.getElementById('maxPrice')?.value || '';
       currentFilters.location = document.getElementById('locationFilter')?.value || '';
       currentFilters.condition = document.getElementById('conditionFilter')?.value || '';
+      currentFilters.stock = document.getElementById('stockFilter')?.value || '';
+      currentFilters.availability = document.getElementById('availabilityFilter')?.value || '';
+      currentFilters.brand = document.getElementById('brandFilter')?.value || '';
+      currentFilters.color = document.getElementById('colorFilter')?.value || '';
+      currentFilters.date = document.getElementById('dateFilter')?.value || '';
       currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
 
       applyFiltersAndRender();
+      updateActiveFilters();
       showToast('Filters applied successfully!', 'success');
     });
   }
@@ -897,25 +1041,100 @@ async function initializeIndexPage() {
         maxPrice: '',
         location: '',
         condition: '',
+        stock: '',
+        availability: '',
+        brand: '',
+        color: '',
+        date: '',
         sortBy: 'newest'
       };
 
       // Clear form inputs
-      document.getElementById('searchInput').value = '';
-      document.getElementById('minPrice').value = '';
-      document.getElementById('maxPrice').value = '';
-      document.getElementById('locationFilter').value = '';
-      document.getElementById('conditionFilter').value = '';
-      document.getElementById('sortFilter').value = 'newest';
+      const inputs = ['searchInput', 'minPrice', 'maxPrice', 'brandFilter', 'colorFilter'];
+      inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      const selects = ['locationFilter', 'conditionFilter', 'stockFilter', 'availabilityFilter', 'dateFilter', 'sortFilter'];
+      selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = id === 'sortFilter' ? 'newest' : '';
+      });
+
+      // Clear category filter
+      const catFilter = document.getElementById('categoryFilter');
+      if (catFilter) catFilter.value = '';
 
       // Reset category to all
       currentCategory = 'all';
       filterTabs.forEach(t => t.classList.remove('active'));
-      document.querySelector('[data-category="all"]').classList.add('active');
+      const allTab = document.querySelector('[data-category="all"]');
+      if (allTab) allTab.classList.add('active');
 
       applyFiltersAndRender();
-      showToast('Filters cleared!', 'info');
+      updateActiveFilters();
+      showToast('Filters cleared!', 'success');
     });
+  }
+
+  // Update active filters display
+  function updateActiveFilters() {
+    const activeFiltersDiv = document.getElementById('activeFilters');
+    const filterTagsDiv = document.getElementById('filterTags');
+    if (!activeFiltersDiv || !filterTagsDiv) return;
+
+    filterTagsDiv.innerHTML = '';
+    let hasFilters = false;
+
+    const filterLabels = {
+      search: '🔍 Search',
+      minPrice: '💰 Min',
+      maxPrice: '💸 Max',
+      location: '📍 Location',
+      condition: '⭐ Condition',
+      stock: '📊 Stock',
+      availability: '🔖 Status',
+      brand: '🏷️ Brand',
+      color: '🎨 Color',
+      date: '📅 Date',
+      sortBy: '🔄 Sort'
+    };
+
+    Object.keys(currentFilters).forEach(key => {
+      if (currentFilters[key] && currentFilters[key] !== 'newest') {
+        hasFilters = true;
+        const tag = document.createElement('div');
+        tag.className = 'filter-tag';
+        tag.innerHTML = `
+          ${filterLabels[key]}: ${currentFilters[key]}
+          <span class="remove-tag">×</span>
+        `;
+        tag.onclick = () => {
+          currentFilters[key] = key === 'sortBy' ? 'newest' : '';
+          const inputId = {
+            search: 'searchInput',
+            minPrice: 'minPrice',
+            maxPrice: 'maxPrice',
+            location: 'locationFilter',
+            condition: 'conditionFilter',
+            stock: 'stockFilter',
+            availability: 'availabilityFilter',
+            brand: 'brandFilter',
+            color: 'colorFilter',
+            date: 'dateFilter',
+            sortBy: 'sortFilter'
+          }[key];
+          const el = document.getElementById(inputId);
+          if (el) el.value = key === 'sortBy' ? 'newest' : '';
+          applyFiltersAndRender();
+          updateActiveFilters();
+        };
+        filterTagsDiv.appendChild(tag);
+      }
+    });
+
+    activeFiltersDiv.style.display = hasFilters ? 'block' : 'none';
   }
 
   // Real-time search
@@ -931,6 +1150,30 @@ async function initializeIndexPage() {
     });
   }
 
+  // Toggle advanced filters
+  const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+  const advancedFiltersContainer = document.getElementById('advancedFiltersContainer');
+  const filterArrow = document.getElementById('filterArrow');
+  let filtersVisible = false;
+
+  if (toggleFiltersBtn && advancedFiltersContainer) {
+    toggleFiltersBtn.addEventListener('click', () => {
+      filtersVisible = !filtersVisible;
+      
+      if (filtersVisible) {
+        advancedFiltersContainer.style.display = 'block';
+        filterArrow.style.transform = 'rotate(180deg)';
+        toggleFiltersBtn.querySelector('[data-i18n]').setAttribute('data-i18n', 'hide_filters');
+        toggleFiltersBtn.querySelector('[data-i18n]').textContent = i18n.t('hide_filters');
+      } else {
+        advancedFiltersContainer.style.display = 'none';
+        filterArrow.style.transform = 'rotate(0deg)';
+        toggleFiltersBtn.querySelector('[data-i18n]').setAttribute('data-i18n', 'show_filters');
+        toggleFiltersBtn.querySelector('[data-i18n]').textContent = i18n.t('show_filters');
+      }
+    });
+  }
+
   // Hero buttons
   document.querySelector('.btn-hero-primary')?.addEventListener('click', () => {
     document.querySelector('.main-container')?.scrollIntoView({ behavior: 'smooth' });
@@ -939,6 +1182,167 @@ async function initializeIndexPage() {
   document.querySelector('.btn-hero-secondary')?.addEventListener('click', () => {
     document.querySelector('.features-section')?.scrollIntoView({ behavior: 'smooth' });
   });
+
+  // Delete product handler
+  async function handleDeleteProduct(productId) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (!user) {
+        showToast('Please log in first', 'error');
+        return;
+      }
+
+      const { deleteProduct } = await import('./supabase.js');
+      await deleteProduct(productId, user.id);
+      
+      showToast('Product deleted successfully!', 'success');
+      loadProducts(); // Reload products
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      showToast(error.message || 'Failed to delete product', 'error');
+    }
+  }
+
+  // Show edit product modal
+  function showEditProductModal(product) {
+    // Create modal
+    const modalHtml = `
+      <div id="editProductModal" class="product-modal" style="display: flex;">
+        <div class="modal-overlay" onclick="closeEditModal()"></div>
+        <div class="modal-content" style="max-width: 800px;">
+          <button class="modal-close" onclick="closeEditModal()">×</button>
+          <div class="modal-body">
+            <h2 style="margin-bottom: 1.5rem; color: var(--text-primary);">Edit Product</h2>
+            <form id="editProductForm" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Product Name</label>
+                  <input type="text" id="editName" value="${escapeHtml(product.name)}" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                </div>
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Price (€)</label>
+                  <input type="number" id="editPrice" value="${product.price}" required min="0" step="0.01" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                </div>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Category</label>
+                  <select id="editCategory" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                    <option value="electronics" ${product.category === 'electronics' ? 'selected' : ''}>Electronics</option>
+                    <option value="clothing" ${product.category === 'clothing' ? 'selected' : ''}>Clothing</option>
+                    <option value="furniture" ${product.category === 'furniture' ? 'selected' : ''}>Furniture</option>
+                    <option value="books" ${product.category === 'books' ? 'selected' : ''}>Books</option>
+                    <option value="sports" ${product.category === 'sports' ? 'selected' : ''}>Sports</option>
+                    <option value="home" ${product.category === 'home' ? 'selected' : ''}>Home</option>
+                    <option value="vehicles" ${product.category === 'vehicles' ? 'selected' : ''}>Vehicles</option>
+                    <option value="other" ${product.category === 'other' ? 'selected' : ''}>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Condition</label>
+                  <select id="editCondition" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                    <option value="new" ${product.condition === 'new' ? 'selected' : ''}>New</option>
+                    <option value="like_new" ${product.condition === 'like_new' ? 'selected' : ''}>Like New</option>
+                    <option value="good" ${product.condition === 'good' ? 'selected' : ''}>Good</option>
+                    <option value="fair" ${product.condition === 'fair' ? 'selected' : ''}>Fair</option>
+                    <option value="poor" ${product.condition === 'poor' ? 'selected' : ''}>Poor</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Stock</label>
+                  <input type="number" id="editStock" value="${product.stock}" required min="0" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                </div>
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Location</label>
+                  <input type="text" id="editLocation" value="${escapeHtml(product.location || '')}" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+                </div>
+              </div>
+              
+              <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
+                <textarea id="editDescription" required rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">${escapeHtml(product.description || '')}</textarea>
+              </div>
+              
+              <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Image URL</label>
+                <input type="url" id="editImageUrl" value="${escapeHtml(product.image_url || '')}" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">
+              </div>
+              
+              <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="submit" style="flex: 1; padding: 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                  💾 Save Changes
+                </button>
+                <button type="button" onclick="closeEditModal()" style="flex: 1; padding: 0.75rem; background: #e5e7eb; color: #374151; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                  ✖️ Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('editProductModal');
+    if (existingModal) existingModal.remove();
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.body.style.overflow = 'hidden';
+    
+    // Add form submit handler
+    document.getElementById('editProductForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleUpdateProduct(product.id);
+    });
+  }
+  
+  // Close edit modal
+  window.closeEditModal = function() {
+    const modal = document.getElementById('editProductModal');
+    if (modal) {
+      modal.remove();
+      document.body.style.overflow = 'auto';
+    }
+  };
+  
+  // Update product handler
+  async function handleUpdateProduct(productId) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (!user) {
+        showToast('Please log in first', 'error');
+        return;
+      }
+
+      const productData = {
+        name: document.getElementById('editName').value,
+        price: parseFloat(document.getElementById('editPrice').value),
+        category: document.getElementById('editCategory').value,
+        condition: document.getElementById('editCondition').value,
+        stock: parseInt(document.getElementById('editStock').value),
+        location: document.getElementById('editLocation').value,
+        description: document.getElementById('editDescription').value,
+        image_url: document.getElementById('editImageUrl').value
+      };
+
+      const { updateProduct } = await import('./supabase.js');
+      await updateProduct(productId, user.id, productData);
+      
+      showToast('Product updated successfully!', 'success');
+      closeEditModal();
+      loadProducts(); // Reload products
+    } catch (error) {
+      console.error('Error updating product:', error);
+      showToast(error.message || 'Failed to update product', 'error');
+    }
+  }
 
   // Load products on page load
   loadProducts();
@@ -973,20 +1377,156 @@ function initializeSettingsPage() {
          return;
        }
 
-       const resp = await supabase.from('users').select('balance,email').eq('id', user.id).single();
+       const resp = await supabase.from('users').select('*').eq('id', user.id).single();
        if (resp.error) {
          console.error('Error loading user settings:', resp.error);
          return;
        }
-       const dataRow = resp.data;
+       const userData = resp.data;
+       
+       // Update email fields
        const emailEl = document.getElementById('userEmail');
-       const balanceEl = document.getElementById('userBalance');
-
-       if (emailEl) emailEl.value = dataRow.email || '';
-       if (balanceEl) balanceEl.value = `€${Number.isFinite(Number(dataRow.balance)) ? parseFloat(dataRow.balance).toFixed(2) : '0.00'}`;
+       const emailDisplayEl = document.getElementById('userEmailDisplay');
+       if (emailEl) emailEl.value = userData.email || '';
+       if (emailDisplayEl) emailDisplayEl.textContent = userData.email || '';
+       
+       // Update balance display
+       const balanceDisplayEl = document.getElementById('userBalanceDisplay');
+       if (balanceDisplayEl) balanceDisplayEl.textContent = `€${Number.isFinite(Number(userData.balance)) ? parseFloat(userData.balance).toFixed(2) : '0.00'}`;
+       
+       // Update username
+       const userNameEl = document.getElementById('userName');
+       const usernameInput = document.getElementById('usernameInput');
+       if (userNameEl) userNameEl.textContent = userData.username || 'User';
+       if (usernameInput) usernameInput.value = userData.username || '';
+       
+       // Update avatar
+       const avatarImg = document.getElementById('userAvatar');
+       const avatarText = document.getElementById('userAvatarText');
+       const avatarUrlInput = document.getElementById('avatarUrlInput');
+       if (userData.avatar_url) {
+         if (avatarImg) {
+           avatarImg.src = userData.avatar_url;
+           avatarImg.style.display = 'block';
+         }
+         if (avatarText) avatarText.style.display = 'none';
+         if (avatarUrlInput) avatarUrlInput.value = userData.avatar_url;
+       } else {
+         if (avatarText) avatarText.textContent = (userData.username || 'U').charAt(0).toUpperCase();
+       }
+       
+       // Update bio
+       const bioInput = document.getElementById('bioInput');
+       if (bioInput) bioInput.value = userData.bio || '';
+       
+       // Update what I sell
+       const whatISellInput = document.getElementById('whatISellInput');
+       if (whatISellInput) whatISellInput.value = userData.what_i_sell || '';
+       
+       // Load user stats
+       loadUserStats(user.id);
      } catch (error) {
        console.error('Error in loadUserSettings:', error);
      }
+   }
+   
+   // Load user statistics
+   async function loadUserStats(userId) {
+     try {
+       // Count user's products
+       const { count: productsCount } = await supabase
+         .from('products')
+         .select('*', { count: 'exact', head: true })
+         .eq('seller_id', userId);
+       
+       // Count user's sales
+       const { count: salesCount } = await supabase
+         .from('user_transactions')
+         .select('*', { count: 'exact', head: true })
+         .eq('user_id', userId)
+         .eq('transaction_type', 'sale');
+       
+       const productCountEl = document.getElementById('userProductCount');
+       const salesCountEl = document.getElementById('userSalesCount');
+       
+       if (productCountEl) productCountEl.textContent = productsCount || 0;
+       if (salesCountEl) salesCountEl.textContent = salesCount || 0;
+     } catch (error) {
+       console.error('Error loading user stats:', error);
+     }
+   }
+   
+   // Save profile button
+   const saveProfileBtn = document.getElementById('saveProfileBtn');
+   if (saveProfileBtn) {
+     saveProfileBtn.addEventListener('click', async () => {
+       try {
+         const { data } = await supabase.auth.getUser();
+         const user = data?.user;
+         if (!user) {
+           showToast('Please log in first', 'error');
+           return;
+         }
+         
+         const username = document.getElementById('usernameInput')?.value;
+         const avatarUrl = document.getElementById('avatarUrlInput')?.value;
+         const bio = document.getElementById('bioInput')?.value;
+         const whatISell = document.getElementById('whatISellInput')?.value;
+         
+         const { error } = await supabase
+           .from('users')
+           .update({
+             username: username || null,
+             avatar_url: avatarUrl || null,
+             bio: bio || null,
+             what_i_sell: whatISell || null,
+             updated_at: new Date().toISOString()
+           })
+           .eq('id', user.id);
+         
+         if (error) throw error;
+         
+         showToast(i18n.t('profile_updated'), 'success');
+         loadUserSettings();
+       } catch (error) {
+         console.error('Error updating profile:', error);
+         showToast(i18n.t('profile_update_failed'), 'error');
+       }
+     });
+   }
+   
+   // Change avatar button
+   const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+   const avatarUrlInput = document.getElementById('avatarUrlInput');
+   if (changeAvatarBtn && avatarUrlInput) {
+     changeAvatarBtn.addEventListener('click', () => {
+       avatarUrlInput.focus();
+       avatarUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+     });
+   }
+   
+   // Real-time avatar preview
+   if (avatarUrlInput) {
+     avatarUrlInput.addEventListener('input', () => {
+       const url = avatarUrlInput.value;
+       const avatarImg = document.getElementById('userAvatar');
+       const avatarText = document.getElementById('userAvatarText');
+       
+       if (url) {
+         if (avatarImg) {
+           avatarImg.src = url;
+           avatarImg.style.display = 'block';
+           avatarImg.onerror = () => {
+             avatarImg.style.display = 'none';
+             if (avatarText) avatarText.style.display = 'flex';
+           };
+         }
+         if (avatarText) avatarText.style.display = 'none';
+       } else {
+         if (avatarImg) avatarImg.style.display = 'none';
+         if (avatarText) avatarText.style.display = 'flex';
+       }
+     });
    }
 
    // Theme toggle functionality
