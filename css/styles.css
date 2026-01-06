@@ -1460,3 +1460,13 @@ html[data-theme="dark"] .navbar {
      padding: 0.5rem 0;
    }
  }
+ 
+ /* Favorite Button Styles */
+ .product-like-btn.liked {
+   color: #ef4444;
+   background: rgba(239, 68, 68, 0.1);
+ }
+ 
+ .product-like-btn:hover {
+   transform: scale(1.1);
+ }

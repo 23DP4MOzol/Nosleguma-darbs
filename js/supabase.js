@@ -1304,11 +1304,112 @@ export async function getUserProfile(userId) {
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;
+  }
+}
+
+// ============================
+// FAVORITES HELPERS
+// ============================
+
+// Add product to favorites
+export async function addToFavorites(userId, productId) {
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .insert({
+        user_id: userId,
+        product_id: productId,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    // If table doesn't exist, throw a more user-friendly error
+    if (error.message.includes('relation "public.favorites" does not exist')) {
+      throw new Error('Favorites functionality is not available yet. Please contact support.');
+    }
+    throw error;
+  }
+}
+
+// Remove product from favorites
+export async function removeFromFavorites(userId, productId) {
+  try {
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', userId)
+      .eq('product_id', productId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    // If table doesn't exist, throw a more user-friendly error
+    if (error.message.includes('relation "public.favorites" does not exist')) {
+      throw new Error('Favorites functionality is not available yet. Please contact support.');
+    }
+    throw error;
+  }
+}
+
+// Check if product is favorited by user
+export async function isProductFavorited(userId, productId) {
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "not found"
+    return !!data;
+  } catch (error) {
+    console.error('Error checking favorite status:', error);
+    // If table doesn't exist, return false
+    if (error.message.includes('relation "public.favorites" does not exist')) {
+      return false;
+    }
+    return false;
+  }
+}
+
+// Get user's favorite products
+export async function getUserFavorites(userId, limit = 100) {
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select(`
+        product_id,
+        created_at,
+        products (
+          *,
+          seller:users!seller_id(username, avatar_url)
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error getting user favorites:', error);
+    // If table doesn't exist, return empty array
+    if (error.message.includes('relation "public.favorites" does not exist')) {
+      return [];
+    }
+    return [];
   }
 }

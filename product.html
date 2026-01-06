@@ -52,58 +52,68 @@
   </div>
 </nav>
 
-<!-- MAIN PRODUCT SECTION -->
+<!-- MAIN PRODUCTS SECTION -->
 <main class="main-container">
 
-  <div class="section-header-centered">
-    <h2 class="section-title" id="productName">Product Name</h2>
-    <p class="section-subtitle" id="productCategory">Category</p>
+  <!-- Header with Sell Button -->
+  <div class="section-header" style="justify-content: space-between; align-items: center;">
+    <div>
+      <h2 class="section-title" data-i18n="myProducts">My Products</h2>
+      <p class="section-subtitle" data-i18n="manageYourProducts">Manage and view your posted products</p>
+    </div>
+    <button class="btn-hero-primary" id="sellNowBtn" style="padding: 0.75rem 1.5rem;">
+      <span data-i18n="sellNewProduct">Sell New Product</span>
+    </button>
   </div>
 
-  <div class="product-card-modern" style="max-width:600px; margin:0 auto;">
-    <div class="product-image-container">
-      <img src="https://via.placeholder.com/600x400" alt="Product Image" class="product-image" id="productImage">
-      <button class="product-like-btn" id="likeBtn">❤️</button>
-      <div class="product-overlay">
-        <button class="btn-quick-view">Quick View</button>
-      </div>
+  <!-- Filter Tabs -->
+  <div class="filter-tabs" style="margin-bottom: 2rem;">
+    <button class="filter-tab active" data-filter="all" data-i18n="allProducts">All Products</button>
+    <button class="filter-tab" data-filter="active" data-i18n="activeProducts">Active</button>
+    <button class="filter-tab" data-filter="sold" data-i18n="soldProducts">Sold</button>
+    <button class="filter-tab" data-filter="favorites" data-i18n="favorites" id="favoritesTab" style="display: none;">❤️ Favorites</button>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="product-grid-modern" id="productGrid">
+    <!-- Product cards will be inserted here -->
+    <div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">
+      <span data-i18n="loading">Loading products...</span>
     </div>
-    <div class="product-info">
-      <h3 class="product-name" id="productTitle">Wireless Headphones</h3>
-      <div class="product-meta">
-        <span class="product-rating" id="productRating">⭐ 4.8</span>
-        <span class="product-views" id="productViews">👁 120</span>
-      </div>
-      <p id="productDescription">High-quality wireless headphones with noise cancellation and long battery life.</p>
-      <div class="product-footer">
-        <div class="product-price">
-          <span class="price-currency">€</span>
-          <span class="price-amount" id="productPrice">59.99</span>
-        </div>
-        <div class="product-actions">
-          <button class="btn-add-cart" id="addCartBtn">🛒</button>
-          <button class="btn-buy-now" id="buyNowBtn">Buy Now</button>
-        </div>
-      </div>
-    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" style="display: none; text-align: center; padding: 4rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+    <h3 style="margin-bottom: 1rem;" data-i18n="noProductsYet">No Products Yet</h3>
+    <p style="color: var(--muted); margin-bottom: 2rem;" data-i18n="startSelling">Start selling by listing your first product</p>
+    <button class="btn-hero-primary" id="sellNowEmptyBtn" data-i18n="sellFirstProduct">Sell Your First Product</button>
   </div>
 
 </main>
 
+<!-- User Profile Modal -->
+<div id="userProfileModal" class="product-modal" style="display: none;">
+  <div class="modal-overlay" id="profileModalOverlay"></div>
+  <div class="modal-content" style="max-width: 800px;">
+    <button class="modal-close" id="profileModalClose">×</button>
+    <div class="modal-body" id="profileModalContent">
+      <!-- Profile content will be inserted here -->
+    </div>
+  </div>
+</div>
+
 <script type="module">
-import { supabase } from './js/supabase.js';
+import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from './js/supabase.js';
 import { i18n } from './js/i18n.js';
 
 // ============================
-// Language Setup
+// Language and Theme Setup (handled globally in i18n.js)
 // ============================
 document.getElementById('langSelect').addEventListener('change', e => {
   i18n.setLang(e.target.value);
 });
 
-// ============================
-// Dark/Light Mode Toggle
-// ============================
 document.getElementById('themeToggle').addEventListener('click', () => {
   const html = document.documentElement;
   const currentTheme = html.getAttribute('data-theme') || 'light';
@@ -139,9 +149,13 @@ async function loadUser() {
     logoutBtn.style.display = 'flex';
     const { data } = await supabase.from('users').select('balance').eq('id', user.id).single();
     balanceBadge.querySelector('span').innerText = `€${parseFloat(data.balance).toFixed(2)}`;
+
+    // Show favorites tab for logged-in users
+    document.getElementById('favoritesTab').style.display = 'inline-flex';
   } else {
     loginBtn.style.display = 'flex';
     logoutBtn.style.display = 'none';
+    document.getElementById('favoritesTab').style.display = 'none';
   }
 }
 
@@ -157,38 +171,394 @@ logoutBtn.addEventListener('click', async () => {
 loadUser();
 
 // ============================
-// Product Actions
+// Product Management
 // ============================
-const likeBtn = document.getElementById('likeBtn');
-const addCartBtn = document.getElementById('addCartBtn');
-const buyNowBtn = document.getElementById('buyNowBtn');
+let currentFilter = 'all';
+let allProducts = [];
+let userFavorites = new Set();
 
-likeBtn.addEventListener('click', () => alert('Liked!'));
-addCartBtn.addEventListener('click', () => alert('Added to Cart!'));
-buyNowBtn.addEventListener('click', () => alert('Purchase Initiated!'));
+// Load products based on current filter
+async function loadProducts() {
+  if (!currentUser) {
+    document.getElementById('productGrid').innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">Please log in to view your products.</div>';
+    return;
+  }
 
-// ============================
-// Load Product Data (example)
-// ============================
-const productData = {
-  id: '1',
-  name: 'Wireless Headphones',
-  category: 'Electronics',
-  image: 'https://via.placeholder.com/600x400',
-  rating: 4.8,
-  views: 120,
-  price: 59.99,
-  description: 'High-quality wireless headphones with noise cancellation and long battery life.'
-};
+  try {
+    let products = [];
 
-document.getElementById('productTitle').innerText = productData.name;
-document.getElementById('productName').innerText = productData.name;
-document.getElementById('productCategory').innerText = productData.category;
-document.getElementById('productImage').src = productData.image;
-document.getElementById('productRating').innerText = `⭐ ${productData.rating}`;
-document.getElementById('productViews').innerText = `👁 ${productData.views}`;
-document.getElementById('productPrice').innerText = productData.price;
-document.getElementById('productDescription').innerText = productData.description;
+    if (currentFilter === 'favorites') {
+      // Load user's favorite products
+      try {
+        const { data: favorites } = await supabase
+          .from('favorites')
+          .select('product_id')
+          .eq('user_id', currentUser.id);
+
+        if (favorites && favorites.length > 0) {
+          const productIds = favorites.map(f => f.product_id);
+          const { data: favProducts } = await supabase
+            .from('products')
+            .select(`
+              *,
+              seller:users!seller_id(username, avatar_url)
+            `)
+            .in('id', productIds);
+
+          products = favProducts || [];
+        }
+      } catch (error) {
+        console.warn('Favorites functionality not available:', error);
+        products = [];
+      }
+    } else {
+      // Load user's own products or all products based on filter
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          seller:users!seller_id(username, avatar_url)
+        `);
+
+      if (currentFilter === 'active') {
+        query = query.eq('seller_id', currentUser.id).gt('stock', 0);
+      } else if (currentFilter === 'sold') {
+        query = query.eq('seller_id', currentUser.id).eq('stock', 0);
+      } else {
+        // 'all' - show all products with seller info
+        query = query.select(`
+          *,
+          seller:users!seller_id(username, avatar_url)
+        `);
+      }
+
+      const { data } = await query.order('created_at', { ascending: false });
+      products = data || [];
+    }
+
+    allProducts = products;
+    displayProducts(products);
+
+    // Load user's favorites for heart icons
+    if (currentUser) {
+      try {
+        const { data: favorites } = await supabase
+          .from('favorites')
+          .select('product_id')
+          .eq('user_id', currentUser.id);
+
+        userFavorites = new Set(favorites?.map(f => f.product_id) || []);
+      } catch (error) {
+        console.warn('Favorites table may not exist yet:', error);
+        userFavorites = new Set();
+      }
+    }
+
+  } catch (error) {
+    console.error('Error loading products:', error);
+    document.getElementById('productGrid').innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--error);">Error loading products.</div>';
+  }
+}
+
+// Display products in grid
+function displayProducts(products) {
+  const grid = document.getElementById('productGrid');
+  const emptyState = document.getElementById('emptyState');
+
+  if (products.length === 0) {
+    grid.style.display = 'none';
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  grid.style.display = 'grid';
+  emptyState.style.display = 'none';
+
+  grid.innerHTML = products.map(product => `
+    <div class="product-card-modern" data-product-id="${product.id}">
+      <div class="product-image-container">
+        <img src="${product.image_url || 'https://via.placeholder.com/400x300'}" alt="${product.name}" class="product-image">
+        <button class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}">
+          ${userFavorites.has(product.id) ? '❤️' : '🤍'}
+        </button>
+        <div class="product-overlay">
+          <button class="btn-quick-view" data-product-id="${product.id}">Quick View</button>
+        </div>
+      </div>
+      <div class="product-info">
+        <div class="product-seller" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+          <div class="seller-avatar" style="width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:12px; color:white; font-weight:600;" onclick="showUserProfile('${product.seller_id}')">
+            ${product.seller?.username?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <span class="seller-name" style="font-size:0.875rem; color:var(--muted); cursor:pointer;" onclick="showUserProfile('${product.seller_id}')">
+            ${product.seller?.username || 'Unknown'}
+          </span>
+        </div>
+        <h3 class="product-name">${product.name}</h3>
+        <div class="product-meta">
+          <span class="product-rating">⭐ ${product.condition || 'N/A'}</span>
+          <span class="product-views">📦 ${product.stock || 0}</span>
+        </div>
+        <p class="product-description">${product.description || 'No description available.'}</p>
+        <div class="product-footer">
+          <div class="product-price">
+            <span class="price-currency">€</span>
+            <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+          </div>
+          <div class="product-actions">
+            ${product.seller_id === currentUser?.id ?
+              `<button class="btn-edit" data-product-id="${product.id}">✏️</button>
+               <button class="btn-delete" data-product-id="${product.id}">🗑️</button>` :
+              `<button class="btn-add-cart" data-product-id="${product.id}">🛒</button>
+               <button class="btn-buy-now" data-product-id="${product.id}">Buy Now</button>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Add event listeners
+  attachProductEventListeners();
+}
+
+// Attach event listeners to product cards
+function attachProductEventListeners() {
+  // Favorite buttons
+  document.querySelectorAll('.product-like-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const productId = btn.dataset.productId;
+      await toggleFavorite(productId);
+    });
+  });
+
+  // Quick view buttons
+  document.querySelectorAll('.btn-quick-view').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const productId = btn.dataset.productId;
+      showProductModal(productId);
+    });
+  });
+
+  // Buy/Add to cart buttons
+  document.querySelectorAll('.btn-buy-now, .btn-add-cart').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const productId = btn.dataset.productId;
+      const action = btn.classList.contains('btn-buy-now') ? 'buy' : 'cart';
+      handleProductAction(productId, action);
+    });
+  });
+
+  // Edit/Delete buttons (for own products)
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const productId = btn.dataset.productId;
+      editProduct(productId);
+    });
+  });
+
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const productId = btn.dataset.productId;
+      deleteProduct(productId);
+    });
+  });
+}
+
+// Toggle favorite status
+async function toggleFavorite(productId) {
+  if (!currentUser) {
+    alert('Please log in to add favorites');
+    return;
+  }
+
+  try {
+    const isFavorited = userFavorites.has(productId);
+
+    if (isFavorited) {
+      // Remove from favorites
+      await removeFromFavorites(currentUser.id, productId);
+      userFavorites.delete(productId);
+    } else {
+      // Add to favorites
+      await addToFavorites(currentUser.id, productId);
+      userFavorites.add(productId);
+    }
+
+    // Update UI
+    const btn = document.querySelector(`.product-like-btn[data-product-id="${productId}"]`);
+    if (btn) {
+      btn.classList.toggle('liked', !isFavorited);
+      btn.textContent = !isFavorited ? '❤️' : '🤍';
+    }
+
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    alert('Favorites functionality is not available yet. Please contact support.');
+  }
+}
+
+// Show user profile modal
+async function showUserProfile(userId) {
+  try {
+    // Get user profile
+    const { data: user } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!user) return;
+
+    // Get user's products
+    const { data: products } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Build profile HTML
+    const profileHtml = `
+      <div style="text-align:center; margin-bottom:2rem;">
+        <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
+          ${user.username?.charAt(0).toUpperCase() || 'U'}
+        </div>
+        <h2>${user.username || 'Unknown User'}</h2>
+        ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${user.bio}</p>` : ''}
+        <div style="display:flex; justify-content:center; gap:1rem; margin:1rem 0;">
+          <div style="text-align:center;">
+            <div style="font-weight:700; font-size:1.25rem;">${products?.length || 0}</div>
+            <div style="font-size:0.875rem; color:var(--muted);">Products</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-weight:700; font-size:1.25rem;">⭐</div>
+            <div style="font-size:0.875rem; color:var(--muted);">Rating</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:1rem;">Recent Products</h3>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
+        ${products?.map(product => `
+          <div class="product-card-modern" style="margin:0;">
+            <div class="product-image-container">
+              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="product-image">
+            </div>
+            <div class="product-info" style="padding:1rem;">
+              <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
+              <div class="product-price" style="margin-bottom:0.5rem;">
+                <span class="price-currency">€</span>
+                <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+              </div>
+              <button class="btn-buy-now" style="width:100%; padding:0.5rem;" data-product-id="${product.id}">View Product</button>
+            </div>
+          </div>
+        `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+      </div>
+    `;
+
+    document.getElementById('profileModalContent').innerHTML = profileHtml;
+    document.getElementById('userProfileModal').style.display = 'flex';
+
+    // Add event listeners for product buttons in modal
+    document.querySelectorAll('#profileModalContent .btn-buy-now').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const productId = btn.dataset.productId;
+        document.getElementById('userProfileModal').style.display = 'none';
+        showProductModal(productId);
+      });
+    });
+
+  } catch (error) {
+    console.error('Error loading user profile:', error);
+  }
+}
+
+// Show product modal
+function showProductModal(productId) {
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) return;
+
+  // For now, redirect to index.html with product modal
+  // In a full implementation, you'd show a detailed modal here
+  window.location.href = `index.html?product=${productId}`;
+}
+
+// Handle product actions
+function handleProductAction(productId, action) {
+  // For now, just show alerts
+  if (action === 'buy') {
+    alert('Purchase functionality would be implemented here');
+  } else {
+    alert('Add to cart functionality would be implemented here');
+  }
+}
+
+// Edit product
+function editProduct(productId) {
+  // Redirect to sell page with edit mode
+  window.location.href = `sell.html?edit=${productId}`;
+}
+
+// Delete product
+async function deleteProduct(productId) {
+  if (!confirm('Are you sure you want to delete this product?')) return;
+
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
+
+    if (error) throw error;
+
+    // Reload products
+    loadProducts();
+    alert('Product deleted successfully');
+
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    alert('Error deleting product');
+  }
+}
+
+// Filter tabs
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Update active tab
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Update filter and reload
+    currentFilter = tab.dataset.filter;
+    loadProducts();
+  });
+});
+
+// Sell now buttons
+document.getElementById('sellNowBtn')?.addEventListener('click', () => {
+  window.location.href = 'sell.html';
+});
+
+document.getElementById('sellNowEmptyBtn')?.addEventListener('click', () => {
+  window.location.href = 'sell.html';
+});
+
+// Modal close handlers
+document.getElementById('profileModalClose')?.addEventListener('click', () => {
+  document.getElementById('userProfileModal').style.display = 'none';
+});
+
+document.getElementById('profileModalOverlay')?.addEventListener('click', () => {
+  document.getElementById('userProfileModal').style.display = 'none';
+});
+
+// Load products on page load
+loadUser().then(() => {
+  loadProducts();
+});
 
 </script>
 

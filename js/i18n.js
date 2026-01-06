@@ -263,7 +263,19 @@ export const i18n = {
         reviews_received: "Reviews Received",
         sales_history: "Sales History",
         no_sales: "No sales yet",
-        rating: "Rating"
+        rating: "Rating",
+        // Product page translations
+        myProducts: "My Products",
+        manageYourProducts: "Manage and view your posted products",
+        allProducts: "All Products",
+        activeProducts: "Active",
+        soldProducts: "Sold",
+        favorites: "❤️ Favorites",
+        sellNewProduct: "Sell New Product",
+        noProductsYet: "No Products Yet",
+        startSelling: "Start selling by listing your first product",
+        sellFirstProduct: "Sell Your First Product",
+        product_title: "Marketplace - My Products"
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -522,7 +534,19 @@ export const i18n = {
         reviews_received: "Saņemtās atsauksmes",
         sales_history: "Pārdošanas vēsture",
         no_sales: "Vēl nav pārdošanas",
-        rating: "Vērtējums"
+        rating: "Vērtējums",
+        // Product page translations
+        myProducts: "Mani produkti",
+        manageYourProducts: "Pārvaldiet un skatiet savus publicētos produktus",
+        allProducts: "Visi produkti",
+        activeProducts: "Aktīvie",
+        soldProducts: "Pārdoti",
+        favorites: "❤️ Iecienītie",
+        sellNewProduct: "Pārdot jaunu produktu",
+        noProductsYet: "Vēl nav produktu",
+        startSelling: "Sāciet pārdot, pievienojot savu pirmo produktu",
+        sellFirstProduct: "Pārdot savu pirmo produktu",
+        product_title: "Tirgus - Mani produkti"
       }
     },
   
@@ -538,6 +562,7 @@ export const i18n = {
         lang = 'en';
       }
       this.lang = lang;
+      localStorage.setItem('language', lang);
   
       // Translate all elements with data-i18n
       document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -578,8 +603,29 @@ export const i18n = {
     }
   };
   
-  // Auto-apply translations on page load
+  // Auto-apply translations and preferences on page load
   window.addEventListener('DOMContentLoaded', () => {
-    i18n.setLang(i18n.lang);
+    // Load saved language preference
+    const savedLang = localStorage.getItem('language') || 'en';
+    i18n.setLang(savedLang);
+
+    // Update language selector
+    const langSelect = document.getElementById('langSelect');
+    if (langSelect) {
+      langSelect.value = savedLang;
+    }
+
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const html = document.documentElement;
+    html.classList.remove('dark', 'light');
+    html.classList.add(savedTheme);
+    html.setAttribute('data-theme', savedTheme);
+
+    // Update theme toggle button
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+      themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    }
   });
   
