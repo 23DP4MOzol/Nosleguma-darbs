@@ -363,6 +363,109 @@ function initializeNavigation() {
 // PAGE-SPECIFIC FUNCTIONS
 // ============================
 
+// Global function for showing user profiles
+async function showUserProfile(userId) {
+  try {
+    // Get user profile
+    const { data: user } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!user) return;
+
+    // Get user's products
+    const { data: products } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Get seller reviews
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select('rating, comment, created_at')
+      .eq('seller_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    let averageRating = 0;
+    if (reviews && reviews.length > 0) {
+      averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    }
+
+    // Build profile HTML
+    const profileHtml = `
+      <div style="text-align:center; margin-bottom:2rem;">
+        <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
+          ${user.username?.charAt(0).toUpperCase() || 'U'}
+        </div>
+        <h2>${user.username || 'Unknown User'}</h2>
+        ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${user.bio}</p>` : ''}
+        <div style="display:flex; justify-content:center; gap:1rem; margin:1rem 0;">
+          <div style="text-align:center;">
+            <div style="font-weight:700; font-size:1.25rem;">${products?.length || 0}</div>
+            <div style="font-size:0.875rem; color:var(--muted);">Products</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-weight:700; font-size:1.25rem;">${averageRating.toFixed(1)} ⭐</div>
+            <div style="font-size:0.875rem; color:var(--muted);">Rating (${reviews?.length || 0} reviews)</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:1rem;">Recent Products</h3>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
+        ${products?.map(product => `
+          <div class="product-card-modern" style="margin:0;">
+            <div class="product-image-container">
+              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="product-image">
+            </div>
+            <div class="product-info" style="padding:1rem;">
+              <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
+              <div class="product-price" style="margin-bottom:0.5rem;">
+                <span class="price-currency">€</span>
+                <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+              </div>
+              <button class="btn-buy-now" style="width:100%; padding:0.5rem;" data-product-id="${product.id}">View Product</button>
+            </div>
+          </div>
+        `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+      </div>
+
+      <h3 style="margin-bottom:1rem; margin-top:2rem;">Recent Reviews</h3>
+      <div style="display:grid; gap:1rem;">
+        ${reviews?.map(review => `
+          <div style="padding:1rem; background:var(--secondary); border-radius:8px;">
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+              <span>⭐ ${review.rating}/5</span>
+              <span style="font-size:0.875rem; color:var(--muted);">${new Date(review.created_at).toLocaleDateString()}</span>
+            </div>
+            <p style="margin:0; font-size:0.875rem;">${review.comment || 'No comment'}</p>
+          </div>
+        `).join('') || '<p style="text-align:center; color:var(--muted);">No reviews yet.</p>'}
+      </div>
+    `;
+
+    document.getElementById('profileModalContent').innerHTML = profileHtml;
+    document.getElementById('userProfileModal').style.display = 'flex';
+
+    // Add event listeners for product buttons in modal
+    document.querySelectorAll('#profileModalContent .btn-buy-now').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const productId = btn.dataset.productId;
+        document.getElementById('userProfileModal').style.display = 'none';
+        showProductModal(productId);
+      });
+    });
+
+  } catch (error) {
+    console.error('Error loading user profile:', error);
+  }
+}
+
 // Index page functions
 async function initializeIndexPage() {
   if (!document.querySelector('.product-grid-modern')) return;

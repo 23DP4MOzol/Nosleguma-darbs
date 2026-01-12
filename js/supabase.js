@@ -1413,3 +1413,42 @@ export async function getUserFavorites(userId, limit = 100) {
     return [];
   }
 }
+
+// ============================
+// IMAGE UPLOAD HELPERS
+// ============================
+
+// Upload image to Supabase storage
+export async function uploadImage(file, userId, folder = 'products') {
+  try {
+    // Create unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    // Upload file
+    const { data, error } = await supabase.storage
+      .from('images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
+}
+
+// Upload avatar image
+export async function uploadAvatar(file, userId) {
+  return uploadImage(file, userId, 'avatars');
+}
