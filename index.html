@@ -391,6 +391,17 @@
     </div>
   </div>
 
+  <!-- User Profile Modal -->
+  <div id="userProfileModal" class="product-modal" style="display:none;">
+    <div class="modal-overlay" onclick="document.getElementById('userProfileModal').style.display='none'; document.body.style.overflow='auto';"></div>
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('userProfileModal').style.display='none'; document.body.style.overflow='auto';">×</button>
+      <div id="profileModalContent" class="modal-body">
+        <!-- Content will be dynamically inserted -->
+      </div>
+    </div>
+  </div>
+
   <!-- Features Section -->
   <div class="section-header-centered">
     <h2 class="section-title" data-i18n="why_choose">Why Choose Us?</h2>
@@ -630,15 +641,16 @@
   .modal-product-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-actions {
     grid-template-columns: 1fr;
   }
-  
+
   .modal-stats {
     grid-template-columns: 1fr;
   }
 }
+
 </style>
 
 <script type="module" src="js/main.js"></script>

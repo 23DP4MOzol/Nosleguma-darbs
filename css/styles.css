@@ -1470,3 +1470,186 @@ html[data-theme="dark"] .navbar {
  .product-like-btn:hover {
    transform: scale(1.1);
  }
+
+/* =======================================================
+  PROFILE MODAL STYLES
+  ======================================================= */
+
+.profile-header {
+ text-align: center;
+ margin-bottom: 2rem;
+}
+
+.profile-avatar {
+ width: 80px;
+ height: 80px;
+ border-radius: 50%;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 2rem;
+ color: white;
+ font-weight: 700;
+ margin: 0 auto 1rem;
+}
+
+.profile-name {
+ font-size: 1.5rem;
+ font-weight: 700;
+ margin-bottom: 0.5rem;
+}
+
+.profile-bio {
+ color: var(--muted);
+ margin-bottom: 1rem;
+}
+
+.profile-stats {
+ display: flex;
+ justify-content: center;
+ gap: 2rem;
+ margin-bottom: 1rem;
+}
+
+.profile-stat {
+ text-align: center;
+}
+
+.profile-stat-value {
+ font-weight: 700;
+ font-size: 1.25rem;
+}
+
+.profile-stat-label {
+ font-size: 0.875rem;
+ color: var(--muted);
+}
+
+.profile-section {
+ margin-bottom: 2rem;
+}
+
+.profile-section h3 {
+ margin-bottom: 1rem;
+ font-size: 1.25rem;
+ font-weight: 600;
+}
+
+.profile-products {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+ gap: 1rem;
+}
+
+.profile-product-card {
+ background: var(--card-bg);
+ border-radius: 8px;
+ overflow: hidden;
+ box-shadow: var(--shadow-sm);
+ transition: var(--transition);
+}
+
+.profile-product-card:hover {
+ transform: translateY(-2px);
+ box-shadow: var(--shadow-md);
+}
+
+.profile-product-image {
+ width: 100%;
+ height: 150px;
+ object-fit: cover;
+}
+
+.profile-product-info {
+ padding: 1rem;
+}
+
+.profile-product-name {
+ font-size: 1rem;
+ font-weight: 600;
+ margin-bottom: 0.5rem;
+}
+
+.profile-product-price {
+ font-size: 1.125rem;
+ font-weight: 700;
+ color: var(--primary);
+}
+
+.profile-reviews {
+ display: grid;
+ gap: 1rem;
+}
+
+.profile-review {
+ padding: 1rem;
+ background: var(--secondary);
+ border-radius: 8px;
+}
+
+.profile-review-header {
+ display: flex;
+ align-items: center;
+ gap: 0.5rem;
+ margin-bottom: 0.5rem;
+}
+
+.profile-review-buyer {
+ font-weight: 600;
+}
+
+.profile-review-rating {
+ color: #fbbf24;
+}
+
+.profile-review-date {
+ font-size: 0.875rem;
+ color: var(--muted);
+}
+
+.profile-review-comment {
+ margin: 0;
+ font-size: 0.875rem;
+}
+
+.profile-review-form {
+ padding: 1rem;
+ background: var(--secondary);
+ border-radius: 8px;
+}
+
+.profile-review-form label {
+ display: block;
+ margin-bottom: 0.5rem;
+ font-weight: 500;
+}
+
+.profile-review-form select,
+.profile-review-form textarea {
+ width: 100%;
+ padding: 0.5rem;
+ border: 1px solid var(--border);
+ border-radius: 4px;
+ margin-bottom: 1rem;
+}
+
+.profile-review-form button {
+ padding: 0.75rem;
+ background: var(--gradient-primary);
+ color: white;
+ border: none;
+ border-radius: 4px;
+ font-weight: 600;
+ cursor: pointer;
+}
+
+@media (max-width: 768px) {
+ .profile-stats {
+   gap: 1rem;
+ }
+
+ .profile-products {
+   grid-template-columns: 1fr;
+ }
+}

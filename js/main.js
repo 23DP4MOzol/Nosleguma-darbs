@@ -366,6 +366,10 @@ function initializeNavigation() {
 // Global function for showing user profiles
 async function showUserProfile(userId) {
   try {
+    // Get current user
+    const { data: currentUserData } = await supabase.auth.getUser();
+    const currentUser = currentUserData?.user;
+
     // Get user profile
     const { data: user } = await supabase
       .from('users')
@@ -386,67 +390,100 @@ async function showUserProfile(userId) {
     // Get seller reviews
     const { data: reviews } = await supabase
       .from('reviews')
-      .select('rating, comment, created_at')
+      .select('rating, comment, created_at, buyer_id, users!buyer_id(username)')
       .eq('seller_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .order('created_at', { ascending: false });
 
     let averageRating = 0;
     if (reviews && reviews.length > 0) {
       averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
     }
 
+    // Check if current user can review
+    let canReview = false;
+    let hasReviewed = false;
+    if (currentUser && currentUser.id !== userId) {
+      const { data: existingReview } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('buyer_id', currentUser.id)
+        .eq('seller_id', userId)
+        .single();
+      hasReviewed = !!existingReview;
+      canReview = !hasReviewed;
+    }
+
     // Build profile HTML
     const profileHtml = `
-      <div style="text-align:center; margin-bottom:2rem;">
-        <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
+      <div class="profile-header">
+        <div class="profile-avatar">
           ${user.username?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <h2>${user.username || 'Unknown User'}</h2>
-        ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${user.bio}</p>` : ''}
-        <div style="display:flex; justify-content:center; gap:1rem; margin:1rem 0;">
-          <div style="text-align:center;">
-            <div style="font-weight:700; font-size:1.25rem;">${products?.length || 0}</div>
-            <div style="font-size:0.875rem; color:var(--muted);">Products</div>
+        <h2 class="profile-name">${user.username || 'Unknown User'}</h2>
+        ${user.bio ? `<p class="profile-bio">${escapeHtml(user.bio)}</p>` : ''}
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <div class="profile-stat-value">${products?.length || 0}</div>
+            <div class="profile-stat-label">Products</div>
           </div>
-          <div style="text-align:center;">
-            <div style="font-weight:700; font-size:1.25rem;">${averageRating.toFixed(1)} ⭐</div>
-            <div style="font-size:0.875rem; color:var(--muted);">Rating (${reviews?.length || 0} reviews)</div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">${averageRating.toFixed(1)} ⭐</div>
+            <div class="profile-stat-label">Rating (${reviews?.length || 0} reviews)</div>
           </div>
         </div>
       </div>
 
-      <h3 style="margin-bottom:1rem;">Recent Products</h3>
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
-        ${products?.map(product => `
-          <div class="product-card-modern" style="margin:0;">
-            <div class="product-image-container">
-              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="product-image">
-            </div>
-            <div class="product-info" style="padding:1rem;">
-              <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
-              <div class="product-price" style="margin-bottom:0.5rem;">
-                <span class="price-currency">€</span>
-                <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+      <div class="profile-section">
+        <h3>Recent Products</h3>
+        <div class="profile-products">
+          ${products?.map(product => `
+            <div class="profile-product-card">
+              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="profile-product-image">
+              <div class="profile-product-info">
+                <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
+                <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>
+                <button class="btn-buy-now" style="width:100%; padding:0.5rem; margin-top:0.5rem;" data-product-id="${product.id}">View Product</button>
               </div>
-              <button class="btn-buy-now" style="width:100%; padding:0.5rem;" data-product-id="${product.id}">View Product</button>
             </div>
-          </div>
-        `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+          `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+        </div>
       </div>
 
-      <h3 style="margin-bottom:1rem; margin-top:2rem;">Recent Reviews</h3>
-      <div style="display:grid; gap:1rem;">
-        ${reviews?.map(review => `
-          <div style="padding:1rem; background:var(--secondary); border-radius:8px;">
-            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
-              <span>⭐ ${review.rating}/5</span>
-              <span style="font-size:0.875rem; color:var(--muted);">${new Date(review.created_at).toLocaleDateString()}</span>
+      <div class="profile-section">
+        <h3>Reviews & Comments</h3>
+        <div class="profile-reviews">
+          ${reviews?.map(review => `
+            <div class="profile-review">
+              <div class="profile-review-header">
+                <span class="profile-review-buyer">${escapeHtml(review.users?.username || 'Anonymous')}</span>
+                <span class="profile-review-rating">⭐ ${review.rating}/5</span>
+                <span class="profile-review-date">${new Date(review.created_at).toLocaleDateString()}</span>
+              </div>
+              <p class="profile-review-comment">${escapeHtml(review.comment || 'No comment')}</p>
             </div>
-            <p style="margin:0; font-size:0.875rem;">${review.comment || 'No comment'}</p>
-          </div>
-        `).join('') || '<p style="text-align:center; color:var(--muted);">No reviews yet.</p>'}
+          `).join('') || '<p style="text-align:center; color:var(--muted);">No reviews yet.</p>'}
+        </div>
       </div>
+
+      ${canReview ? `
+        <div class="profile-section">
+          <h3>Leave a Review</h3>
+          <form id="reviewForm" class="profile-review-form">
+            <label>Rating</label>
+            <select id="reviewRating" required>
+              <option value="">Select rating</option>
+              <option value="5">⭐⭐⭐⭐⭐ 5 stars</option>
+              <option value="4">⭐⭐⭐⭐ 4 stars</option>
+              <option value="3">⭐⭐⭐ 3 stars</option>
+              <option value="2">⭐⭐ 2 stars</option>
+              <option value="1">⭐ 1 star</option>
+            </select>
+            <label>Comment</label>
+            <textarea id="reviewComment" rows="3" placeholder="Share your experience..."></textarea>
+            <button type="submit">Submit Review</button>
+          </form>
+        </div>
+      ` : hasReviewed ? '<p style="text-align:center; color:var(--muted); margin-top:1rem;">You have already reviewed this seller.</p>' : ''}
     `;
 
     document.getElementById('profileModalContent').innerHTML = profileHtml;
@@ -457,9 +494,44 @@ async function showUserProfile(userId) {
       btn.addEventListener('click', () => {
         const productId = btn.dataset.productId;
         document.getElementById('userProfileModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
         showProductModal(productId);
       });
     });
+
+    // Add review form handler
+    if (canReview) {
+      const reviewForm = document.getElementById('reviewForm');
+      if (reviewForm) {
+        reviewForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const rating = parseInt(document.getElementById('reviewRating').value);
+          const comment = document.getElementById('reviewComment').value.trim();
+          if (!rating || rating < 1 || rating > 5) {
+            showToast('Please select a valid rating', 'error');
+            return;
+          }
+          try {
+            const { error } = await supabase
+              .from('reviews')
+              .insert({
+                buyer_id: currentUser.id,
+                seller_id: userId,
+                rating,
+                comment: comment || null
+              });
+            if (error) throw error;
+            showToast('Review submitted successfully!', 'success');
+            // Refresh profile
+            document.getElementById('userProfileModal').style.display = 'none';
+            showUserProfile(userId);
+          } catch (error) {
+            console.error('Error submitting review:', error);
+            showToast('Failed to submit review', 'error');
+          }
+        });
+      }
+    }
 
   } catch (error) {
     console.error('Error loading user profile:', error);
@@ -519,7 +591,7 @@ async function initializeIndexPage() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, users!seller_id(username)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -759,6 +831,14 @@ async function initializeIndexPage() {
             ${conditionText ? `<span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">${conditionEmoji[product.condition]} ${conditionText}</span>` : ''}
           </div>
           <h3 class="product-name">${nameText}</h3>
+          <div class="product-seller" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+            <div class="seller-avatar" style="width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:12px; color:white; font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); showUserProfile('${product.seller_id}')">
+              👤
+            </div>
+            <span class="seller-name" style="font-size:0.875rem; color:var(--muted); cursor:pointer;" onclick="event.stopPropagation(); showUserProfile('${product.seller_id}')">
+              ${escapeHtml(product.users?.username || 'Unknown')}
+            </span>
+          </div>
           <div class="product-meta">
             ${locationText ? `<span style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">📍 ${locationText}</span>` : ''}
             <span class="product-views">📦 ${escapeHtml(stock)} in stock</span>
@@ -769,12 +849,7 @@ async function initializeIndexPage() {
               <span class="price-amount">${price}</span>
             </div>
             <div class="product-actions">
-              ${!product.is_reserved ? `
-                <button class="btn-add-cart" data-id="${escapeHtml(product.id)}" title="Reserve">🔖 Reserve</button>
-                <button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">🛒 Buy Now</button>
-              ` : `
-                <button class="btn-buy-now" disabled style="opacity:0.5" data-i18n="reserved">Reserved</button>
-              `}
+              <button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">🛒 Buy Now</button>
             </div>
           </div>
           ${canManage ? `
@@ -844,6 +919,17 @@ async function initializeIndexPage() {
       });
     });
 
+    // Remove Reserve buttons
+    document.querySelectorAll('.btn-remove-reserve').forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true));
+    });
+    document.querySelectorAll('.btn-remove-reserve').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const productId = e.currentTarget.dataset.id;
+        await handleRemoveReserve(productId);
+      });
+    });
+
     // Quick View buttons
     document.querySelectorAll('.btn-quick-view').forEach(btn => {
       btn.replaceWith(btn.cloneNode(true));
@@ -908,6 +994,31 @@ async function initializeIndexPage() {
     } catch (error) {
       console.error('Reserve error:', error);
       showToast(error.message || 'Reservation failed', 'error');
+    }
+  }
+
+  async function handleRemoveReserve(productId) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data ? data.user : null;
+      if (!user) {
+        showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
+        setTimeout(() => (window.location.href = 'login.html'), 1500);
+        return;
+      }
+
+      const mod = await import('./supabase.js');
+      if (mod && typeof mod.removeReserve === 'function') {
+        await mod.removeReserve(productId, user.id);
+        showToast('Reservation removed successfully!', 'success');
+        await loadProducts();
+        await updateNavbarAuth();
+      } else {
+        throw new Error('Remove reserve function not available');
+      }
+    } catch (error) {
+      console.error('Remove reserve error:', error);
+      showToast(error.message || 'Failed to remove reservation', 'error');
     }
   }
 
@@ -1009,7 +1120,7 @@ async function initializeIndexPage() {
             ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
           </div>
           <div class="modal-seller-info">
-            <h3>${escapeHtml(sellerData?.username) || 'Unknown Seller'}</h3>
+            <h3 style="cursor:pointer; color:#3b82f6;">${escapeHtml(sellerData?.username) || 'Unknown Seller'}</h3>
             <div class="modal-seller-rating">
               ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
             </div>
@@ -1028,16 +1139,10 @@ async function initializeIndexPage() {
       
       <!-- Action Buttons -->
       <div class="modal-actions">
-        <button class="modal-btn modal-btn-secondary" id="saveProductBtn">
-          🔖 Save for Later
-        </button>
         <button class="modal-btn modal-btn-secondary" id="likeProductBtn">
           ❤️ Like Product
         </button>
-        ${product.stock > 0 && !product.is_reserved ? `
-          <button class="modal-btn modal-btn-secondary" id="modalReserveBtn" data-id="${product.id}">
-            🔖 Reserve (€0.20)
-          </button>
+        ${product.stock > 0 ? `
           <button class="modal-btn modal-btn-primary" id="modalBuyBtn" data-id="${product.id}">
             🛒 Buy Now - €${price}
           </button>
@@ -1048,6 +1153,16 @@ async function initializeIndexPage() {
     // Show modal
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    // Add click handler for seller name
+    const sellerNameEl = modal.querySelector('.modal-seller-info h3');
+    if (sellerNameEl) {
+      sellerNameEl.addEventListener('click', () => {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        showUserProfile(product.seller_id);
+      });
+    }
     
     // Close modal handlers
     const closeModal = () => {
@@ -1067,29 +1182,14 @@ async function initializeIndexPage() {
         window.location.href = `chat.html?seller=${product.seller_id}&product=${product.id}`;
       };
     }
-    
-    const saveBtn = document.getElementById('saveProductBtn');
-    if (saveBtn) {
-      saveBtn.onclick = () => {
-        showToast('Product saved for later!', 'success');
-      };
-    }
-    
+
     const likeBtn = document.getElementById('likeProductBtn');
     if (likeBtn) {
       likeBtn.onclick = () => {
         showToast('Product liked!', 'success');
       };
     }
-    
-    const modalReserveBtn = document.getElementById('modalReserveBtn');
-    if (modalReserveBtn) {
-      modalReserveBtn.onclick = async () => {
-        await handleReserve(product.id);
-        closeModal();
-      };
-    }
-    
+
     const modalBuyBtn = document.getElementById('modalBuyBtn');
     if (modalBuyBtn) {
       modalBuyBtn.onclick = async () => {
@@ -1541,21 +1641,139 @@ function initializeSettingsPage() {
          .from('products')
          .select('*', { count: 'exact', head: true })
          .eq('seller_id', userId);
-       
+
        // Count user's sales
        const { count: salesCount } = await supabase
          .from('user_transactions')
          .select('*', { count: 'exact', head: true })
          .eq('user_id', userId)
          .eq('transaction_type', 'sale');
-       
+
        const productCountEl = document.getElementById('userProductCount');
        const salesCountEl = document.getElementById('userSalesCount');
-       
+
        if (productCountEl) productCountEl.textContent = productsCount || 0;
        if (salesCountEl) salesCountEl.textContent = salesCount || 0;
+
+       // Load detailed data
+       loadUserProducts(userId);
+       loadUserReviews(userId);
+       loadUserSales(userId);
      } catch (error) {
        console.error('Error loading user stats:', error);
+     }
+   }
+
+   // Load user's products
+   async function loadUserProducts(userId) {
+     try {
+       const { data: products } = await supabase
+         .from('products')
+         .select('*')
+         .eq('seller_id', userId)
+         .order('created_at', { ascending: false })
+         .limit(10);
+
+       const container = document.getElementById('userProducts');
+       if (!container) return;
+
+       if (products && products.length > 0) {
+         container.innerHTML = products.map(product => `
+           <div class="product-card-modern" style="margin:0; display:flex; align-items:center; gap:1rem; padding:1rem;">
+             <img src="${product.image_url || 'https://via.placeholder.com/80x60'}" alt="${product.name}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
+             <div style="flex:1;">
+               <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${product.name}</h4>
+               <div style="font-size:0.875rem; color:var(--muted);">€${parseFloat(product.price).toFixed(2)} • ${product.stock} in stock</div>
+             </div>
+             <button class="btn-edit-product" data-product-id="${product.id}" style="padding:0.5rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Edit</button>
+           </div>
+         `).join('');
+       } else {
+         container.innerHTML = `
+           <div style="text-align: center; padding: 2rem; color: var(--muted);">
+             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+             <span data-i18n="no_listings">No products listed yet</span>
+           </div>
+         `;
+       }
+     } catch (error) {
+       console.error('Error loading user products:', error);
+     }
+   }
+
+   // Load user's reviews
+   async function loadUserReviews(userId) {
+     try {
+       const { data: reviews } = await supabase
+         .from('reviews')
+         .select('rating, comment, created_at, buyer_id, users!buyer_id(username)')
+         .eq('seller_id', userId)
+         .order('created_at', { ascending: false })
+         .limit(5);
+
+       const container = document.getElementById('userReviews');
+       if (!container) return;
+
+       if (reviews && reviews.length > 0) {
+         container.innerHTML = reviews.map(review => `
+           <div style="padding:1rem; background:var(--secondary); border-radius:8px; margin-bottom:1rem;">
+             <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+               <span style="font-weight:600;">${escapeHtml(review.users?.username || 'Anonymous')}</span>
+               <span>⭐ ${review.rating}/5</span>
+               <span style="font-size:0.875rem; color:var(--muted);">${new Date(review.created_at).toLocaleDateString()}</span>
+             </div>
+             <p style="margin:0; font-size:0.875rem;">${escapeHtml(review.comment || 'No comment')}</p>
+           </div>
+         `).join('');
+       } else {
+         container.innerHTML = `
+           <div style="text-align: center; padding: 2rem; color: var(--muted);">
+             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+             <span data-i18n="no_reviews">No reviews yet</span>
+           </div>
+         `;
+       }
+     } catch (error) {
+       console.error('Error loading user reviews:', error);
+     }
+   }
+
+   // Load user's sales
+   async function loadUserSales(userId) {
+     try {
+       const { data: sales } = await supabase
+         .from('user_transactions')
+         .select('*')
+         .eq('user_id', userId)
+         .eq('transaction_type', 'sale')
+         .order('created_at', { ascending: false })
+         .limit(10);
+
+       const container = document.getElementById('userSales');
+       if (!container) return;
+
+       if (sales && sales.length > 0) {
+         container.innerHTML = sales.map(sale => `
+           <div style="padding:1rem; background:var(--secondary); border-radius:8px; margin-bottom:1rem;">
+             <div style="display:flex; justify-content:space-between; align-items:center;">
+               <div>
+                 <div style="font-weight:600;">€${Math.abs(sale.amount).toFixed(2)}</div>
+                 <div style="font-size:0.875rem; color:var(--muted);">${new Date(sale.created_at).toLocaleDateString()}</div>
+               </div>
+               <div style="font-size:0.875rem; color:var(--muted);">Sale</div>
+             </div>
+           </div>
+         `).join('');
+       } else {
+         container.innerHTML = `
+           <div style="text-align: center; padding: 2rem; color: var(--muted);">
+             <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
+             <span data-i18n="no_sales">No sales yet</span>
+           </div>
+         `;
+       }
+     } catch (error) {
+       console.error('Error loading user sales:', error);
      }
    }
    

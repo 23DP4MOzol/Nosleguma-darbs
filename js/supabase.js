@@ -309,6 +309,35 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
   }
 }
 
+// Remove reservation
+export async function removeReserve(productId, userId) {
+  try {
+    // Check if product exists and is reserved by this user
+    const product = await getProduct(productId);
+    if (!product) throw new Error('Product not found');
+    if (!product.is_reserved || product.reserved_by !== userId) {
+      throw new Error('You do not have a reservation for this product');
+    }
+
+    // Update product reservation status
+    const { error } = await supabase
+      .from('products')
+      .update({
+        is_reserved: false,
+        reserved_by: null,
+        reserved_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error removing reservation:', error);
+    throw error;
+  }
+}
+
 // List/Sell product with mandatory condition
 export async function listProduct(productData, userId) {
   try {
