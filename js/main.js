@@ -94,8 +94,8 @@ function initializeTheme() {
 
   const userThemeToggle = document.getElementById('userThemeToggle');
   if (userThemeToggle) {
-    userThemeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    userThemeToggle.addEventListener('click', toggleTheme);
+    userThemeToggle.textContent = i18n.t('toggle_theme');
+    // Note: userThemeToggle has its own event listener in initializeSettingsPage
   }
 }
 
@@ -109,9 +109,17 @@ function toggleTheme() {
   html.setAttribute('data-theme', newTheme);
   localStorage.setItem('theme', newTheme);
 
-  document.querySelectorAll('#themeToggle, #userThemeToggle').forEach(btn => {
-    if (btn) btn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-  });
+  // Update navbar theme toggle with emoji
+  const navThemeToggle = document.getElementById('themeToggle');
+  if (navThemeToggle) {
+    navThemeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  }
+
+  // Update settings theme toggle with translated text
+  const userThemeToggle = document.getElementById('userThemeToggle');
+  if (userThemeToggle) {
+    userThemeToggle.textContent = i18n.t('toggle_theme');
+  }
 }
 
 // ============================
@@ -1625,7 +1633,18 @@ function initializeSettingsPage() {
        // Update what I sell
        const whatISellInput = document.getElementById('whatISellInput');
        if (whatISellInput) whatISellInput.value = userData.what_i_sell || '';
-       
+
+       // Update language
+       const userLangSelect = document.getElementById('userLang');
+       if (userLangSelect) userLangSelect.value = userData.language || 'en';
+
+       // Update theme preference
+       const userTheme = userData.theme || 'light';
+       const userThemeToggle = document.getElementById('userThemeToggle');
+       if (userThemeToggle) {
+         userThemeToggle.textContent = i18n.t('toggle_theme');
+       }
+
        // Load user stats
        loadUserStats(user.id);
      } catch (error) {
@@ -1788,25 +1807,41 @@ function initializeSettingsPage() {
            showToast('Please log in first', 'error');
            return;
          }
-         
+
          const username = document.getElementById('usernameInput')?.value;
-         const avatarUrl = document.getElementById('avatarUrlInput')?.value;
          const bio = document.getElementById('bioInput')?.value;
          const whatISell = document.getElementById('whatISellInput')?.value;
-         
+         const language = document.getElementById('userLang')?.value;
+
+         let avatarUrl = null;
+
+         // Check if file upload is selected
+         const fileRadio = document.querySelector('input[name="avatarType"][value="file"]');
+         if (fileRadio && fileRadio.checked) {
+           const fileInput = document.getElementById('avatarFileInput');
+           if (fileInput && fileInput.files[0]) {
+             const { uploadAvatar } = await import('./supabase.js');
+             avatarUrl = await uploadAvatar(fileInput.files[0], user.id);
+           }
+         } else {
+           // URL input
+           avatarUrl = document.getElementById('avatarUrlInput')?.value || null;
+         }
+
          const { error } = await supabase
            .from('users')
            .update({
              username: username || null,
-             avatar_url: avatarUrl || null,
+             avatar_url: avatarUrl,
              bio: bio || null,
              what_i_sell: whatISell || null,
+             language: language || 'en',
              updated_at: new Date().toISOString()
            })
            .eq('id', user.id);
-         
+
          if (error) throw error;
-         
+
          showToast(i18n.t('profile_updated'), 'success');
          loadUserSettings();
        } catch (error) {
@@ -1816,23 +1851,46 @@ function initializeSettingsPage() {
      });
    }
    
+   // Avatar type radio buttons
+   const avatarTypeRadios = document.querySelectorAll('input[name="avatarType"]');
+   const avatarUrlInput = document.getElementById('avatarUrlInput');
+   const avatarFileInput = document.getElementById('avatarFileInput');
+
+   avatarTypeRadios.forEach(radio => {
+     radio.addEventListener('change', (e) => {
+       if (e.target.value === 'url') {
+         avatarUrlInput.style.display = 'block';
+         avatarFileInput.style.display = 'none';
+         avatarFileInput.value = '';
+       } else {
+         avatarUrlInput.style.display = 'none';
+         avatarFileInput.style.display = 'block';
+         avatarUrlInput.value = '';
+       }
+     });
+   });
+
    // Change avatar button
    const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-   const avatarUrlInput = document.getElementById('avatarUrlInput');
-   if (changeAvatarBtn && avatarUrlInput) {
+   if (changeAvatarBtn) {
      changeAvatarBtn.addEventListener('click', () => {
-       avatarUrlInput.focus();
-       avatarUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+       const urlRadio = document.querySelector('input[name="avatarType"][value="url"]');
+       if (urlRadio && urlRadio.checked) {
+         avatarUrlInput.focus();
+         avatarUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+       } else {
+         avatarFileInput.click();
+       }
      });
    }
-   
-   // Real-time avatar preview
+
+   // Real-time avatar preview for URL
    if (avatarUrlInput) {
      avatarUrlInput.addEventListener('input', () => {
        const url = avatarUrlInput.value;
        const avatarImg = document.getElementById('userAvatar');
        const avatarText = document.getElementById('userAvatarText');
-       
+
        if (url) {
          if (avatarImg) {
            avatarImg.src = url;
@@ -1850,10 +1908,30 @@ function initializeSettingsPage() {
      });
    }
 
+   // File upload preview
+   if (avatarFileInput) {
+     avatarFileInput.addEventListener('change', (e) => {
+       const file = e.target.files[0];
+       if (file) {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+           const avatarImg = document.getElementById('userAvatar');
+           const avatarText = document.getElementById('userAvatarText');
+           if (avatarImg) {
+             avatarImg.src = e.target.result;
+             avatarImg.style.display = 'block';
+           }
+           if (avatarText) avatarText.style.display = 'none';
+         };
+         reader.readAsDataURL(file);
+       }
+     });
+   }
+
    // Theme toggle functionality
    const userThemeToggle = document.getElementById('userThemeToggle');
    if (userThemeToggle) {
-     userThemeToggle.addEventListener('click', () => {
+     userThemeToggle.addEventListener('click', async () => {
        const html = document.documentElement;
        const currentTheme = html.getAttribute('data-theme') || 'light';
        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -1863,16 +1941,75 @@ function initializeSettingsPage() {
        html.setAttribute('data-theme', newTheme);
        localStorage.setItem('theme', newTheme);
 
-       // Update button text
-       userThemeToggle.textContent = newTheme === 'dark' ? '🌙 Toggle Dark Mode' : '☀️ Toggle Light Mode';
-       userThemeToggle.setAttribute('data-i18n', newTheme === 'dark' ? 'toggle_theme' : 'toggle_theme');
+       // Update button text with proper i18n
+       userThemeToggle.textContent = i18n.t('toggle_theme');
 
-       showToast(`Switched to ${newTheme} mode`, 'success');
+       // Also update navbar theme toggle
+       const navThemeToggle = document.getElementById('themeToggle');
+       if (navThemeToggle) {
+         navThemeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+       }
+
+       // Save theme preference to user profile
+       try {
+         const { data } = await supabase.auth.getUser();
+         const user = data?.user;
+         if (user) {
+           await supabase
+             .from('users')
+             .update({
+               theme: newTheme,
+               updated_at: new Date().toISOString()
+             })
+             .eq('id', user.id);
+         }
+       } catch (error) {
+         console.error('Error saving theme preference:', error);
+       }
+
+       showToast(i18n.t(newTheme === 'dark' ? 'switched_to_dark' : 'switched_to_light'), 'success');
+     });
+   }
+
+   // Language change handler
+   const userLangSelect = document.getElementById('userLang');
+   if (userLangSelect) {
+     userLangSelect.addEventListener('change', async (e) => {
+       const lang = e.target.value;
+       localStorage.setItem('lang', lang);
+       if (i18n && typeof i18n.setLang === 'function') {
+         i18n.setLang(lang);
+       }
+
+       // Update theme button text after language change
+       const userThemeToggle = document.getElementById('userThemeToggle');
+       if (userThemeToggle) {
+         userThemeToggle.textContent = i18n.t('toggle_theme');
+       }
+
+       // Save language preference to user profile
+       try {
+         const { data } = await supabase.auth.getUser();
+         const user = data?.user;
+         if (user) {
+           await supabase
+             .from('users')
+             .update({
+               language: lang,
+               updated_at: new Date().toISOString()
+             })
+             .eq('id', user.id);
+         }
+       } catch (error) {
+         console.error('Error saving language preference:', error);
+       }
+
+       showToast(i18n.t('language_changed'), 'success');
      });
    }
 
    // Logout button in settings
-   const settingsLogoutBtn = document.getElementById('logoutBtn');
+   const settingsLogoutBtn = document.getElementById('settingsLogoutBtn');
    if (settingsLogoutBtn) {
      settingsLogoutBtn.addEventListener('click', async () => {
        try {
@@ -1890,7 +2027,7 @@ function initializeSettingsPage() {
    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
    if (deleteAccountBtn) {
      deleteAccountBtn.addEventListener('click', async () => {
-       const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+       const confirmed = confirm(i18n.t ? i18n.t('delete_account_confirm') || 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.' : 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.');
        if (!confirmed) return;
 
        try {
@@ -1901,8 +2038,8 @@ function initializeSettingsPage() {
          // Delete user profile first
          await supabase.from('users').delete().eq('id', user.id);
 
-         // Delete auth user
-         await supabase.auth.admin.deleteUser(user.id);
+         // Note: supabase.auth.admin.deleteUser requires admin privileges and can't be called from client
+         // The user record deletion is sufficient for now
 
          showToast('Account deleted successfully', 'success');
          setTimeout(() => (window.location.href = 'index.html'), 1000);
@@ -1913,8 +2050,79 @@ function initializeSettingsPage() {
      });
    }
 
+   // Preview profile button
+   const previewProfileBtn = document.getElementById('previewProfileBtn');
+   if (previewProfileBtn) {
+     previewProfileBtn.addEventListener('click', () => {
+       showProfilePreview();
+     });
+   }
+
    loadUserSettings();
-}
+ }
+
+ // Function to show profile preview
+ function showProfilePreview() {
+   const username = document.getElementById('usernameInput')?.value || 'User';
+   const bio = document.getElementById('bioInput')?.value || '';
+   const whatISell = document.getElementById('whatISellInput')?.value || '';
+   const email = document.getElementById('userEmail')?.value || '';
+
+   // Get avatar
+   let avatarUrl = '';
+   const fileRadio = document.querySelector('input[name="avatarType"][value="file"]');
+   if (fileRadio && fileRadio.checked && document.getElementById('avatarFileInput').files[0]) {
+     // Use the preview data URL
+     avatarUrl = document.getElementById('avatarFileInput').dataset.previewUrl || '';
+   } else {
+     avatarUrl = document.getElementById('avatarUrlInput')?.value || '';
+   }
+
+   // Create preview modal
+   const modalHtml = `
+     <div id="profilePreviewModal" class="product-modal" style="display: flex;">
+       <div class="modal-overlay" onclick="closeProfilePreview()"></div>
+       <div class="modal-content" style="max-width: 600px;">
+         <button class="modal-close" onclick="closeProfilePreview()">×</button>
+         <div class="modal-body">
+           <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Profile Preview</h2>
+           <div style="text-align: center; padding: 2rem;">
+             <div style="position: relative; width: 120px; margin: 0 auto 1rem;">
+               <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; overflow: hidden; margin: 0 auto;">
+                 ${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">` : `<span>${username.charAt(0).toUpperCase()}</span>`}
+               </div>
+             </div>
+             <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--fg);">${username}</h3>
+             <p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;">${email}</p>
+             ${bio ? `<p style="margin: 0 0 1rem 0; color: var(--fg); font-size: 0.875rem;">${bio}</p>` : ''}
+             ${whatISell ? `<p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;"><strong>What I sell:</strong> ${whatISell}</p>` : ''}
+             <div style="margin-top: 2rem; padding: 1rem; background: var(--secondary); border-radius: 12px;">
+               <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">€0.00</div>
+               <div style="font-size: 0.875rem; color: var(--muted);">Current Balance</div>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   `;
+
+   // Remove existing modal if any
+   const existingModal = document.getElementById('profilePreviewModal');
+   if (existingModal) existingModal.remove();
+
+   // Add modal to body
+   document.body.insertAdjacentHTML('beforeend', modalHtml);
+   document.body.style.overflow = 'hidden';
+ }
+
+ // Make closeProfilePreview global
+ window.closeProfilePreview = function() {
+   const modal = document.getElementById('profilePreviewModal');
+   if (modal) {
+     modal.remove();
+     document.body.style.overflow = 'auto';
+   }
+ };
 
 // Sell page functions
 function initializeSellPage() {

@@ -107,8 +107,19 @@
         </label>
 
         <label style="display: block; margin-bottom: 1rem;">
-          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="profile_picture_url">Profile Picture URL</span>
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="profile_picture">Profile Picture</span>
+          <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="avatarType" value="url" checked style="margin: 0;">
+              <span style="font-size: 0.875rem; color: var(--fg);">URL</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="avatarType" value="file" style="margin: 0;">
+              <span style="font-size: 0.875rem; color: var(--fg);">Upload File</span>
+            </label>
+          </div>
           <input type="url" id="avatarUrlInput" placeholder="https://example.com/avatar.jpg" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);">
+          <input type="file" id="avatarFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg); display: none;">
         </label>
 
         <label style="display: block; margin-bottom: 1rem;">
@@ -121,9 +132,14 @@
           <input type="text" id="whatISellInput" placeholder="e.g., Electronics, Vintage Clothing, Handmade Items" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);">
         </label>
 
-        <button id="saveProfileBtn" style="width: 100%; padding: 0.875rem; background: var(--gradient-primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm); margin-top: 0.5rem;">
-          💾 <span data-i18n="save_profile">Save Profile</span>
-        </button>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button id="previewProfileBtn" style="flex: 1; padding: 0.875rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition);">
+            👁️ <span data-i18n="preview_profile">Preview Profile</span>
+          </button>
+          <button id="saveProfileBtn" style="flex: 1; padding: 0.875rem; background: var(--gradient-primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm);">
+            💾 <span data-i18n="save_profile">Save Profile</span>
+          </button>
+        </div>
       </div>
 
       <!-- Account Settings -->
@@ -145,12 +161,12 @@
 
         <label style="display: block; margin-bottom: 1rem;">
           <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="theme">Theme</span>
-          <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%; padding: 0.75rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;">🌙 Toggle Dark/Light Mode</button>
+          <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%; padding: 0.75rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;"></button>
         </label>
 
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
           <h4 style="margin-bottom: 1rem; color: var(--fg); font-size: 0.875rem; font-weight: 600;" data-i18n="account_actions">Account Actions</h4>
-          <button class="btn-buy-now" id="logoutBtn" style="background: #dc3545; width: 100%; margin-bottom: 0.5rem;" data-i18n="logout">Logout</button>
+          <button class="btn-buy-now" id="settingsLogoutBtn" style="background: #dc3545; width: 100%; margin-bottom: 0.5rem;" data-i18n="logout">Logout</button>
           <button class="btn-buy-now" id="deleteAccountBtn" style="background: #6c757d; width: 100%;" data-i18n="delete_account">Delete Account</button>
         </div>
       </div>
