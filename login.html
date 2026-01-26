@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="login">Login - Vendly</title>
-  <link rel="icon" href="assets/vendly-logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
 
@@ -78,8 +78,8 @@
      </form>
   </main>
 <script type="module">
-import { supabase, loginUser } from './js/supabase.js';
-import { i18n } from './js/i18n.js';
+import { supabase, loginUser } from './src/supabase.js';
+import { i18n } from './src/i18n.js';
 
 // ============================
 // Language Setup
@@ -272,7 +272,7 @@ document.getElementById('quickUser2Login').addEventListener('click', async () =>
 
 <!-- Import navbar functionality -->
 <script type="module">
-  import './js/navbar.js';
+  import './src/navbar.js';
 </script>
 
 </body>

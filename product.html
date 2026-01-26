@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="product_title">Vendly - Product</title>
-  <link rel="icon" href="assets/vendly-logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -105,8 +105,8 @@
 </div>
 
 <script type="module">
-import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from './js/supabase.js';
-import { i18n } from './js/i18n.js';
+import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from './src/supabase.js';
+import { i18n } from './src/i18n.js';
 
 // ============================
 // Language and Theme Setup (handled globally in i18n.js)
@@ -564,7 +564,7 @@ loadUser().then(() => {
 
 <!-- Import navbar functionality -->
 <script type="module">
-  import './js/navbar.js';
+  import './src/navbar.js';
 </script>
 
 </body>

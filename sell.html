@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="sell">Vendly - Sell Item</title>
-  <link rel="icon" href="assets/vendly-logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -253,8 +253,8 @@
 
 <script type="module">
 // Import necessary modules
-import { supabase } from './js/supabase.js';
-import { i18n } from './js/i18n.js';
+import { supabase } from './src/supabase.js';
+import { i18n } from './src/i18n.js';
 
 // Form handling and preview functionality
 document.addEventListener('DOMContentLoaded', () => {
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fileRadio && fileRadio.checked) {
         const fileInput = document.getElementById('productImageFileInput');
         if (fileInput && fileInput.files[0]) {
-          const { uploadImage } = await import('./js/supabase.js');
+          const { uploadImage } = await import('./src/supabase.js');
           imageUrl = await uploadImage(fileInput.files[0], user.id, 'products');
         }
       } else {
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color: document.getElementById('productColorInput')?.value || ''
       };
 
-      const { listProduct } = await import('./js/supabase.js');
+      const { listProduct } = await import('./src/supabase.js');
       const result = await listProduct(productData, user.id);
 
       if (result) {
@@ -565,7 +565,7 @@ updateAuth();
 
 <!-- Import navbar functionality -->
 <script type="module">
-  import './js/navbar.js';
+  import './src/navbar.js';
 </script>
 
 </body>

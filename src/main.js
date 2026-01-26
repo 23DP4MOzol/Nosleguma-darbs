@@ -5,6 +5,9 @@
 import { supabase } from './supabase.js';
 import { i18n } from './i18n.js';
 import './navbar.js';
+import './app.js';
+import './product-modal.js';
+import './ai-widget.js';
 
 // ============================
 // UTILITY FUNCTIONS
@@ -281,9 +284,13 @@ function initializeAuth() {
   const settingsBtn = document.getElementById('settingsBtn');
 
   if (loginBtn) {
+    console.log('Login button found, attaching listener');
     loginBtn.addEventListener('click', () => {
-      window.location.href = 'login.html';
+      console.log('Login button clicked');
+      window.location.href = './login.html';
     });
+  } else {
+    console.log('Login button not found');
   }
 
   if (logoutBtn) {
@@ -291,7 +298,7 @@ function initializeAuth() {
       try {
         await supabase.auth.signOut();
         await updateNavbarAuth();
-        window.location.href = 'index.html';
+        window.location.href = './index.html';
       } catch (error) {
         console.error('Error signing out:', error);
         showToast('Error signing out', 'error');
@@ -304,7 +311,7 @@ function initializeAuth() {
       const { data } = await supabase.auth.getUser();
       const user = data ? data.user : null;
       if (user) {
-        window.location.href = 'sell.html';
+        window.location.href = './sell.html';
       } else {
         showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
         setTimeout(() => (window.location.href = 'login.html'), 1500);
@@ -317,7 +324,7 @@ function initializeAuth() {
       const { data } = await supabase.auth.getUser();
       const user = data ? data.user : null;
       if (user) {
-        window.location.href = 'settings.html';
+        window.location.href = './settings.html';
       } else {
         showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
         setTimeout(() => (window.location.href = 'login.html'), 1500);
@@ -987,7 +994,7 @@ async function initializeIndexPage() {
       const user = data ? data.user : null;
       if (!user) {
         showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
-        setTimeout(() => (window.location.href = 'login.html'), 1500);
+        setTimeout(() => (window.location.href = './login.html'), 1500);
         return;
       }
 
@@ -1013,7 +1020,7 @@ async function initializeIndexPage() {
       const user = data ? data.user : null;
       if (!user) {
         showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
-        setTimeout(() => (window.location.href = 'login.html'), 1500);
+        setTimeout(() => (window.location.href = './login.html'), 1500);
         return;
       }
 

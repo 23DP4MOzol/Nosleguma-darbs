@@ -1,23 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: "./",
-  base: "./", // crucial for relative paths in multi-page apps
+  base: './',
+  root: '.',        // root folder (where your HTML files are)
   build: {
-    outDir: "dist",
-    assetsDir: "assets", // all JS/CSS/images go into dist/assets
+    outDir: 'dist', // output folder
     rollupOptions: {
       input: {
-        index: "index.html",
-        admin: "admin.html",
-        balance: "balance.html",
-        chat: "chat.html",
-        login: "login.html",
-        product: "product.html",
-        register: "register.html",
-        sell: "sell.html",
-        settings: "settings.html",
-      },
-    },
-  },
+        index: 'index.html',
+        admin: 'admin.html',
+        balance: 'balance.html',
+        chat: 'chat.html',
+        login: 'login.html',
+        product: 'product.html',
+        register: 'register.html',
+        sell: 'sell.html',
+        settings: 'settings.html'
+      }
+    }
+  }
 });
