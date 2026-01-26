@@ -1249,10 +1249,29 @@ export async function updateProduct(productId, userId, productData) {
       updated_at: new Date().toISOString()
     };
     
-    // Only include fields that are provided
+    // Handle price reduction - set original_price if price is being reduced
+    if (productData.price !== undefined) {
+      const newPrice = parseFloat(productData.price);
+      // Get current product to check if price is being reduced
+      const { data: currentProduct } = await supabase
+        .from('products')
+        .select('price, original_price')
+        .eq('id', productId)
+        .single();
+
+      if (currentProduct && newPrice < currentProduct.price) {
+        // Price is being reduced, set original_price if not already set
+        if (!currentProduct.original_price) {
+          updateData.original_price = currentProduct.price;
+        }
+        // Keep existing original_price if already set
+      }
+      updateData.price = newPrice;
+    }
+
+    // Only include other fields that are provided
     if (productData.name !== undefined) updateData.name = productData.name;
     if (productData.description !== undefined) updateData.description = productData.description;
-    if (productData.price !== undefined) updateData.price = parseFloat(productData.price);
     if (productData.category !== undefined) updateData.category = productData.category.toLowerCase();
     if (productData.condition !== undefined) updateData.condition = productData.condition.toLowerCase();
     if (productData.location !== undefined) updateData.location = productData.location;

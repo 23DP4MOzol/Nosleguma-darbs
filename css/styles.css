@@ -736,6 +736,14 @@ html[data-theme="dark"] .navbar {
   letter-spacing: -0.02em;
 }
 
+.price-original {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: line-through;
+  margin-right: 0.5rem;
+}
+
 .product-actions {
   display: flex;
   gap: 0.5rem;

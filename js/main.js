@@ -853,6 +853,8 @@ async function initializeIndexPage() {
           </div>
           <div class="product-footer">
             <div class="product-price">
+              ${product.original_price && product.original_price > product.price ?
+                `<span class="price-original">€${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
               <span class="price-currency">€</span>
               <span class="price-amount">${price}</span>
             </div>

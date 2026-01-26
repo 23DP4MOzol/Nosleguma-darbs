@@ -1,4 +1,4 @@
-# AGENTS.md - Marketplace Project
+# AGENTS.md - Vendly Project
 
 ## Build & Development Commands
 - `npm run dev` - Start Vite dev server on port 5173 (auto-opens browser)
