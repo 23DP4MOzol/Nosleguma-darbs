@@ -1,9 +1,8 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: "./", // your project root
+  root: "./",
   build: {
-    outDir: "dist", // default output folder
     rollupOptions: {
       input: {
         main: "index.html",
@@ -14,8 +13,15 @@ export default defineConfig({
         product: "product.html",
         register: "register.html",
         sell: "sell.html",
-        settings: "settings.html",
-      },
+        settings: "settings.html"
+      }
     },
+    outDir: "dist",
+    emptyOutDir: true
   },
+  server: {
+    port: 5173,
+    open: true,
+    hmr: { overlay: false }
+  }
 });

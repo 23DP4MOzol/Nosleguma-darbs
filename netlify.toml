@@ -1,10 +1,11 @@
 [build]
-  command = "npx vite build"     # Use npx to call Vite directly
+  base = "/"                  
   publish = "dist"
+  command = "npm ci && npx vite build"   # Ensure fresh install + build
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_ENV = "development"       # Force devDependencies to be installed
+  NODE_ENV = "development"     # Ensures devDependencies are installed
   NODE_VERSION = "20"
 
 [[redirects]]
