@@ -12,6 +12,18 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-
+    rollupOptions: {
+      input: {
+        index: "index.html",
+        admin: "admin.html",
+        balance: "balance.html",
+        chat: "chat.html",
+        login: "login.html",
+        product: "product.html",
+        register: "register.html",
+        sell: "sell.html",
+        settings: "settings.html",
+      },
+    },
   },
 });
