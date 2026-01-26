@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": ">=18"
+  },
   "name": "marketplace",
   "version": "1.0.0",
   "description": "Modern marketplace web app with Supabase, TailwindCSS, and Vite",
