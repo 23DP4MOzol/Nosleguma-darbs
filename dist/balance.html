@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace - Balance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/balance-Ck2WjmMp.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BgUz24lM.js">
+  <link rel="stylesheet" crossorigin href="/assets/navbar-DnmfGxTg.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- BALANCE SECTION -->
+<main class="main-container">
+  <div class="section-header-centered">
+    <h2 class="section-title" data-i18n="balance_title">Your Balance</h2>
+    <p class="section-subtitle" data-i18n="balance_subtitle">Manage your funds and view transaction history.</p>
+  </div>
+
+  <div class="balance-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+    <div class="current-balance" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border); text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+      <h3 data-i18n="current_balance" style="margin-bottom: 1rem; color: var(--fg);">Current Balance</h3>
+      <div class="balance-amount" id="currentBalance" style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem;">€0.00</div>
+      <div style="color: var(--muted); font-size: 0.875rem;" data-i18n="available_for_purchases">Available for purchases</div>
+    </div>
+
+    <div class="add-funds" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
+      <div style="font-size: 2rem; margin-bottom: 1rem; text-align: center;">💳</div>
+      <h3 data-i18n="add_funds" style="margin-bottom: 1.5rem; color: var(--fg); text-align: center;">Add Funds</h3>
+      <div style="display: flex; gap: 1rem;">
+        <input type="number" id="fundAmount" data-i18n-placeholder="amount_placeholder" placeholder="Amount in €" style="flex: 1; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.875rem; background: var(--bg); color: var(--fg);" min="1" step="0.01">
+        <button id="addFundsBtn" class="btn-hero-primary" style="background: var(--gradient-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm);">
+          <span data-i18n="btn_add">Add Funds</span>
+        </button>
+        <button id="withdrawBtn" class="btn-hero-secondary" style="padding:0.75rem 1rem; border-radius:8px; background:#ef4444; color:white; border:none; cursor:pointer; font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm);">
+          <span data-i18n="btn_withdraw">Withdraw</span>
+        </button>
+      </div>
+      <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center;" data-i18n="minimum_deposit">
+        Minimum deposit: €1.00
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header-centered">
+    <h3 class="section-title" data-i18n="transactions">Transaction History</h3>
+    <p class="section-subtitle" data-i18n="view_all_deposits">View all your deposits, purchases, and sales</p>
+  </div>
+
+  <div class="transaction-history" id="transactionHistory" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h4 style="margin: 0; color: var(--fg);" data-i18n="recent_transactions">Recent Transactions</h4>
+      <div style="display: flex; gap: 0.5rem;">
+        <button id="filterAll" class="filter-btn active" data-i18n="filter_all_tx" style="padding: 0.5rem 1rem; border: 1px solid var(--primary); border-radius: 6px; background: var(--primary); color: white; font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">All</button>
+        <button id="filterDeposits" class="filter-btn" data-i18n="filter_deposits" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Deposits</button>
+        <button id="filterPurchases" class="filter-btn" data-i18n="filter_purchases" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Purchases</button>
+        <button id="filterSales" class="filter-btn" data-i18n="filter_sales" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Sales</button>
+      </div>
+    </div>
+    <!-- Transactions rendered dynamically -->
+  </div>
+
+  <!-- Manage User Listings Section -->
+  <div class="section-header-centered" id="listingsSection" style="margin-top: 3rem;">
+    <h3 class="section-title" data-i18n="my_listings">Manage My Listings</h3>
+    <p class="section-subtitle" data-i18n="listings_subtitle">Edit or remove your product listings.</p>
+  </div>
+  <div class="listings-container" id="myListingsContainer" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
+    <div style="text-align: center; padding: 2rem; color: var(--muted);">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">📦</div>
+      <div data-i18n="loading">Loading your listings...</div>
+    </div>
+  </div>
+</main>
+
+
+<!-- Import navbar functionality -->
+
+</body>
+</html>

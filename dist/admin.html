@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="admin_title">Admin Dashboard - Marketplace</title>
+  <script type="module" crossorigin src="/assets/admin-9TW8CxFX.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BgUz24lM.js">
+  <link rel="stylesheet" crossorigin href="/assets/navbar-DnmfGxTg.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-container">
+      <!-- Logo -->
+      <a href="index.html" class="navbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 0L24 24H0z"/>
+        </svg>
+        MARKETPLACE
+      </a>
+  
+      <!-- Hamburger for mobile -->
+      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+  
+      <!-- Links & actions -->
+      <div class="navbar-links">
+        <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
+        <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+        <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+ 
+        <!-- Pages Dropdown -->
+        <div class="dropdown" id="pagesDropdown">
+          <button class="dropdown-btn">☰</button>
+          <div class="dropdown-menu">
+            <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+            <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+            <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+            <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+          </div>
+        </div>
+ 
+        <!-- Language Dropdown -->
+        <select id="langSelect" class="category-select">
+          <option value="en">English</option>
+          <option value="lv">Latviešu</option>
+        </select>
+ 
+        <!-- Dark/Light Mode -->
+        <button class="icon-btn" id="themeToggle">🌙</button>
+ 
+        <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+        <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  
+  
+
+  <main class="main-container">
+    <section>
+      <div class="section-header">
+        <h2 class="section-title" data-i18n="dashboard">Dashboard</h2>
+        <p class="section-subtitle" data-i18n="overview">Overview of marketplace activities</p>
+      </div>
+
+      <div class="features-section">
+
+        <!-- Users Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-primary);">👥</div>
+          <div class="feature-title" data-i18n="registered_users">Registered Users</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">1,234</div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-vibrant);">📦</div>
+          <div class="feature-title" data-i18n="total_products">Total Products</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">567</div>
+        </div>
+
+        <!-- Transactions Card -->
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--gradient-success);">💳</div>
+          <div class="feature-title" data-i18n="transactions_today">Transactions Today</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">89</div>
+        </div>
+
+      </div>
+
+      <section style="margin-top: 4rem;">
+        <div class="section-header">
+          <h3 class="section-title" data-i18n="recent_activities">Recent Activities</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="background: var(--secondary);">
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="user">User</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="action">Action</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="date">Date</th>
+              <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 0.75rem;">Alice</td>
+              <td style="padding: 0.75rem;" data-i18n="added_funds">Added Funds</td>
+              <td style="padding: 0.75rem;">09/10/2025</td>
+              <td style="padding: 0.75rem;">€50</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.75rem;">Bob</td>
+              <td style="padding: 0.75rem;" data-i18n="sold_product">Sold Product</td>
+              <td style="padding: 0.75rem;">09/10/2025</td>
+              <td style="padding: 0.75rem;">€20</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.75rem;">Charlie</td>
+              <td style="padding: 0.75rem;" data-i18n="purchased_product">Purchased Product</td>
+              <td style="padding: 0.75rem;">08/10/2025</td>
+              <td style="padding: 0.75rem;">€15</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </section>
+  </main>
+
+
+
+  <!-- Import navbar functionality -->
+
+  </body>
+  </html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="product_title">Marketplace - Product</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/product-BYB4staF.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BgUz24lM.js">
+  <link rel="stylesheet" crossorigin href="/assets/navbar-DnmfGxTg.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN PRODUCTS SECTION -->
+<main class="main-container">
+
+  <!-- Header with Sell Button -->
+  <div class="section-header" style="justify-content: space-between; align-items: center;">
+    <div>
+      <h2 class="section-title" data-i18n="myProducts">My Products</h2>
+      <p class="section-subtitle" data-i18n="manageYourProducts">Manage and view your posted products</p>
+    </div>
+    <button class="btn-hero-primary" id="sellNowBtn" style="padding: 0.75rem 1.5rem;">
+      <span data-i18n="sellNewProduct">Sell New Product</span>
+    </button>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="filter-tabs" style="margin-bottom: 2rem;">
+    <button class="filter-tab active" data-filter="all" data-i18n="allProducts">All Products</button>
+    <button class="filter-tab" data-filter="active" data-i18n="activeProducts">Active</button>
+    <button class="filter-tab" data-filter="sold" data-i18n="soldProducts">Sold</button>
+    <button class="filter-tab" data-filter="favorites" data-i18n="favorites" id="favoritesTab" style="display: none;">❤️ Favorites</button>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="product-grid-modern" id="productGrid">
+    <!-- Product cards will be inserted here -->
+    <div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">
+      <span data-i18n="loading">Loading products...</span>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" style="display: none; text-align: center; padding: 4rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+    <h3 style="margin-bottom: 1rem;" data-i18n="noProductsYet">No Products Yet</h3>
+    <p style="color: var(--muted); margin-bottom: 2rem;" data-i18n="startSelling">Start selling by listing your first product</p>
+    <button class="btn-hero-primary" id="sellNowEmptyBtn" data-i18n="sellFirstProduct">Sell Your First Product</button>
+  </div>
+
+</main>
+
+<!-- User Profile Modal -->
+<div id="userProfileModal" class="product-modal" style="display: none;">
+  <div class="modal-overlay" id="profileModalOverlay"></div>
+  <div class="modal-content" style="max-width: 800px;">
+    <button class="modal-close" id="profileModalClose">×</button>
+    <div class="modal-body" id="profileModalContent">
+      <!-- Profile content will be inserted here -->
+    </div>
+  </div>
+</div>
+
+
+<!-- Import navbar functionality -->
+
+</body>
+</html>

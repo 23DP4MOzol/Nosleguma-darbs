@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="login">Login - Marketplace</title>
+  <script type="module" crossorigin src="/assets/login-DCF44pI-.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BgUz24lM.js">
+  <link rel="stylesheet" crossorigin href="/assets/navbar-DnmfGxTg.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+      
+      
+
+
+  <main class="main-container" style="max-width: 400px; margin-top: 8rem;">
+    <section class="section-header-centered">
+      <h2 class="section-title" data-i18n="welcome_back">Welcome Back</h2>
+      <p class="section-subtitle" data-i18n="login_account">Log in to your marketplace account</p>
+    </section>
+
+    <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+       <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+       <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required>
+       <button type="submit" class="btn-buy-now" data-i18n="login">Login</button>
+       <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+         <button type="button" id="quickAdminLogin" class="btn-buy-now">Admin: admin@example.com</button>
+         <button type="button" id="quickUser1Login" class="btn-buy-now">User1: user1@example.com</button>
+         <button type="button" id="quickUser2Login" class="btn-buy-now">User2: user2@example.com</button>
+       </div>
+       <div style="text-align: center; color: var(--muted); font-size: 0.875rem; margin-top: 1rem;">
+         Password for all: password123
+       </div>
+       <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
+         <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
+       </p>
+     </form>
+  </main>
+
+<!-- Import navbar functionality -->
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="chat_title">Marketplace - Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/chat-C6hruQ4B.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BgUz24lM.js">
+  <link rel="stylesheet" crossorigin href="/assets/navbar-DnmfGxTg.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0L24 24H0z"/>
+      </svg>
+      MARKETPLACE
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN CHAT SECTION -->
+<main class="main-container messaging-section">
+  <div class="chat-modern">
+
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <div class="chat-list-header">
+        <h3 data-i18n="contacts">Contacts</h3>
+        <button class="btn-icon-small">+</button>
+      </div>
+      <div class="chat-list" id="chatList">
+        <!-- Chat contacts populated via JS -->
+      </div>
+    </div>
+
+    <!-- Chat main area -->
+    <div class="chat-main">
+      <div class="chat-header-bar">
+        <div class="chat-user-info">
+          <div class="chat-avatar avatar-circle" id="activeUserAvatar">A</div>
+          <div>
+            <div class="chat-user-name" id="activeUserName" data-i18n="select_chat">Select a chat</div>
+            <div class="chat-user-status" id="activeUserStatus"></div>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button class="icon-btn">💬</button>
+          <button class="icon-btn">⋮</button>
+        </div>
+      </div>
+      <div class="chat-messages-area" id="chatMessages">
+        <!-- Messages populated via JS -->
+      </div>
+      <div class="chat-input-area">
+        <input type="text" data-i18n-placeholder="type_message" placeholder="Type a message..." class="chat-input-field" id="messageInput">
+        <button class="btn-send" id="sendBtn" data-i18n="send">Send</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+
+<!-- Import navbar functionality -->
+
+</body>
+</html>
