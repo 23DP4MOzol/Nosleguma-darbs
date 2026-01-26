@@ -1,14 +1,61 @@
 [build]
-  base = "/"                  
+  base    = "/"                  
+  command = "node ./node_modules/vite/bin/vite.js build"
   publish = "dist"
-  command = "npm ci && npx vite build"   # Ensure fresh install + build
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_ENV = "development"     # Ensures devDependencies are installed
-  NODE_VERSION = "20"
+  NODE_ENV = "development"      
+  NODE_VERSION = "20"           
+
+# Whitelist all HTML pages
+[[redirects]]
+  from = "/index.html"
+  to = "/index.html"
+  status = 200
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/admin.html"
+  to = "/admin.html"
   status = 200
+
+[[redirects]]
+  from = "/balance.html"
+  to = "/balance.html"
+  status = 200
+
+[[redirects]]
+  from = "/chat.html"
+  to = "/chat.html"
+  status = 200
+
+[[redirects]]
+  from = "/login.html"
+  to = "/login.html"
+  status = 200
+
+[[redirects]]
+  from = "/product.html"
+  to = "/product.html"
+  status = 200
+
+[[redirects]]
+  from = "/register.html"
+  to = "/register.html"
+  status = 200
+
+[[redirects]]
+  from = "/sell.html"
+  to = "/sell.html"
+  status = 200
+
+[[redirects]]
+  from = "/settings.html"
+  to = "/settings.html"
+  status = 200
+
+# Optional catch-all for SPA fallback (if you ever need it)
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
