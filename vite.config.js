@@ -2,10 +2,13 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: "./",
+  base: "./", // crucial for relative paths in multi-page apps
   build: {
+    outDir: "dist",
+    assetsDir: "assets", // all JS/CSS/images go into dist/assets
     rollupOptions: {
       input: {
-        main: "index.html",
+        index: "index.html",
         admin: "admin.html",
         balance: "balance.html",
         chat: "chat.html",
@@ -13,15 +16,8 @@ export default defineConfig({
         product: "product.html",
         register: "register.html",
         sell: "sell.html",
-        settings: "settings.html"
-      }
+        settings: "settings.html",
+      },
     },
-    outDir: "dist",
-    emptyOutDir: true
   },
-  server: {
-    port: 5173,
-    open: true,
-    hmr: { overlay: false }
-  }
 });
