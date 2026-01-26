@@ -1,20 +1,12 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: "./",
-  server: {
-    port: 5173,
-    open: true,
-  },
-  css: {
-    postcss: "./postcss.config.cjs",
-  },
+  root: "./", // your project root
   build: {
-    outDir: "dist",
-    emptyOutDir: true,
+    outDir: "dist", // default output folder
     rollupOptions: {
       input: {
-        index: "index.html",
+        main: "index.html",
         admin: "admin.html",
         balance: "balance.html",
         chat: "chat.html",
