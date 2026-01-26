@@ -1,7 +1,7 @@
 [build]
   base    = "/"                  
   publish = "dist"               
-  command = "npx --yes vite build"      
+  command = "npm exec vite build"   
   functions = "netlify/functions"
 
 [build.environment]
