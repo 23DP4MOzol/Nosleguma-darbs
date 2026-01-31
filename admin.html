@@ -28,73 +28,88 @@
         <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
         <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
         <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
- 
+  
         <!-- Pages Dropdown -->
         <div class="dropdown" id="pagesDropdown">
           <button class="dropdown-btn">☰</button>
           <div class="dropdown-menu">
             <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
-            <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+            <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn">Admin</a>
             <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
             <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
           </div>
         </div>
- 
+  
         <!-- Language Dropdown -->
         <select id="langSelect" class="category-select">
           <option value="en">English</option>
           <option value="lv">Latviešu</option>
         </select>
- 
+  
         <!-- Dark/Light Mode -->
         <button class="icon-btn" id="themeToggle">🌙</button>
- 
+  
         <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
         <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
       </div>
     </div>
   </nav>
-  
-  
-  
 
   <main class="main-container">
     <section>
       <div class="section-header">
-        <h2 class="section-title" data-i18n="dashboard">Dashboard</h2>
-        <p class="section-subtitle" data-i18n="overview">Overview of marketplace activities</p>
+        <h2 class="section-title" data-i18n="admin_dashboard">Admin Dashboard</h2>
+        <p class="section-subtitle">Manage users, view statistics, and monitor marketplace activity</p>
       </div>
 
+      <!-- Stats Cards -->
       <div class="features-section">
-
         <!-- Users Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-primary);">👥</div>
           <div class="feature-title" data-i18n="registered_users">Registered Users</div>
-          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">1,234</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;" id="totalUsers">0</div>
         </div>
 
         <!-- Products Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-vibrant);">📦</div>
           <div class="feature-title" data-i18n="total_products">Total Products</div>
-          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">567</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;" id="totalProducts">0</div>
         </div>
 
         <!-- Transactions Card -->
         <div class="feature-card">
           <div class="feature-icon" style="background: var(--gradient-success);">💳</div>
           <div class="feature-title" data-i18n="transactions_today">Transactions Today</div>
-          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;">89</div>
+          <div class="feature-description" style="font-size: 1.25rem; font-weight: 700;" id="todayTransactions">0</div>
         </div>
-
       </div>
 
-      <section style="margin-top: 4rem;">
+      <!-- User Search Section -->
+      <section style="margin-top: 3rem;">
+        <div class="section-header">
+          <h3 class="section-title">🔍 User Search</h3>
+          <p class="section-subtitle">Search for any user to view their account details, transactions, and history</p>
+        </div>
+        
+        <form id="userSearchForm" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <input type="text" id="userSearchInput" placeholder="Search by email or username..." 
+            style="flex: 1; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg); color: var(--fg);">
+          <button type="submit" class="btn-buy-now">Search Users</button>
+        </form>
+        
+        <div id="userSearchResults" style="background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden;">
+          <!-- User search results will be displayed here -->
+        </div>
+      </section>
+
+      <!-- Recent Activities -->
+      <section style="margin-top: 3rem;">
         <div class="section-header">
           <h3 class="section-title" data-i18n="recent_activities">Recent Activities</h3>
         </div>
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
           <thead>
             <tr style="background: var(--secondary);">
               <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="user">User</th>
@@ -103,25 +118,8 @@
               <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);" data-i18n="amount">Amount</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td style="padding: 0.75rem;">Alice</td>
-              <td style="padding: 0.75rem;" data-i18n="added_funds">Added Funds</td>
-              <td style="padding: 0.75rem;">09/10/2025</td>
-              <td style="padding: 0.75rem;">€50</td>
-            </tr>
-            <tr>
-              <td style="padding: 0.75rem;">Bob</td>
-              <td style="padding: 0.75rem;" data-i18n="sold_product">Sold Product</td>
-              <td style="padding: 0.75rem;">09/10/2025</td>
-              <td style="padding: 0.75rem;">€20</td>
-            </tr>
-            <tr>
-              <td style="padding: 0.75rem;">Charlie</td>
-              <td style="padding: 0.75rem;" data-i18n="purchased_product">Purchased Product</td>
-              <td style="padding: 0.75rem;">08/10/2025</td>
-              <td style="padding: 0.75rem;">€15</td>
-            </tr>
+          <tbody id="recentActivitiesBody">
+            <tr><td colspan="4" style="padding: 1rem; text-align: center;">Loading...</td></tr>
           </tbody>
         </table>
       </section>
@@ -129,9 +127,20 @@
     </section>
   </main>
 
+  <!-- User Details Modal -->
+  <div id="userDetailsModal" class="product-modal" style="display: none;">
+    <div class="modal-overlay" id="userDetailsModalOverlay"></div>
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+      <button class="modal-close" id="userDetailsModalClose">×</button>
+      <div class="modal-body" id="userDetailsContent">
+        <!-- User details will be inserted here -->
+      </div>
+    </div>
+  </div>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/pages/admin.js"></script>
   <script type="module" src="./src/navbar.js"></script>
+  <script type="module" src="./src/main.js"></script>
 
-  </body>
-  </html>
+</body>
+</html>
