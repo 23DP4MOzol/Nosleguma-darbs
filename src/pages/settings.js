@@ -8,7 +8,9 @@ async function checkAuth() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     // User is not logged in, redirect to login page
-    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+    const redirectUrl = window.location.href;
+    const reason = 'settings';
+    window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl)}&reason=${reason}`;
     return false;
   }
   return user;

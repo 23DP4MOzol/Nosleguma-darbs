@@ -1,6 +1,21 @@
 import { supabase, getOrCreateConversation } from '../supabase.js';
 import { i18n } from '../i18n.js';
 
+// ============================
+// Authentication Check - Redirect guests to login
+// ============================
+async function checkAuth() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    // User is not logged in, redirect to login page with reason
+    const redirectUrl = window.location.href;
+    const reason = 'chat';
+    window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl)}&reason=${reason}`;
+    return false;
+  }
+  return user;
+}
+
 // small HTML escape helper used throughout the chat UI
 function escapeHtml(unsafe) {
   if (!unsafe && unsafe !== 0) return '';
@@ -320,10 +335,8 @@ if (newChatBtn && !newChatBtn._hasHandler) {
   newChatBtn._hasHandler = true;
 }
 
-// Initialize
-(async function initChat() {
-  try {
-    await loadUser();
-  } catch (e) { console.warn('loadUser failed on init', e); }
-  try { await ensureGlobalMessageListener(); } catch (e) { console.warn('global listener init failed', e); }
-})();
+// Initialize chat after auth check
+checkAuth().then(isAuthenticated => {
+  if (!isAuthenticated) return;
+  initializeChat();
+});
