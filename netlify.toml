@@ -1,12 +1,16 @@
 [build]
-  base    = "/"                  
+  base    = "/"
   command = "node ./node_modules/vite/bin/vite.js build"
   publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_ENV = "development"      
-  NODE_VERSION = "20"           
+  NODE_ENV = "development"
+  NODE_VERSION = "20"
+
+# Allow Supabase anon keys in client-side code (these are safe to expose)
+[settings]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
 
 [[redirects]]
   from = "/api/*"
