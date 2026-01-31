@@ -7,7 +7,10 @@
 [build.environment]
   NODE_ENV = "development"
   NODE_VERSION = "20"
-  # Disable secrets scanning for Supabase keys (these are safe to expose)
+  # Supabase environment variables (required for client-side authentication)
+  VITE_SUPABASE_URL = "https://nhzukmkmfyyekyhhfyru.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oenVrbWttZnl5ZWt5aGhmeXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MTQzOTQsImV4cCI6MjA3NTQ5MDM5NH0.0uXVwG5yFcPOFIucVuH73Ng5E9F-6syEPnEJCrty6lk"
+  # Disable secrets scanning (Supabase anon keys are safe to expose)
   SECRETS_SCAN_ENABLED = "false"
 
 [[redirects]]
