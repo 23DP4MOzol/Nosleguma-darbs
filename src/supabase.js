@@ -4,23 +4,26 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase credentials from environment variables
-// You need to set these in your .env file or environment
+// These must be set in your deployment platform (Netlify, Vercel, etc.)
+// or in a local .env file (do not commit real credentials to version control)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Fallback to hardcoded values for local development (not recommended for production)
-const fallbackUrl = 'https://nhzukmkmfyyekyhhfyru.supabase.co';
-const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oenVrbWttZnl5ZWt5aGhmeXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MTQzOTQsImV4cCI6MjA3NTQ5MDM5NH0.0uXVwG5yFcPOFIucVuH73Ng5E9F-6syEPnEJCrty6lk';
-
-// Use environment variables if available, otherwise use fallback
-const finalUrl = supabaseUrl || fallbackUrl;
-const finalKey = supabaseAnonKey || fallbackKey;
+// Validate that credentials are provided
+if (!supabaseUrl || !supabaseAnonKey) {
+  const missing = [];
+  if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
+  if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
+  
+  console.error('❌ Missing Supabase environment variables:', missing.join(', '));
+  console.error('Please set these in your deployment platform or .env file.');
+}
 
 // Debug: Log which credentials are being used
-console.log('Supabase URL:', finalUrl);
-console.log('Using env vars:', !!supabaseUrl && !!supabaseAnonKey);
+console.log('Supabase URL configured:', !!supabaseUrl);
+console.log('Supabase Anon Key configured:', !!supabaseAnonKey);
 
-export const supabase = createClient(finalUrl, finalKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 
 // ============================
