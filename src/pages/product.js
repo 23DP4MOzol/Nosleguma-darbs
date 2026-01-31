@@ -2,6 +2,19 @@ import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from 
 import { i18n } from '../i18n.js';
 
 // ============================
+// Authentication Check - Redirect guests to login
+// ============================
+async function checkAuth() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    // User is not logged in, redirect to login page
+    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+    return false;
+  }
+  return user;
+}
+
+// ============================
 // Language and Theme Setup (handled globally in i18n.js)
 // ============================
 document.getElementById('langSelect').addEventListener('change', e => {
@@ -61,8 +74,6 @@ logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
   window.location.href = 'index.html';
 });
-
-loadUser();
 
 // ============================
 // Product Management
@@ -448,7 +459,17 @@ document.getElementById('profileModalOverlay')?.addEventListener('click', () => 
   document.getElementById('userProfileModal').style.display = 'none';
 });
 
-// Load products on page load
-loadUser().then(() => {
-  loadProducts();
-});
+// ============================
+// Initialize Page (after auth check)
+// ============================
+async function initializePage() {
+  currentUser = await checkAuth();
+  if (!currentUser) return; // Redirect happened
+  
+  loadUser().then(() => {
+    loadProducts();
+  });
+}
+
+// Run initialization
+initializePage();
