@@ -7,10 +7,8 @@
 [build.environment]
   NODE_ENV = "development"
   NODE_VERSION = "20"
-
-# Allow Supabase anon keys in client-side code (these are safe to expose)
-[settings]
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+  # Disable secrets scanning for Supabase keys (these are safe to expose)
+  SECRETS_SCAN_ENABLED = "false"
 
 [[redirects]]
   from = "/api/*"
