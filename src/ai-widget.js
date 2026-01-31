@@ -130,7 +130,7 @@ sendBtn.addEventListener("click", async () => {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
   } catch(err) {
-    showToast("AI assistant error", "error");
+    console.error("AI assistant error:", err);
   }
 });
 

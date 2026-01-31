@@ -1,0 +1,64 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./navbar-UlE-X-40.js","./navbar-C5EQzQ5q.css"])))=>i.map(i=>d[i]);
+import{i,s as m,_ as x}from"./navbar-UlE-X-40.js";import"./main-CNAnq-cL.js";function A(){const e=localStorage.getItem("theme")||"light",t=document.documentElement;t.classList.remove("light","dark"),t.classList.add(e),t.setAttribute("data-theme",e),document.getElementById("themeToggle").textContent=e==="dark"?"☀️":"🌙"}function F(){const e=localStorage.getItem("lang")||"en",t=document.getElementById("langSelect");t&&(t.value=e),i.setLang(e)}document.getElementById("langSelect").addEventListener("change",e=>{const t=e.target.value;localStorage.setItem("lang",t),i.setLang(t)});document.getElementById("themeToggle").addEventListener("click",()=>{const e=document.documentElement,r=(e.getAttribute("data-theme")||"light")==="dark"?"light":"dark";e.classList.remove("dark","light"),e.classList.add(r),e.setAttribute("data-theme",r),localStorage.setItem("theme",r),document.getElementById("themeToggle").textContent=r==="dark"?"☀️":"🌙"});A();F();document.getElementById("hamburgerBtn").addEventListener("click",()=>{document.querySelector(".navbar-links").classList.toggle("active")});const E=document.getElementById("loginBtn"),b=document.getElementById("logoutBtn"),B=document.getElementById("balanceBadge"),L=document.getElementById("currentBalance"),h=document.getElementById("transactionHistory");let v=null,g="all";async function p(e,t="all"){const{data:r,error:s}=await m.from("user_transactions").select("*").eq("user_id",e).order("created_at",{ascending:!1});if(h.querySelectorAll(".transaction-item").forEach(n=>n.remove()),r&&r.length){let n=r;if(t!=="all")switch(t){case"deposits":n=r.filter(a=>a.transaction_type==="topup");break;case"purchases":n=r.filter(a=>a.transaction_type==="purchase");break;case"sales":n=r.filter(a=>a.transaction_type==="sale");break}if(n.forEach(a=>{const o=document.createElement("div");o.className="transaction-item",o.style.cssText=`
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: background-color 0.2s;
+        border-radius: 8px;
+      `,o.onmouseover=()=>{const f=document.documentElement.getAttribute("data-theme")==="dark";o.style.backgroundColor=f?"rgba(255, 255, 255, 0.05)":"var(--secondary)"},o.onmouseout=()=>o.style.backgroundColor="transparent";const l=f=>{switch(f){case"topup":return"💰";case"purchase":return"🛒";case"sale":return"💸";case"fee":return"📝";case"refund":return"↩️";case"withdraw":return"💳";default:return"💳"}},I=f=>{switch(f){case"topup":return"#10b981";case"sale":return"#10b981";case"refund":return"#10b981";case"purchase":case"fee":case"withdraw":return"#ef4444";default:return"#6b7280"}},$=f=>{const c=f.description||"";if(c.toLowerCase().includes("top-up")||c.toLowerCase().includes("topup"))return i.t("transaction_topup");if(c.toLowerCase().includes("withdrawal")||c.toLowerCase().includes("withdraw"))return i.t("transaction_withdraw");if(c.toLowerCase().includes("listing fee")){const y=c.match(/listing fee for (.+)/i);return y?`${i.t("transaction_listing_fee")}: ${y[1]}`:i.t("transaction_listing_fee")}else if(c.toLowerCase().includes("purchase")){const y=c.match(/purchase[:\s]+(.+)/i);return y?`${i.t("transaction_purchase")}: ${y[1]}`:i.t("transaction_purchase")}else if(c.toLowerCase().includes("sale")){const y=c.match(/sale[:\s]+(.+)/i);return y?`${i.t("transaction_sale")}: ${y[1]}`:i.t("transaction_sale")}else if(c.toLowerCase().includes("refund"))return i.t("transaction_refund");return c||f.transaction_type.replace("_"," ")},C=Math.abs(parseFloat(a.amount||0)),S=["topup","sale","refund"].includes(a.transaction_type);o.innerHTML=`
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="font-size: 1.25rem;">${l(a.transaction_type)}</div>
+          <div>
+            <div style="font-weight: 500; color: var(--fg);">${$(a)}</div>
+            <div style="font-size: 0.875rem; color: var(--muted);">${new Date(a.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>
+        <div style="font-weight: 600; color: ${I(a.transaction_type)};">
+          ${S?"+":"-"}€${C.toFixed(2)}
+        </div>
+      `,h.appendChild(o)}),n.length===0){const a=document.createElement("div");a.style.cssText="text-align: center; padding: 2rem; color: var(--muted);",a.innerHTML=`<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>${i.t("no_filter_transactions").replace("{filter}",t)}`,h.appendChild(a)}}else{const n=document.createElement("div");n.style.cssText="text-align: center; padding: 2rem; color: var(--muted);",n.innerHTML=`<div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>${i.t("no_transactions_found")}`,h.appendChild(n)}}async function _(){const{data:{user:e}}=await m.auth.getUser();if(e){v=e.id,E.style.display="none",b.style.display="flex";const{data:t,error:r}=await m.from("users").select("balance, role").eq("id",e.id).maybeSingle();if(r&&console.warn("Error fetching user balance:",r),t){const s=parseFloat(t.balance||0);if(B.querySelector("span").innerText=`€${s.toFixed(2)}`,L.innerText=`€${s.toFixed(2)}`,t.role==="admin"){const d=document.getElementById("adminBtn");d&&(d.style.display="flex")}}else B.querySelector("span").innerText="€0.00",L.innerText="€0.00";p(e.id,g),T(e.id)}else E.style.display="flex",b.style.display="none",window.location.href="login.html"}E.addEventListener("click",async()=>{window.location.href="login.html"});b.addEventListener("click",async()=>{await m.auth.signOut(),window.location.href="index.html"});const D=document.querySelector(".add-funds"),z=D?.querySelector("div");let u=document.getElementById("withdrawBtn");u||(u=document.createElement("button"),u.id="withdrawBtn",u.className="btn-hero-secondary",u.style.cssText="margin-left:0.5rem;padding:0.75rem 1rem;border-radius:8px; background:#ef4444;color:white;border:none; cursor:pointer;",u.textContent="Withdraw",z?.appendChild(u));const k=document.getElementById("addFundsBtn");k&&k.addEventListener("click",async()=>{const e=parseFloat(document.getElementById("fundAmount").value);if(isNaN(e)||e<=0)return alert(i.t("enter_valid_amount"));const{data:{user:t}}=await m.auth.getUser();if(!t)return alert(i.t("loginFirst"));try{const{addBalance:r}=await x(async()=>{const{addBalance:s}=await import("./navbar-UlE-X-40.js").then(d=>d.f);return{addBalance:s}},__vite__mapDeps([0,1]),import.meta.url);await r(t.id,e,"Balance top-up"),await _(),document.getElementById("fundAmount").value="",alert(i.t("deposit_success"))}catch(r){console.error("Error adding funds:",r),alert("Failed to add funds: "+(r.message||r))}});u&&u.addEventListener("click",async()=>{const e=parseFloat(document.getElementById("fundAmount").value);if(isNaN(e)||e<=0)return alert(i.t("enter_valid_amount"));const{data:{user:t}}=await m.auth.getUser();if(!t)return alert(i.t("loginFirst"));try{const{getBalance:r,updateBalance:s}=await x(async()=>{const{getBalance:a,updateBalance:o}=await import("./navbar-UlE-X-40.js").then(l=>l.f);return{getBalance:a,updateBalance:o}},__vite__mapDeps([0,1]),import.meta.url),d=await r(t.id);if(d<e){alert("Insufficient balance for withdrawal");return}const n=d-e;await s(t.id,n),await m.from("user_transactions").insert({user_id:t.id,amount:-e,transaction_type:"withdraw",description:"Withdrawal",created_at:new Date().toISOString()}),await _(),document.getElementById("fundAmount").value="",alert(i.t("withdrawal_success"))}catch(r){console.error("Error withdrawing funds:",r),alert("Failed to withdraw: "+(r.message||r))}});async function T(e){try{const{data:t,error:r}=await m.from("products").select("*").eq("seller_id",e).order("created_at",{ascending:!1}),s=document.getElementById("myListingsContainer");if(r){console.error("Error loading user products:",r),s.innerHTML=`
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+          <div style="color: #ef4444;">Failed to load listings.</div>
+        </div>
+      `;return}if(s.innerHTML="",!t||t.length===0){s.innerHTML=`
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">📦</div>
+          <div data-i18n="no_listings">${i.t("no_listings")}</div>
+        </div>
+      `;return}const d=document.createElement("div");d.style.cssText="display: grid; grid-template-columns: 2fr 1fr 1fr 200px; gap: 1rem; padding: 1rem; border-bottom: 2px solid var(--border); font-weight: 600; color: var(--fg); font-size: 0.875rem;",d.innerHTML=`
+      <div>Product</div>
+      <div>Price</div>
+      <div>Stock</div>
+      <div>Actions</div>
+    `,s.appendChild(d),t.forEach(n=>{const a=document.createElement("div");a.style.cssText="display: grid; grid-template-columns: 2fr 1fr 1fr 200px; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); transition: background-color 0.2s;",a.onmouseover=()=>{const l=document.documentElement.getAttribute("data-theme")==="dark";a.style.backgroundColor=l?"rgba(255, 255, 255, 0.05)":"var(--secondary)"},a.onmouseout=()=>a.style.backgroundColor="transparent";const o={new:"✨",like_new:"🔄",good:"👍",fair:"😐",poor:"⚠️"};a.innerHTML=`
+        <div>
+          <div style="font-weight: 600; color: var(--fg); margin-bottom: 0.25rem;">${q(n.name)}</div>
+          <div style="font-size: 0.875rem; color: var(--muted);">
+            ${n.category?`📦 ${n.category}`:""} 
+            ${n.condition?`• ${o[n.condition]||""} ${n.condition.replace("_"," ")}`:""}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem;">
+            ${n.created_at?`Created: ${new Date(n.created_at).toLocaleDateString()}`:""}
+          </div>
+        </div>
+        <div style="font-weight: 600; color: var(--fg);">€${parseFloat(n.price||0).toFixed(2)}</div>
+        <div style="color: var(--fg);">
+          ${parseInt(n.stock||0)>0?`<span style="color: #10b981;">✓ ${n.stock}</span>`:'<span style="color: #ef4444;">✗ 0</span>'}
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button data-id="${n.id}" class="editListingBtn" style="flex: 1; padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: var(--transition);">
+            ✏️ ${i.t("edit_listing")}
+          </button>
+          <button data-id="${n.id}" class="deleteListingBtn" style="flex: 1; padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: var(--transition);">
+            🗑️ ${i.t("delete_listing")}
+          </button>
+        </div>
+      `,s.appendChild(a)}),s.querySelectorAll(".deleteListingBtn").forEach(n=>{n.onclick=async a=>{a.stopPropagation();const o=a.target.getAttribute("data-id");if(confirm(i.t("delete_listing_confirm"))){n.textContent="⏳...",n.disabled=!0;try{const{error:l}=await m.from("products").delete().eq("id",o);if(l)throw l;alert(i.t("listing_deleted")),T(e)}catch(l){console.error("Error deleting listing",l),alert(i.t("failed_to_delete")+": "+(l.message||l)),n.textContent=`🗑️ ${i.t("delete_listing")}`,n.disabled=!1}}}}),s.querySelectorAll(".editListingBtn").forEach(n=>{n.onclick=a=>{a.stopPropagation();const o=a.target.getAttribute("data-id");window.location.href=`sell.html?edit=${o}`}})}catch(t){console.error("Error loading user products",t);const r=document.getElementById("myListingsContainer");r&&(r.innerHTML=`
+        <div style="text-align: center; padding: 2rem; color: var(--muted);">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+          <div style="color: #ef4444;">Failed to load listings: ${t.message}</div>
+        </div>
+      `)}}function q(e){const t=document.createElement("div");return t.textContent=e,t.innerHTML}document.getElementById("filterAll").addEventListener("click",()=>{w("filterAll"),g="all",p(v,g)});document.getElementById("filterDeposits").addEventListener("click",()=>{w("filterDeposits"),g="deposits",p(v,g)});document.getElementById("filterPurchases").addEventListener("click",()=>{w("filterPurchases"),g="purchases",p(v,g)});document.getElementById("filterSales").addEventListener("click",()=>{w("filterSales"),g="sales",p(v,g)});function w(e){document.querySelectorAll(".filter-btn").forEach(t=>{t.classList.remove("active"),t.style.background="var(--card-bg)",t.style.color="var(--fg)",t.style.border="1px solid var(--border)"}),document.getElementById(e).classList.add("active"),document.getElementById(e).style.background="var(--primary)",document.getElementById(e).style.color="white",document.getElementById(e).style.border="1px solid var(--primary)"}_();

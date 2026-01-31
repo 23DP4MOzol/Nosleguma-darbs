@@ -1,28 +1,10 @@
 import { supabase, getCurrentUser, loginUser, registerUser, logoutUser, getBalance, getProducts, addBalance, purchaseProduct, reserveProduct, listProduct, getUserTransactions } from './supabase.js';
+import { showToast } from './main.js';
+import { i18n } from './i18n.js';
 
 // ---------------------
 // UTILS
 // ---------------------
-function showToast(msg, type="success", timeout=3000){
-  let container = document.getElementById("toastContainer");
-  if(!container){
-    container = document.createElement("div");
-    container.id="toastContainer";
-    Object.assign(container.style,{position:"fixed",right:"20px",bottom:"20px",zIndex:9999,display:"flex",flexDirection:"column",gap:"8px"});
-    document.body.appendChild(container);
-  }
-  const node=document.createElement("div");
-  node.textContent=msg;
-  node.className=`toast toast-${type}`;
-  Object.assign(node.style,{
-    background:type==="error"? "#fee2e2":"#ecfdf5",
-    color:type==="error"? "#ef4444":"#065f46",
-    padding:"10px 14px", borderRadius:"10px", boxShadow:"0 6px 18px rgba(0,0,0,0.08)", fontWeight:600
-  });
-  container.appendChild(node);
-  setTimeout(()=>node.remove(),timeout);
-}
-
 function escapeHtml(str=''){return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
 
 // ---------------------
@@ -122,11 +104,8 @@ export async function loadProducts(containerId='productsContainer'){
 window.addEventListener("load", async ()=>{
   updateNavbar();
   loadProducts();
-});
-// After rendering products
-i18n.setLang(i18n.lang);
-
-// Example: switch language
-document.getElementById('langSwitcher').addEventListener('change', (e) => {
-  i18n.setLang(e.target.value);
+  // Initialize language
+  if (i18n && typeof i18n.setLang === 'function') {
+    i18n.setLang(i18n.lang || localStorage.getItem('lang') || 'en');
+  }
 });

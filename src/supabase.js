@@ -3,10 +3,24 @@
 // =======================================
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://nhzukmkmfyyekyhhfyru.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oenVrbWttZnl5ZWt5aGhmeXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MTQzOTQsImV4cCI6MjA3NTQ5MDM5NH0.0uXVwG5yFcPOFIucVuH73Ng5E9F-6syEPnEJCrty6lk';
+// Get Supabase credentials from environment variables
+// You need to set these in your .env file or environment
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Fallback to hardcoded values for local development (not recommended for production)
+const fallbackUrl = 'https://nhzukmkmfyyekyhhfyru.supabase.co';
+const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oenVrbWttZnl5ZWt5aGhmeXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MTQzOTQsImV4cCI6MjA3NTQ5MDM5NH0.0uXVwG5yFcPOFIucVuH73Ng5E9F-6syEPnEJCrty6lk';
+
+// Use environment variables if available, otherwise use fallback
+const finalUrl = supabaseUrl || fallbackUrl;
+const finalKey = supabaseAnonKey || fallbackKey;
+
+// Debug: Log which credentials are being used
+console.log('Supabase URL:', finalUrl);
+console.log('Using env vars:', !!supabaseUrl && !!supabaseAnonKey);
+
+export const supabase = createClient(finalUrl, finalKey);
 
 
 // ============================
@@ -20,7 +34,10 @@ export async function getCurrentUser() {
     if (error) throw error;
     return user;
   } catch (error) {
-    console.error('Error getting current user:', error);
+    // AuthSessionMissingError is expected for unauthenticated users
+    if (error.name !== 'AuthSessionMissingError') {
+      console.error('Error getting current user:', error);
+    }
     return null;
   }
 }

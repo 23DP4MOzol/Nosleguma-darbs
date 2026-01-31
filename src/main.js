@@ -7,13 +7,14 @@ import { i18n } from './i18n.js';
 import './navbar.js';
 import './app.js';
 import './product-modal.js';
-import './ai-widget.js';
+// AI widget disabled - requires Netlify functions setup
+// import './ai-widget.js';
 
 // ============================
 // UTILITY FUNCTIONS
 // ============================
 
-function showToast(message, type = 'success') {
+export function showToast(message, type = 'success') {
   let container = document.getElementById('toastContainer');
   if (!container) {
     container = document.createElement('div');
@@ -66,7 +67,7 @@ function showToast(message, type = 'success') {
  * Safely escape HTML to prevent XSS.
  * Accepts null/undefined gracefully by converting to empty string.
  */
-function escapeHtml(input = '') {
+export function escapeHtml(input = '') {
   const str = String(input);
   const map = {
     '&': '&amp;',
@@ -609,13 +610,25 @@ async function initializeIndexPage() {
         .select('*, users!seller_id(username)')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // 401 errors are expected for unauthenticated users - don't show error toast
+        if (error.status === 401 || error.message.includes('401')) {
+          console.log('Products require authentication to view');
+          allProducts = [];
+          applyFiltersAndRender();
+          return;
+        }
+        throw error;
+      }
       allProducts = Array.isArray(data) ? data : [];
       applyFiltersAndRender();
       updateStats();
     } catch (error) {
       console.error('Error loading products:', error);
-      showToast(i18n.t ? i18n.t('error_loading_products') || 'Error loading products' : 'Error loading products', 'error');
+      // Only show toast for non-401 errors
+      if (error.status !== 401) {
+        showToast(i18n.t ? i18n.t('error_loading_products') || 'Error loading products' : 'Error loading products', 'error');
+      }
     }
   }
 
@@ -2384,7 +2397,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeLoginPage();
   initializeRegisterPage();
   initializeBalancePage();
-});
-
-// Export for potential use in other modules
-export { showToast, updateNavbarAuth };
+  });
