@@ -15,7 +15,9 @@ export default defineConfig({
         product: 'product.html',
         register: 'register.html',
         sell: 'sell.html',
-        settings: 'settings.html'
+        settings: 'settings.html',
+        terms: 'terms.html',
+        terms_lv: 'terms-lv.html'
       }
     }
   }

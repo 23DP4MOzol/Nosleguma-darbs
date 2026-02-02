@@ -7,6 +7,61 @@
   <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    .terms-checkbox-container {
+      background: var(--secondary);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+    
+    .terms-checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    
+    .terms-checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+    
+    .terms-text {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--fg);
+    }
+    
+    .terms-text a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .terms-text a:hover {
+      text-decoration: underline;
+    }
+    
+    .warning-text {
+      color: var(--warning);
+      font-weight: 600;
+    }
+    
+    .error-message {
+      color: var(--error);
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
@@ -53,7 +108,7 @@
   </div>
 </nav>
 
-<main class="main-container" style="max-width: 400px; margin-top: 8rem;">
+<main class="main-container" style="max-width: 450px; margin-top: 4rem; margin-bottom: 4rem;">
   <section class="section-header-centered">
     <h2 class="section-title" data-i18n="create_account">Create Account</h2>
     <p class="section-subtitle" data-i18n="join_marketplace">Join our marketplace and start buying and selling</p>
@@ -64,6 +119,26 @@
     <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
     <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required minlength="6">
     <input type="password" id="confirmPasswordInput" placeholder="Confirm Password" data-i18n-placeholder="confirm_password" class="chat-input-field" required minlength="6">
+    
+    <!-- Terms and Conditions Checkbox -->
+    <div class="terms-checkbox-container">
+      <label class="terms-checkbox-label">
+        <input type="checkbox" id="acceptTerms" required>
+        <span class="terms-text">
+          <span data-i18n="accept_terms">I have read and agree to the Terms of Service and Anti-Scam Policy</span>.
+          <br><br>
+          <span class="warning-text">⚠️ WARNING:</span> <span data-i18n="scam_warning_text">Scamming activities are illegal and may result in criminal prosecution, civil lawsuits, and severe financial penalties. We actively cooperate with law enforcement agencies worldwide.</span>
+        </span>
+      </label>
+      <p class="error-message" id="termsError" data-i18n="accept_terms_error">You must accept the Terms of Service and Anti-Scam Policy to register.</p>
+    </div>
+    
+    <!-- Email Verification Notice -->
+    <div style="background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; font-size: 0.875rem; color: #1e40af;">
+      <strong>📧 Email Verification Required</strong><br>
+      <span data-i18n="email_verification_notice">After registration, you must verify your email address before you can log in.</span>
+    </div>
+    
     <button type="submit" class="btn-buy-now" data-i18n="register">Register</button>
     <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
       <span data-i18n="already_have_account">Already have an account?</span> <a href="login.html" style="color: var(--primary);" data-i18n="sign_in">Sign in</a>

@@ -280,7 +280,17 @@ export const i18n = {
         noProductsYet: "No Products Yet",
         startSelling: "Start selling by listing your first product",
         sellFirstProduct: "Sell Your First Product",
-        product_title: "Vendly - My Products"
+        product_title: "Vendly - My Products",
+        // Terms and Anti-Scam Policy translations
+        terms_title: "Terms of Service & Anti-Scam Policy",
+        accept_terms: "I have read and agree to the Terms of Service and Anti-Scam Policy",
+        accept_terms_error: "You must accept the Terms of Service and Anti-Scam Policy to register.",
+        scam_warning_title: "⚠️ ANTI-SCAM WARNING",
+        scam_warning_text: "By proceeding, you acknowledge that scamming is a serious crime that may result in criminal prosecution.",
+        email_verification_notice: "Email Verification Required - After registration, you must verify your email address before you can log in.",
+        resend_verification: "Resend verification email",
+        verification_required: "Email Verification Required - Your email address has not been verified yet.",
+        check_spam_folder: "If you did not receive the email, check your spam folder."
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -556,7 +566,17 @@ export const i18n = {
         noProductsYet: "Vēl nav produktu",
         startSelling: "Sāciet pārdot, pievienojot savu pirmo produktu",
         sellFirstProduct: "Pārdot savu pirmo produktu",
-        product_title: "Vendly - Mani produkti"
+        product_title: "Vendly - Mani produkti",
+        // Terms and Anti-Scam Policy translations
+        terms_title: "Lietošanas noteikumi un Pretkrāpšanas politika",
+        accept_terms: "Esmu izlasījis un piekrītu Lietošanas noteikumiem un Pretkrāpšanas politikai",
+        accept_terms_error: "Jums jāpiekrīt Lietošanas noteikumiem un Pretkrāpšanas politikai, lai reģistrētos.",
+        scam_warning_title: "⚠️ PRETKRĀPŠANAS BRĪDINĀJUMS",
+        scam_warning_text: "Turpinot, jūs apzināties, ka krāpšana ir nopietns noziegums, kas var izraisīt kriminālvajāšanu.",
+        email_verification_notice: "E-pasta verifikācija nepieciešama - Pēc reģistrācijas jums jāverificē e-pasta adrese, lai varētu pieslēgties.",
+        resend_verification: "Atkārtoti nosūtīt verifikācijas e-pastu",
+        verification_required: "E-pasta verifikācija nepieciešama - Jūsu e-pasta adrese vēl nav verificēta.",
+        check_spam_folder: "Ja nesaņēmāt e-pastu, pārbaudiet surogātpasta mapi."
       }
     },
   

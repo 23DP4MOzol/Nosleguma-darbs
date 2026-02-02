@@ -80,6 +80,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
   const confirmPassword = document.getElementById('confirmPasswordInput').value;
+  const acceptTerms = document.getElementById('acceptTerms').checked;
+  const termsError = document.getElementById('termsError');
 
   // Validation
   if (password !== confirmPassword) {
@@ -92,6 +94,29 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     return;
   }
 
+  // Terms acceptance validation
+  if (!acceptTerms) {
+    termsError.classList.add('show');
+    alert('⚠️ ANTI-SCAM POLICY ACKNOWLEDGMENT REQUIRED\n\nYou must read and accept the Terms of Service and Anti-Scam Policy to create an account.\n\nScamming activities are illegal and may result in criminal prosecution.');
+    return;
+  }
+  termsError.classList.remove('show');
+
+  // Anti-scam warning before final submission
+  const confirmScamWarning = confirm(
+    '⚠️ IMPORTANT ANTI-SCAM WARNING\n\n' +
+    'By proceeding, you acknowledge that:\n' +
+    '• Scamming is a serious crime\n' +
+    '• You may face criminal prosecution\n' +
+    '• You may be sued civilly\n' +
+    '• We cooperate with law enforcement\n\n' +
+    'Do you acknowledge and agree?'
+  );
+  
+  if (!confirmScamWarning) {
+    return;
+  }
+
   try {
     // Register user with Supabase
     const result = await supabase.auth.signUp({
@@ -99,14 +124,16 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       password,
       options: {
         data: {
-          username: username
+          username: username,
+          accepted_terms_at: new Date().toISOString(),
+          accepted_terms_version: '2026-01'
         }
       }
     });
 
     if (result.error) throw result.error;
 
-    alert(i18n.t('registration_success') || 'Registration successful! Please check your email to verify your account.');
+    alert('✅ Registration Successful!\n\n📧 Please check your email inbox for the verification link.\n\n⚠️ You must verify your email before you can log in and use the platform.');
     window.location.href = 'login.html';
 
   } catch (error) {

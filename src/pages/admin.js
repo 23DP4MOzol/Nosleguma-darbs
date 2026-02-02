@@ -179,15 +179,15 @@ function displayUsers(users) {
       <td>${formatDate(user.created_at)}</td>
       <td>${user.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge badge-user">User</span>'}</td>
       <td>
-        <button class="btn btn-sm" onclick="viewUserDetails('${user.id}')">View</button>
-        <button class="btn btn-sm btn-warning" onclick="editUser('${user.id}', '${user.balance}')">Edit</button>
-        ${user.role !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">Delete</button>` : ''}
+        <button class="btn btn-sm" data-action="view-user" data-id="${user.id}">View</button>
+        <button class="btn btn-sm btn-warning" data-action="edit-user" data-id="${user.id}" data-balance="${user.balance}">Edit</button>
+        ${user.role !== 'admin' ? `<button class="btn btn-sm btn-danger" data-action="delete-user" data-id="${user.id}">Delete</button>` : ''}
       </td>
     </tr>
   `).join('');
 }
 
-async function viewUserDetails(userId) {
+window.viewUserDetails = async function(userId) {
   try {
     // User data
     const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
@@ -222,7 +222,7 @@ function showUserDetailModal(user, stats) {
   content.innerHTML = `
     <div class="admin-modal-header">
       <h2>👤 User: ${user.username || user.email}</h2>
-      ${user.role !== 'admin' ? `<button class="btn btn-danger" onclick="deleteUser('${user.id}')">Delete User</button>` : ''}
+      ${user.role !== 'admin' ? `<button class="btn btn-danger" data-action="delete-user" data-id="${user.id}">Delete User</button>` : ''}
     </div>
     
     <div class="admin-modal-grid">
@@ -403,7 +403,7 @@ function displayProducts(products) {
       <td>${p.condition || 'N/A'}</td>
       <td>${formatDate(p.created_at)}</td>
       <td>
-        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">Delete</button>
+        <button class="btn btn-sm btn-danger" data-action="delete-product" data-id="${p.id}">Delete</button>
       </td>
     </tr>
   `).join('');
@@ -426,11 +426,22 @@ window.deleteProduct = async function(productId) {
 // ============================
 async function loadTransactions() {
   const type = document.getElementById('tx-type')?.value || 'all';
+  const amountFilter = document.getElementById('tx-amount')?.value || 'all';
+  const dateFrom = document.getElementById('tx-date-from')?.value;
+  const dateTo = document.getElementById('tx-date-to')?.value;
   
   let query = supabase.from('user_transactions').select('*, users!user_id(username, email)');
   
   if (type !== 'all') {
     query = query.eq('transaction_type', type);
+  }
+  
+  if (dateFrom) {
+    query = query.gte('created_at', dateFrom);
+  }
+  
+  if (dateTo) {
+    query = query.lte('created_at', dateTo + 'T23:59:59');
   }
   
   const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
@@ -440,14 +451,22 @@ async function loadTransactions() {
     return;
   }
   
-  displayTransactions(data || []);
+  // Apply profit/loss filter client-side
+  let filteredData = data || [];
+  if (amountFilter === 'profit') {
+    filteredData = filteredData.filter(t => t.amount > 0);
+  } else if (amountFilter === 'loss') {
+    filteredData = filteredData.filter(t => t.amount < 0);
+  }
+  
+  displayTransactions(filteredData);
 }
 
 function displayTransactions(transactions) {
   const tbody = document.getElementById('transactions-table-body');
   
   if (!transactions.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No transactions found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No transactions found</td></tr>';
     return;
   }
   
@@ -458,8 +477,27 @@ function displayTransactions(transactions) {
       <td><span class="badge badge-${t.transaction_type}">${t.transaction_type}</span></td>
       <td>${t.description || '-'}</td>
       <td class="${t.amount >= 0 ? 'text-success' : 'text-danger'}">€${Math.abs(t.amount).toFixed(2)}</td>
+      <td><span class="badge badge-${t.status || 'pending'}">${t.status || 'completed'}</span></td>
     </tr>
   `).join('');
+}
+
+window.clearTransactionHistory = async function() {
+  if (!confirm('Are you sure you want to CLEAR ALL transaction history? This action cannot be undone!')) return;
+  
+  try {
+    const { error } = await supabase.from('user_transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) throw error;
+    
+    alert('Transaction history cleared successfully');
+    loadTransactions();
+  } catch (error) {
+    alert('Error clearing transaction history: ' + error.message);
+  }
+};
+
+export function exportTransactions() {
+  alert('Export feature coming soon - will export to CSV');
 }
 
 // ============================
@@ -543,7 +581,7 @@ function displayConversations(conversations) {
           <div class="conversation-preview">${c.last_message || 'No messages'}</div>
           <div class="conversation-time">${formatDate(c.last_message_at)}</div>
           <span class="badge badge-${c.status}">${c.status}</span>
-          <button class="btn btn-sm" onclick="viewConversation('${c.id}')">View</button>
+          <button class="btn btn-sm" data-action="view-conversation" data-id="${c.id}">View</button>
         </div>
       `).join('')}
     </div>
@@ -618,8 +656,8 @@ function displayTickets(tickets) {
             <td><span class="badge badge-${t.status}">${t.status}</span></td>
             <td>${formatDate(t.created_at)}</td>
             <td>
-              <button class="btn btn-sm" onclick="viewTicket('${t.id}')">View</button>
-              ${t.status === 'open' ? `<button class="btn btn-sm btn-success" onclick="resolveTicket('${t.id}')">Resolve</button>` : ''}
+              <button class="btn btn-sm" data-action="view-ticket" data-id="${t.id}">View</button>
+              ${t.status === 'open' ? `<button class="btn btn-sm btn-success" data-action="resolve-ticket" data-id="${t.id}">Resolve</button>` : ''}
             </td>
           </tr>
         `).join('')}
@@ -723,27 +761,14 @@ async function loadSiteSettings() {
     <p style="color:var(--muted);">Settings are managed through Supabase database. Future enhancement: Add platform_settings table.</p>
     
     <h3 style="margin-top:2rem;">🗄️ Database Stats</h3>
-    <button class="btn btn-primary" onclick="refreshStats()">Refresh All Stats</button>
+    <button class="btn btn-primary" data-action="refresh-stats">Refresh All Stats</button>
     
     <h3 style="margin-top:2rem;">🔧 Quick Actions</h3>
     <div class="settings-section">
-      <button class="btn btn-warning" onclick="clearOldData()">Archive Old Data</button>
+      <button class="btn btn-warning" data-action="clear-data">Archive Old Data</button>
     </div>
   `;
 }
-
-window.refreshStats = function() {
-  loadDashboard();
-  alert('Stats refreshed!');
-};
-
-window.clearOldData = function() {
-  alert('Data cleanup feature coming soon');
-};
-
-// ============================
-// Utilities
-// ============================
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
   return new Date(dateStr).toLocaleString();
@@ -774,6 +799,31 @@ async function initialize() {
   
   document.getElementById('user-search')?.addEventListener('input', debounce(loadUsers, 300));
   document.getElementById('product-search')?.addEventListener('input', debounce(loadProducts, 300));
+  
+  // Event delegation for action buttons
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    
+    switch(action) {
+      case 'view-user': viewUserDetails(id); break;
+      case 'edit-user': editUser(id, btn.dataset.balance); break;
+      case 'delete-user': deleteUser(id); break;
+      case 'delete-product': deleteProduct(id); break;
+      case 'view-conversation': viewConversation(id); break;
+      case 'resolve-ticket': resolveTicket(id); break;
+      case 'refresh-stats': 
+        loadDashboard(); 
+        alert('Stats refreshed!');
+        break;
+      case 'clear-data': 
+        alert('Data cleanup feature coming soon');
+        break;
+    }
+  });
   
   await loadDashboard();
 }
