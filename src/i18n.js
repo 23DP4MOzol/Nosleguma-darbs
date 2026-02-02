@@ -290,7 +290,11 @@ export const i18n = {
         email_verification_notice: "Email Verification Required - After registration, you must verify your email address before you can log in.",
         resend_verification: "Resend verification email",
         verification_required: "Email Verification Required - Your email address has not been verified yet.",
-        check_spam_folder: "If you did not receive the email, check your spam folder."
+        check_spam_folder: "If you did not receive the email, check your spam folder.",
+        terms_of_service: "Terms of Service and Anti-Scam Policy",
+        email_verification_required: "Email Verification Required",
+        decline: "Decline",
+        accept_and_register: "Accept & Register"
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -576,7 +580,11 @@ export const i18n = {
         email_verification_notice: "E-pasta verifikācija nepieciešama - Pēc reģistrācijas jums jāverificē e-pasta adrese, lai varētu pieslēgties.",
         resend_verification: "Atkārtoti nosūtīt verifikācijas e-pastu",
         verification_required: "E-pasta verifikācija nepieciešama - Jūsu e-pasta adrese vēl nav verificēta.",
-        check_spam_folder: "Ja nesaņēmāt e-pastu, pārbaudiet surogātpasta mapi."
+        check_spam_folder: "Ja nesaņēmāt e-pastu, pārbaudiet surogātpasta mapi.",
+        terms_of_service: "Lietošanas noteikumi un Pretkrāpšanas politika",
+        email_verification_required: "E-pasta verifikācija nepieciešama",
+        decline: "Atteikties",
+        accept_and_register: "Pieņemt un reģistrēties"
       }
     },
   

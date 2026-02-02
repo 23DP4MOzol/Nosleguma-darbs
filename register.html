@@ -36,13 +36,14 @@
       color: var(--fg);
     }
     
-    .terms-text a {
+    .terms-link {
       color: var(--primary);
       text-decoration: none;
       font-weight: 600;
+      cursor: pointer;
     }
     
-    .terms-text a:hover {
+    .terms-link:hover {
       text-decoration: underline;
     }
     
@@ -60,6 +61,215 @@
     
     .error-message.show {
       display: block;
+    }
+    
+    /* Terms Modal Styles */
+    .terms-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+      z-index: 10000;
+      padding: 2rem 1rem;
+      overflow-y: auto;
+    }
+    
+    .terms-modal-overlay.active {
+      display: flex;
+    }
+    
+    .terms-modal-content {
+      background: var(--card-bg);
+      border-radius: 16px;
+      max-width: 900px;
+      width: 100%;
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+      position: relative;
+      animation: modalSlideIn 0.3s ease;
+    }
+    
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .terms-modal-header {
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    
+    .terms-modal-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--fg);
+    }
+    
+    .terms-modal-close {
+      background: var(--secondary);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--fg);
+      transition: var(--transition);
+    }
+    
+    .terms-modal-close:hover {
+      background: var(--border);
+    }
+    
+    .terms-modal-body {
+      padding: 1.5rem;
+    }
+    
+    .terms-section {
+      margin-bottom: 1.5rem;
+    }
+    
+    .terms-section h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .terms-section h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin: 0.75rem 0 0.5rem 0;
+    }
+    
+    .terms-section p, .terms-section li {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--fg);
+    }
+    
+    .terms-section ul {
+      padding-left: 1.25rem;
+    }
+    
+    .terms-section li {
+      margin-bottom: 0.35rem;
+    }
+    
+    .warning-box {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .warning-box h4 {
+      color: #92400e;
+      margin-bottom: 0.5rem;
+    }
+    
+    .warning-box p {
+      color: #78350f;
+      margin: 0;
+    }
+    
+    .danger-box {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .danger-box h4 {
+      color: #991b1b;
+      margin-bottom: 0.5rem;
+    }
+    
+    .danger-box p {
+      color: #7f1d1d;
+      margin: 0;
+    }
+    
+    .legal-box {
+      background: #dbeafe;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .legal-box h4 {
+      color: #1e40af;
+      margin-bottom: 0.5rem;
+    }
+    
+    .legal-box p {
+      color: #1e3a8a;
+      margin: 0;
+    }
+    
+    .scam-item {
+      background: var(--secondary);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 0.75rem 0;
+    }
+    
+    .scam-item strong {
+      color: var(--error);
+    }
+    
+    .accept-section {
+      position: sticky;
+      bottom: 0;
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+    
+    .btn-accept-terms {
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+      .terms-modal-content {
+        max-height: calc(100vh - 2rem);
+      }
+      
+      .accept-section {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -125,17 +335,18 @@
       <label class="terms-checkbox-label">
         <input type="checkbox" id="acceptTerms" required>
         <span class="terms-text">
-          <span data-i18n="accept_terms">I have read and agree to the Terms of Service and Anti-Scam Policy</span>.
+          <span data-i18n="accept_terms">I have read and agree to the</span>
+          <span class="terms-link" id="readTermsLink" data-i18n="terms_of_service">Terms of Service and Anti-Scam Policy</span>.
           <br><br>
-          <span class="warning-text">⚠️ WARNING:</span> <span data-i18n="scam_warning_text">Scamming activities are illegal and may result in criminal prosecution, civil lawsuits, and severe financial penalties. We actively cooperate with law enforcement agencies worldwide.</span>
+          <span class="warning-text">⚠️ <span data-i18n="scam_warning_title">WARNING:</span></span> <span data-i18n="scam_warning_text">Scamming activities are illegal and may result in criminal prosecution.</span>
         </span>
       </label>
-      <p class="error-message" id="termsError" data-i18n="accept_terms_error">You must accept the Terms of Service and Anti-Scam Policy to register.</p>
+      <p class="error-message" id="termsError" data-i18n="accept_terms_error">You must accept the Terms of Service to register.</p>
     </div>
     
     <!-- Email Verification Notice -->
     <div style="background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; font-size: 0.875rem; color: #1e40af;">
-      <strong>📧 Email Verification Required</strong><br>
+      <strong>📧 <span data-i18n="email_verification_required">Email Verification Required</span></strong><br>
       <span data-i18n="email_verification_notice">After registration, you must verify your email address before you can log in.</span>
     </div>
     
@@ -145,6 +356,23 @@
     </p>
   </form>
 </main>
+
+<!-- Terms Modal -->
+<div class="terms-modal-overlay" id="termsModal">
+  <div class="terms-modal-content">
+    <div class="terms-modal-header">
+      <h2 data-i18n="terms_title">Terms of Service & Anti-Scam Policy</h2>
+      <button class="terms-modal-close" id="termsModalClose">×</button>
+    </div>
+    <div class="terms-modal-body" id="termsModalBody">
+      <!-- Terms content loaded dynamically -->
+    </div>
+    <div class="accept-section">
+      <button class="btn btn-secondary" id="declineTerms" data-i18n="decline">Decline</button>
+      <button class="btn btn-primary btn-accept-terms" id="acceptTermsBtn" data-i18n="accept_and_register">Accept & Register</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="./src/pages/register.js"></script>
 
