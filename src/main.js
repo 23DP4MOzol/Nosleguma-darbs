@@ -335,9 +335,57 @@ function initializeAuth() {
 
   // Listen for auth state changes
   if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === 'function') {
-    supabase.auth.onAuthStateChange(() => {
-      updateNavbarAuth();
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      await updateNavbarAuth();
+      
+      // Handle email confirmation success
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Check if this was from email confirmation
+        const hash = window.location.hash;
+        if (hash.includes('access_token') && (hash.includes('type=signup') || hash.includes('type=email_change'))) {
+          // Clear the hash after processing
+          window.history.replaceState(null, '', window.location.pathname);
+          
+          // Show success message
+          if (session.user.email_confirmed_at) {
+            alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
+            // Redirect to home or stay on current page
+            if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
+              window.location.href = 'index.html';
+            }
+          }
+        }
+      }
     });
+  }
+
+  // Check for hash-based session recovery (email confirmation)
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    console.log('Hash detected, recovering session...');
+    // The Supabase client should automatically detect and process the hash
+    // But we need to wait a moment for it to complete
+    setTimeout(async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session) {
+        console.log('Session recovered successfully');
+        await updateNavbarAuth();
+        
+        // Clear the hash
+        window.history.replaceState(null, '', window.location.pathname);
+        
+        // Show success message
+        alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
+        
+        // Redirect to home if on login/register page
+        if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
+          window.location.href = 'index.html';
+        }
+      } else if (error) {
+        console.error('Error recovering session:', error);
+      }
+    }, 500);
   }
 
   updateNavbarAuth();

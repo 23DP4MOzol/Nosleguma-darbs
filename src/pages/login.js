@@ -110,3 +110,37 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     showLoginError('Login failed', error);
   }
 });
+
+// ============================
+// Check for email confirmation hash and auto-login
+// ============================
+(async function checkEmailConfirmation() {
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    console.log('Email confirmation hash detected, processing...');
+    
+    // Wait for Supabase to process the hash
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check if session is now active
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (session && session.user) {
+      console.log('Session recovered from email confirmation');
+      
+      // Clear the hash
+      window.history.replaceState(null, '', window.location.pathname);
+      
+      if (session.user.email_confirmed_at) {
+        // Email is verified - show success and redirect
+        alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
+        window.location.href = 'index.html';
+      } else {
+        // Email not yet confirmed
+        alert('Email verification link processed, but email is not yet confirmed. Please wait a moment and try again.');
+      }
+    } else if (error) {
+      console.error('Error processing email confirmation:', error);
+    }
+  }
+})();
