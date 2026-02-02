@@ -294,7 +294,8 @@ export const i18n = {
         terms_of_service: "Terms of Service and Anti-Scam Policy",
         email_verification_required: "Email Verification Required",
         decline: "Decline",
-        accept_and_register: "Accept & Register"
+        accept_and_register: "Accept & Register",
+        verify_required: "Email Verification Required - Please check your email for the verification link."
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -584,7 +585,8 @@ export const i18n = {
         terms_of_service: "Lietošanas noteikumi un Pretkrāpšanas politika",
         email_verification_required: "E-pasta verifikācija nepieciešama",
         decline: "Atteikties",
-        accept_and_register: "Pieņemt un reģistrēties"
+        accept_and_register: "Pieņemt un reģistrēties",
+        verify_required: "E-pasta verifikācija nepieciešama - Lūdzu, pārbaudiet savu e-pastu verifikācijas saitei."
       }
     },
   

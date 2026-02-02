@@ -385,8 +385,11 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
     if (result.error) throw result.error;
 
-    alert('✅ Registration Successful!\n\n📧 Please check your email inbox for the verification link.\n\n⚠️ You must verify your email before you can log in and use the platform.');
-    window.location.href = 'login.html';
+    // Sign out immediately - user must verify email before logging in
+    await supabase.auth.signOut();
+
+    alert('✅ Registration Successful!\n\n📧 Please check your email inbox for the verification link.\n\n⚠️ IMPORTANT: You must verify your email address before you can log in to the platform.\n\nCheck your spam folder if you don\'t see the email.');
+    window.location.href = 'login.html?reason=verify_required';
 
   } catch (error) {
     console.error('Registration error:', error);

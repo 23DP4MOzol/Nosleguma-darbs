@@ -14,7 +14,8 @@ import '../main.js';
     const messages = {
       'chat': 'You must be logged in to access the chat feature.',
       'settings': 'You must be logged in to access your settings.',
-      'products': 'You must be logged in to view your products.'
+      'products': 'You must be logged in to view your products.',
+      'verify_required': i18n.t && typeof i18n.t === 'function' ? i18n.t('verify_required') : 'Email Verification Required - Please check your email for the verification link.'
     };
     
     const message = messages[reason] || 'You must be logged in to access this page.';
