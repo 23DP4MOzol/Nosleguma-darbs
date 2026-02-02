@@ -209,6 +209,93 @@ document.getElementById('settingsLogoutBtn')?.addEventListener('click', async ()
 });
 
 // ============================
+// Change Password Functionality
+// ============================
+
+// Show/hide password change section
+document.getElementById('showChangePasswordBtn')?.addEventListener('click', () => {
+  document.getElementById('changePasswordBtnContainer').style.display = 'none';
+  document.getElementById('changePasswordSection').style.display = 'block';
+});
+
+document.getElementById('cancelPasswordBtn')?.addEventListener('click', () => {
+  document.getElementById('changePasswordBtnContainer').style.display = 'block';
+  document.getElementById('changePasswordSection').style.display = 'none';
+  // Clear inputs
+  document.getElementById('newPasswordInput').value = '';
+  document.getElementById('confirmNewPasswordInput').value = '';
+});
+
+// Save new password
+document.getElementById('savePasswordBtn')?.addEventListener('click', async () => {
+  const currentUser = await checkAuth();
+  if (!currentUser) return;
+  
+  const newPassword = document.getElementById('newPasswordInput').value;
+  const confirmPassword = document.getElementById('confirmNewPasswordInput').value;
+  
+  // Validation
+  if (!newPassword || !confirmPassword) {
+    alert('Please fill in both password fields.');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    alert('Password must be at least 6 characters long.');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    alert('Passwords do not match. Please try again.');
+    return;
+  }
+  
+  try {
+    // Update password using Supabase
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      alert('❌ Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+    } else {
+      alert('✅ Password Changed Successfully!\n\nYour password has been updated.\n\nFor security reasons, please log in again.');
+      
+      // Clear inputs
+      document.getElementById('newPasswordInput').value = '';
+      document.getElementById('confirmNewPasswordInput').value = '';
+      
+      // Hide the form
+      document.getElementById('changePasswordBtnContainer').style.display = 'block';
+      document.getElementById('changePasswordSection').style.display = 'none';
+      
+      // Sign out and redirect to login
+      await supabase.auth.signOut();
+      window.location.href = 'login.html?reason=password_changed';
+    }
+  } catch (error) {
+    alert('❌ Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+  }
+});
+
+// ============================
+// Check for password reset tab parameter
+// ============================
+(function checkPasswordResetTab() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get('tab');
+  
+  if (tab === 'password') {
+    // Show the password change section
+    setTimeout(() => {
+      document.getElementById('showChangePasswordBtn')?.click();
+    }, 500);
+    
+    alert('🔐 Password Reset\n\nPlease enter your new password below.\n\nAfter saving, you will need to log in again.');
+  }
+})();
+
+// ============================
 // Initialize Page
 // ============================
 async function initializePage() {

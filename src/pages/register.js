@@ -253,7 +253,7 @@ if (themeToggle) {
     html.classList.add(newTheme);
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    themeToggle.textContent = newTheme === 'dark' ? "☀️" : "🌙";
   });
 }
 
@@ -369,7 +369,22 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   }
 
   try {
-    // Register user with Supabase
+    // First, check if email already exists in users table
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+    
+    if (existingUser) {
+      alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+      return;
+    }
+
+    // Also check if email is already in auth (might not be in users table yet)
+    // Note: We can't directly check auth.users table, but Supabase will return an error
+
+    // Register user with Supabase Auth
     const result = await supabase.auth.signUp({
       email,
       password,
@@ -383,16 +398,59 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       }
     });
 
-    if (result.error) throw result.error;
+    if (result.error) {
+      // Handle specific errors
+      if (result.error.message.includes('already registered') || 
+          result.error.message.includes('User already exists') ||
+          result.error.message.includes('email')) {
+        alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+        return;
+      }
+      throw result.error;
+    }
+    
+    if (!result.data.user) throw new Error('User creation failed');
+    
+    // Insert user record into public users table
+    const { error: insertError } = await supabase.from('users').upsert({
+      id: result.data.user.id,
+      email: email,
+      username: username || email.split('@')[0],
+      balance: 0,
+      role: 'user',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'id'
+    });
 
-    // Sign out immediately - user must verify email before logging in
-    await supabase.auth.signOut();
-
-    alert('✅ Registration Successful!\n\n📧 Please check your email inbox for the verification link.\n\n⚠️ IMPORTANT: You must verify your email address before you can log in to the platform.\n\nCheck your spam folder if you don\'t see the email.');
+    if (insertError) {
+      // Show warning but don't block registration - auth user was created
+      console.error('Error inserting user record:', insertError);
+      alert('⚠️ Account Created with Warning\n\nYour account was created in our authentication system, but there was a minor issue saving your profile data.\n\nPlease contact support if this persists.\n\nYou can still log in and use most features.');
+    } else {
+      // Success - user fully registered
+      alert('Registration Successful!\n\nPlease check your email inbox for the verification link.\n\nIMPORTANT: You must verify your email address before you can log in.\n\nCheck your spam folder if you dont see the email.');
+    }
+    
     window.location.href = 'login.html?reason=verify_required';
 
   } catch (error) {
     console.error('Registration error:', error);
-    alert(error.message || 'Registration failed. Please try again.');
+    
+    // Handle specific error messages
+    let errorMessage = error.message || 'Registration failed. Please try again.';
+    
+    if (errorMessage.includes('already registered') || 
+        errorMessage.includes('User already exists') ||
+        errorMessage.includes('email') && errorMessage.includes('already')) {
+      alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+    } else if (errorMessage.includes('Password')) {
+      alert('⚠️ Password Error\n\n' + errorMessage + '\n\nPlease choose a different password.');
+    } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+      alert('⚠️ Network Error\n\nUnable to connect to the server.\n\nPlease check your internet connection and try again.');
+    } else {
+      alert('Registration Error\n\n' + errorMessage + '\n\nPlease try again or contact support if the problem persists.');
+    }
   }
 });
