@@ -92,6 +92,7 @@ export const i18n = {
         password: "Password",
         no_account: "Don't have an account?",
         sign_up: "Sign up",
+        remember_password: "Remember your password?",
         contacts: "Contacts",
         select_chat: "Select a chat",
         type_message: "Type a message...",
@@ -295,7 +296,20 @@ export const i18n = {
         email_verification_required: "Email Verification Required",
         decline: "Decline",
         accept_and_register: "Accept & Register",
-        verify_required: "Email Verification Required - Please check your email for the verification link."
+        verify_required: "Email Verification Required - Please check your email for the verification link.",
+        // Resend verification page translations
+        resend_verification_title: "Resend Verification Email - Vendly",
+        enter_email_for_verification: "Enter your email address and we'll send you a new verification link.",
+        send_verification_link: "Send Verification Link",
+        verification_sent: "Verification Email Sent!",
+        check_email_inbox: "Check your email inbox for the verification link.",
+        back_to_login: "Back to Login",
+        email_verification_required_page: "Email Verification Required - Please enter your email to receive a new verification link.",
+        please_enter_email: "Please enter your email address.",
+        sending: "Sending...",
+        error_sending_verification: "Error sending verification email",
+        forgot_password: "Forgot your password?",
+        send_reset_link: "Send Reset Link"
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -383,6 +397,7 @@ export const i18n = {
         password: "Parole",
         no_account: "Nav konta?",
         sign_up: "Reģistrēties",
+        remember_password: "Atceraties paroli?",
         contacts: "Kontakti",
         select_chat: "Izvēlieties čatu",
         type_message: "Ierakstiet ziņojumu...",
@@ -586,7 +601,20 @@ export const i18n = {
         email_verification_required: "E-pasta verifikācija nepieciešama",
         decline: "Atteikties",
         accept_and_register: "Pieņemt un reģistrēties",
-        verify_required: "E-pasta verifikācija nepieciešama - Lūdzu, pārbaudiet savu e-pastu verifikācijas saitei."
+        verify_required: "E-pasta verifikācija nepieciešama - Lūdzu, pārbaudiet savu e-pastu verifikācijas saitei.",
+        // Resend verification page translations
+        resend_verification_title: "Atkārtota verifikācijas e-pasta sūtīšana - Vendly",
+        enter_email_for_verification: "Ievadiet savu e-pasta adresi, un mēs jums nosūtīsim jaunu verifikācijas saiti.",
+        send_verification_link: "Sūtīt verifikācijas saiti",
+        verification_sent: "Verifikācijas e-pasts nosūtīts!",
+        check_email_inbox: "Pārbaudiet savu e-pasta iesūtni, lai atrast verifikācijas saiti.",
+        back_to_login: "Atpakaļ uz pieslēgšanos",
+        email_verification_required_page: "E-pasta verifikācija nepieciešama - Lūdzu, ievadiet e-pastu, lai saņemtu jaunu verifikācijas saiti.",
+        please_enter_email: "Lūdzu, ievadiet savu e-pasta adresi.",
+        sending: "Sūta...",
+        error_sending_verification: "Kļūda sūtot verifikācijas e-pastu",
+        forgot_password: "Aizmirsāt paroli?",
+        send_reset_link: "Sūtīt atiestatīšanas saiti"
       }
     },
   

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="resend_verification_title">Resend Verification Email - Vendly</title>
+  <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M17,18C15.89,18 15,18.89 15,20A2,2 0 0,0 17,22A2,2 0 0,0 19,20C19,18.89 18.1,18 17,18M1,2V4H3L6.6,11.59L5.24,14.04C5.09,14.32 5,14.65 5,15A2,2 0 0,0 7,17H19V15H7.42A0.25,0.25 0 0,1 7.17,14.75C7.17,14.7 7.18,14.66 7.2,14.63L8.1,13H15.55C16.3,13 16.96,12.58 17.3,11.97L20.88,5.5C20.95,5.34 21,5.17 21,5A1,1 0 0,0 20,4H5.21L4.27,2M7,18C5.89,18 5,18.89 5,20A2,2 0 0,0 7,22A2,2 0 0,0 9,20C9,18.89 8.1,18 7,18Z"/>
+      </svg>
+      VENDLY
+    </a>
+
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+
+    <div class="navbar-links">
+      <a href="index.html" class="btn-nav" data-i18n="viewItems">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
+
+      <!-- Pages Dropdown -->
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
+        </div>
+      </div>
+
+      <!-- Language Dropdown -->
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+
+      <!-- Dark/Light Mode -->
+      <button class="icon-btn" id="themeToggle">🌙</button>
+
+      <button class="btn-login" id="loginBtn" data-i18n="login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<main class="main-container" style="max-width: 400px; margin-top: 8rem;">
+  <section class="section-header-centered">
+    <h2 class="section-title" data-i18n="resend_verification">Resend Verification Email</h2>
+    <p class="section-subtitle" data-i18n="enter_email_for_verification">Enter your email address and we'll send you a new verification link.</p>
+  </section>
+
+  <form id="resendForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+     <input type="email" id="emailInput" data-i18n-placeholder="email_address" placeholder="Email Address" class="chat-input-field" required>
+     <button type="submit" class="btn-buy-now" data-i18n="send_verification_link">Send Verification Link</button>
+     <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
+       <span data-i18n="remember_password">Remember your password?</span> <a href="login.html" style="color: var(--primary);" data-i18n="login">Login</a>
+     </p>
+     <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
+       <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
+     </p>
+  </form>
+
+  <!-- Success Message (hidden by default) -->
+  <div id="successMessage" style="display: none; text-align: center; padding: 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+    <h3 style="margin-bottom: 1rem;" data-i18n="verification_sent">Verification Email Sent!</h3>
+    <p style="color: var(--muted); margin-bottom: 1.5rem;" data-i18n="check_email_inbox">Check your email inbox for the verification link.</p>
+    <a href="login.html" class="btn-buy-now" data-i18n="back_to_login">Back to Login</a>
+  </div>
+</main>
+
+<script type="module">
+  import { supabase } from './src/supabase.js';
+  import { i18n } from './src/i18n.js';
+  import './src/main.js';
+
+  // Get email from URL parameter if provided
+  const urlParams = new URLSearchParams(window.location.search);
+  const emailParam = urlParams.get('email');
+  const reasonParam = urlParams.get('reason');
+  
+  if (emailParam) {
+    document.getElementById('emailInput').value = decodeURIComponent(emailParam);
+  }
+
+  // Check for redirect reason and show message
+  if (reasonParam === 'verify_required') {
+    setTimeout(() => {
+      alert('🔐 ' + (i18n.t?.('email_verification_required_page') || 'Email Verification Required - Please enter your email to receive a new verification link.'));
+    }, 100);
+  }
+
+  // Form submission
+  document.getElementById('resendForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('emailInput').value.trim();
+    
+    if (!email) {
+      alert(i18n.t?.('please_enter_email') || 'Please enter your email address.');
+      return;
+    }
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = i18n.t?.('sending') || 'Sending...';
+    submitBtn.disabled = true;
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      });
+      
+      if (error) {
+        alert('❌ ' + (i18n.t?.('error_sending_verification') || 'Error sending verification email:') + '\n\n' + error.message);
+      } else {
+        // Show success message
+        document.getElementById('resendForm').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+      }
+    } catch (error) {
+      alert('❌ ' + (i18n.t?.('error_sending_verification') || 'Error sending verification email:') + '\n\n' + error.message);
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<!-- Import navbar functionality -->
+<script type="module" src="./src/navbar.js"></script>
+
+</body>
+</html>
