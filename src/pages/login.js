@@ -229,49 +229,47 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   console.log('🔐 Attempting login for:', email);
 
-  let authData, authError;
-  try {
-    const result = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+  // Use .then() instead of await to avoid potential issues
+  supabase.auth.signInWithPassword({
+    email,
+    password
+  }).then(result => {
     authData = result.data;
     authError = result.error;
     console.log('📊 Auth call completed');
-  } catch (err) {
+    
+    console.log('📊 Auth response:', authError ? 'error: ' + authError.message : 'success');
+    
+    if (authError) {
+      console.log('❌ Auth error:', authError.message);
+      showLoginError('Login failed', authError);
+      return;
+    }
+    
+    console.log('✅ Auth successful, user:', authData?.user?.email);
+    
+    // Check if email is confirmed
+    if (authData.user && !authData.user.email_confirmed_at) {
+      alert('🔐 Email Verification Required\n\nYour email address has not been verified yet.\n\nPlease check your email inbox and click the verification link to activate your account.\n\nIf you did not receive the email, check your spam folder or request a new verification email.');
+      supabase.auth.signOut();
+      return;
+    }
+    
+    // Success - redirect to home
+    console.log('✅ Login successful, redirecting...');
+    
+    // Update navbar (fire and forget)
+    if (typeof updateNavbarAuth === 'function') {
+      updateNavbarAuth().catch(err => console.error('Error updating navbar:', err));
+    }
+    
+    // Redirect immediately
+    console.log('🚀 Redirecting to index.html...');
+    window.location.href = 'index.html';
+  }).catch(err => {
     console.error('💥 Auth call failed:', err);
     showLoginError('Login failed', err);
-    return;
-  }
-  
-  console.log('📊 Auth response:', authError ? 'error: ' + authError.message : 'success');
-  
-  if (authError) {
-    console.log('❌ Auth error:', authError.message);
-    showLoginError('Login failed', authError);
-    return;
-  }
-  
-  console.log('✅ Auth successful, user:', authData?.user?.email);
-  
-  // Check if email is confirmed
-  if (authData.user && !authData.user.email_confirmed_at) {
-    alert('🔐 Email Verification Required\n\nYour email address has not been verified yet.\n\nPlease check your email inbox and click the verification link to activate your account.\n\nIf you did not receive the email, check your spam folder or request a new verification email.');
-    await supabase.auth.signOut();
-    return;
-  }
-  
-  // Success - redirect to home
-  console.log('✅ Login successful, redirecting...');
-  
-  // Update navbar (fire and forget)
-  if (typeof updateNavbarAuth === 'function') {
-    updateNavbarAuth().catch(err => console.error('Error updating navbar:', err));
-  }
-  
-  // Redirect immediately
-  console.log('🚀 Redirecting to index.html...');
-  window.location.href = 'index.html';
+  });
 });
 
 // ============================
