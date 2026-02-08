@@ -2,10 +2,13 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import '../main.js';
 
+console.log('login.js module loaded');
+
 // ============================
 // Check for redirect reason and show message
 // ============================
 (function checkRedirectReason() {
+  console.log('checkRedirectReason running');
   const urlParams = new URLSearchParams(window.location.search);
   const reason = urlParams.get('reason');
   const redirect = urlParams.get('redirect');

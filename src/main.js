@@ -632,10 +632,11 @@ async function initializeIndexPage() {
       const sellersCount = sellersResp.count || 0;
 
       // Debug: log the responses
-      console.log('Stats - Products:', productsResp.count, 'Users:', usersResp.count, 'Sellers:', sellersResp.count);
-      if (usersResp.error) {
-        console.error('Users query error:', usersResp.error);
-      }
+      console.log('Stats response:', {
+        products: { count: productsResp.count, error: productsResp.error },
+        users: { count: usersResp.count, error: usersResp.error },
+        sellers: { count: sellersResp.count, error: sellersResp.error }
+      });
 
       const statsProductsEl = document.getElementById('statsProducts');
       const statsUsersEl = document.getElementById('statsUsers');
