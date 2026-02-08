@@ -229,11 +229,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   console.log('🔐 Attempting login for:', email);
 
-  // Use .then() instead of await to avoid potential issues
-  supabase.auth.signInWithPassword({
+  // Use .then() with timeout to diagnose
+  const loginPromise = supabase.auth.signInWithPassword({
     email,
     password
-  }).then(result => {
+  });
+  
+  // Set a 10 second timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Login timeout')), 10000);
+  });
+  
+  Promise.race([loginPromise, timeoutPromise]).then(result => {
     authData = result.data;
     authError = result.error;
     console.log('📊 Auth call completed');
@@ -267,7 +274,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     console.log('🚀 Redirecting to index.html...');
     window.location.href = 'index.html';
   }).catch(err => {
-    console.error('💥 Auth call failed:', err);
+    console.error('💥 Auth call failed:', err.message);
     showLoginError('Login failed', err);
   });
 });
