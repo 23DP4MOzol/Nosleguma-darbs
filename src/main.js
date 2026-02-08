@@ -165,10 +165,13 @@ function initializeLanguage() {
 // AUTHENTICATION MANAGEMENT
 // ============================
 
-async function updateNavbarAuth() {
+export async function updateNavbarAuth() {
+  console.log('🔐 updateNavbarAuth() called');
   try {
     const { data } = await supabase.auth.getUser();
     const user = data ? data.user : null;
+    
+    console.log('👤 User from getUser():', user ? user.email : 'null');
 
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -176,6 +179,15 @@ async function updateNavbarAuth() {
     const sellBtn = document.getElementById('sellBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const adminBtn = document.getElementById('adminBtn');
+    
+    console.log('🎛️ Navbar elements found:', {
+      loginBtn: !!loginBtn,
+      logoutBtn: !!logoutBtn,
+      balanceBadge: !!balanceBadge,
+      sellBtn: !!sellBtn,
+      settingsBtn: !!settingsBtn,
+      adminBtn: !!adminBtn
+    });
 
     if (user) {
       // Get user role

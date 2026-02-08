@@ -1,6 +1,6 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
-import '../main.js';
+import { updateNavbarAuth } from '../main.js';
 
 console.log('login.js module loaded');
 
@@ -244,8 +244,17 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
     
     // Success - redirect to home
-    console.log('Login successful, redirecting to home...');
-    window.location.href = 'index.html';
+    console.log('Login successful, updating navbar...');
+    
+    // Update navbar before redirecting
+    if (typeof updateNavbarAuth === 'function') {
+      await updateNavbarAuth();
+    }
+    
+    // Small delay to ensure navbar updates, then redirect
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 150);
   } catch (error) {
     showLoginError('Login failed', error);
   }
