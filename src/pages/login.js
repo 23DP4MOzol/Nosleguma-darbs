@@ -213,16 +213,21 @@ document.getElementById('forgotPasswordForm')?.addEventListener('submit', async 
 // ============================
 // Login Form Submission
 // ============================
+console.log('🎯 Setting up login form listener...');
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  console.log('📝 Login form submitted');
 
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
 
   if (!email || !password) {
+    console.log('❌ Missing email or password');
     alert('Please fill in all fields');
     return;
   }
+
+  console.log('🔐 Attempting login for:', email);
 
   try {
     // First authenticate the user
@@ -230,6 +235,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       email,
       password
     });
+    
+    console.log('📊 Auth response:', authData ? 'success' : 'no data', authError ? 'error: ' + authError.message : 'no error');
     
     if (authError) {
       showLoginError('Login failed', authError);
@@ -244,7 +251,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
     
     // Success - redirect to home
-    console.log('Login successful, updating navbar...');
+    console.log('✅ Login successful, updating navbar...');
     
     // Update navbar before redirecting
     if (typeof updateNavbarAuth === 'function') {
@@ -253,9 +260,11 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     
     // Small delay to ensure navbar updates, then redirect
     setTimeout(() => {
+      console.log('🚀 Redirecting to index.html...');
       window.location.href = 'index.html';
     }, 150);
   } catch (error) {
+    console.error('💥 Login error:', error);
     showLoginError('Login failed', error);
   }
 });
