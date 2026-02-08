@@ -364,21 +364,13 @@ function initializeAuth() {
   const hash = window.location.hash;
   if (hash.includes('access_token')) {
     console.log('Hash detected, recovering session...');
-    // The Supabase client should automatically detect and process the hash
-    // But we need to wait a moment for it to complete
     setTimeout(async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (session) {
-        console.log('Session recovered successfully');
+        console.log('Session recovered successfully:', session.user.email);
         await updateNavbarAuth();
-        
-        // Clear the hash
         window.history.replaceState(null, '', window.location.pathname);
-        
-        // Show success message
-        alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
-        
-        // Redirect to home if on login/register page
+        alert('Email Verified Successfully!');
         if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
           window.location.href = 'index.html';
         }
@@ -388,7 +380,24 @@ function initializeAuth() {
     }, 500);
   }
 
-  updateNavbarAuth();
+  // Also try to get session on every page load
+  (async () => {
+    console.log('Checking for existing session...');
+    
+    // Wait a bit for session to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (session) {
+      console.log('Existing session found:', session.user.email);
+    } else {
+      console.log('No existing session found');
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+    }
+    updateNavbarAuth();
+  })();
 }
 
 // ============================
@@ -621,6 +630,12 @@ async function initializeIndexPage() {
       const productsCount = productsResp.count || 0;
       const usersCount = usersResp.count || 0;
       const sellersCount = sellersResp.count || 0;
+
+      // Debug: log the responses
+      console.log('Stats - Products:', productsResp.count, 'Users:', usersResp.count, 'Sellers:', sellersResp.count);
+      if (usersResp.error) {
+        console.error('Users query error:', usersResp.error);
+      }
 
       const statsProductsEl = document.getElementById('statsProducts');
       const statsUsersEl = document.getElementById('statsUsers');

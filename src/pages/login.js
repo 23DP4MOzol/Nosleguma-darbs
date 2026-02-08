@@ -228,6 +228,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
     
     // Success - redirect to home
+    console.log('Login successful, redirecting to home...');
     window.location.href = 'index.html';
   } catch (error) {
     showLoginError('Login failed', error);
