@@ -214,6 +214,10 @@ document.getElementById('forgotPasswordForm')?.addEventListener('submit', async 
 // Login Form Submission
 // ============================
 console.log('🎯 Setting up login form listener...');
+
+// Track if we've already handled this login
+let loginHandled = false;
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   console.log('📝 Login form submitted');
@@ -228,55 +232,55 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   }
 
   console.log('🔐 Attempting login for:', email);
+  loginHandled = false;
 
-  // Use .then() with timeout to diagnose
-  const loginPromise = supabase.auth.signInWithPassword({
+  // Listen for auth state change - this reliably fires when login succeeds
+  const unsubscribe = supabase.auth.onAuthStateChange((event, session) => {
+    console.log('📡 Auth event received:', event);
+    
+    if (event === 'SIGNED_IN' && session && !loginHandled) {
+      loginHandled = true;
+      unsubscribe(); // Stop listening
+      
+      console.log('✅ Login confirmed via auth state change');
+      console.log('👤 User:', session.user.email);
+      
+      // Check if email is confirmed
+      if (!session.user.email_confirmed_at) {
+        alert('🔐 Email Verification Required\n\nYour email address has not been verified yet.\n\nPlease check your email inbox and click the verification link.');
+        supabase.auth.signOut();
+        return;
+      }
+      
+      // Success - redirect
+      console.log('🚀 Redirecting to index.html...');
+      window.location.href = 'index.html';
+    }
+  });
+
+  // Make the login call
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
   
-  // Set a 10 second timeout
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Login timeout')), 10000);
-  });
+  if (error) {
+    loginHandled = true;
+    unsubscribe();
+    console.log('❌ Auth error:', error.message);
+    showLoginError('Login failed', error);
+    return;
+  }
   
-  Promise.race([loginPromise, timeoutPromise]).then(result => {
-    authData = result.data;
-    authError = result.error;
-    console.log('📊 Auth call completed');
-    
-    console.log('📊 Auth response:', authError ? 'error: ' + authError.message : 'success');
-    
-    if (authError) {
-      console.log('❌ Auth error:', authError.message);
-      showLoginError('Login failed', authError);
-      return;
+  // If no error but auth state change didn't fire yet, set a timeout fallback
+  setTimeout(() => {
+    if (!loginHandled) {
+      loginHandled = true;
+      unsubscribe();
+      console.log('⏰ Auth timeout - forcing redirect');
+      window.location.href = 'index.html';
     }
-    
-    console.log('✅ Auth successful, user:', authData?.user?.email);
-    
-    // Check if email is confirmed
-    if (authData.user && !authData.user.email_confirmed_at) {
-      alert('🔐 Email Verification Required\n\nYour email address has not been verified yet.\n\nPlease check your email inbox and click the verification link to activate your account.\n\nIf you did not receive the email, check your spam folder or request a new verification email.');
-      supabase.auth.signOut();
-      return;
-    }
-    
-    // Success - redirect to home
-    console.log('✅ Login successful, redirecting...');
-    
-    // Update navbar (fire and forget)
-    if (typeof updateNavbarAuth === 'function') {
-      updateNavbarAuth().catch(err => console.error('Error updating navbar:', err));
-    }
-    
-    // Redirect immediately
-    console.log('🚀 Redirecting to index.html...');
-    window.location.href = 'index.html';
-  }).catch(err => {
-    console.error('💥 Auth call failed:', err.message);
-    showLoginError('Login failed', err);
-  });
+  }, 5000);
 });
 
 // ============================
