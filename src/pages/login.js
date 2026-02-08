@@ -235,26 +235,27 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   loginHandled = false;
 
   // Listen for auth state change - this reliably fires when login succeeds
-  const unsubscribe = supabase.auth.onAuthStateChange((event, session) => {
-    console.log('📡 Auth event received:', event, 'loginHandled:', loginHandled);
-    
-    // For SIGNED_IN, always try to handle
-    if (event === 'SIGNED_IN' && !loginHandled) {
-      loginHandled = true;
-      unsubscribe(); // Stop listening
+  const unsubscribe = supabase.auth.onAuthStateChange(async (event, session) => {
+    try {
+      console.log('📡 Auth event:', event, 'hasSession:', !!session);
       
-      console.log('✅ Login confirmed, attempting redirect...');
-      
-      // Check email confirmation
-      if (session?.user?.email_confirmed_at) {
+      if (event === 'SIGNED_IN' && session?.user && !loginHandled) {
+        console.log('✅ Login confirmed for:', session.user.email);
+        loginHandled = true;
+        unsubscribe();
+        
+        // Force immediate redirect
         console.log('🚀 Redirecting to index.html...');
         window.location.href = 'index.html';
-      } else {
-        alert('🔐 Email Verification Required\n\nYour email has not been verified.');
-        supabase.auth.signOut();
       }
-    } else if (event === 'SIGNED_IN' && loginHandled) {
-      console.log('⚠️ Login already handled, ignoring duplicate event');
+    } catch (err) {
+      console.error('❌ Auth event error:', err);
+      // Force redirect anyway
+      if (!loginHandled) {
+        loginHandled = true;
+        console.log('🚀 Emergency redirect...');
+        window.location.href = 'index.html';
+      }
     }
   });
 
