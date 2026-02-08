@@ -236,12 +236,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       password
     });
     
-    console.log('📊 Auth response:', authData ? 'success' : 'no data', authError ? 'error: ' + authError.message : 'no error');
+    console.log('📊 Auth response received');
     
     if (authError) {
+      console.log('❌ Auth error:', authError.message);
       showLoginError('Login failed', authError);
       return;
     }
+    
+    console.log('✅ Auth successful, user:', authData?.user?.email);
     
     // Check if email is confirmed
     if (authData.user && !authData.user.email_confirmed_at) {
@@ -251,18 +254,18 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
     
     // Success - redirect to home
-    console.log('✅ Login successful, updating navbar...');
+    console.log('✅ Login successful, updating navbar and redirecting...');
     
-    // Update navbar before redirecting
+    // Update navbar (fire and forget, don't await to avoid blocking)
     if (typeof updateNavbarAuth === 'function') {
-      await updateNavbarAuth();
+      updateNavbarAuth().catch(err => console.error('Error updating navbar:', err));
     }
     
-    // Small delay to ensure navbar updates, then redirect
-    setTimeout(() => {
-      console.log('🚀 Redirecting to index.html...');
-      window.location.href = 'index.html';
-    }, 150);
+    // Redirect immediately
+    console.log('🚀 Redirecting to index.html...');
+    window.location.href = 'index.html';
+    return;
+    
   } catch (error) {
     console.error('💥 Login error:', error);
     showLoginError('Login failed', error);
