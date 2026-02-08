@@ -5,6 +5,19 @@ import '../main.js';
 console.log('login.js module loaded');
 
 // ============================
+// Check if already logged in - redirect to home
+// ============================
+(async function checkAlreadyLoggedIn() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session && session.user) {
+    console.log('Already logged in as:', session.user.email);
+    window.location.href = 'index.html';
+    return;
+  }
+  console.log('Not logged in, showing login form');
+})();
+
+// ============================
 // Check for redirect reason and show message
 // ============================
 (function checkRedirectReason() {
