@@ -236,25 +236,23 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   // Listen for auth state change - this reliably fires when login succeeds
   const unsubscribe = supabase.auth.onAuthStateChange((event, session) => {
-    console.log('📡 Auth event received:', event);
+    console.log('📡 Auth event received:', event, 'session:', session ? 'exists' : 'null');
     
-    if (event === 'SIGNED_IN' && session && !loginHandled) {
+    // For SIGNED_IN, session should exist, but handle edge cases
+    if (event === 'SIGNED_IN' && !loginHandled) {
       loginHandled = true;
       unsubscribe(); // Stop listening
       
       console.log('✅ Login confirmed via auth state change');
-      console.log('👤 User:', session.user.email);
       
-      // Check if email is confirmed
-      if (!session.user.email_confirmed_at) {
-        alert('🔐 Email Verification Required\n\nYour email address has not been verified yet.\n\nPlease check your email inbox and click the verification link.');
+      // Check email confirmation
+      if (session?.user?.email_confirmed_at) {
+        console.log('🚀 Redirecting to index.html...');
+        window.location.href = 'index.html';
+      } else {
+        alert('🔐 Email Verification Required\n\nYour email has not been verified.');
         supabase.auth.signOut();
-        return;
       }
-      
-      // Success - redirect
-      console.log('🚀 Redirecting to index.html...');
-      window.location.href = 'index.html';
     }
   });
 
