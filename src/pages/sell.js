@@ -2,8 +2,26 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 
+// ============================
+// Authentication Check - Redirect guests to login
+// ============================
+async function checkAuth() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    // User is not logged in, redirect to login page with reason
+    const redirectUrl = window.location.href;
+    window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl)}&reason=sell`;
+    return false;
+  }
+  return user;
+}
+
 // Form handling and preview functionality
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check auth first
+  const user = await checkAuth();
+  if (!user) return;
+
   const form = document.getElementById('sellForm');
   const previewBtn = document.getElementById('previewBtn');
   const productPreview = document.getElementById('productPreview');

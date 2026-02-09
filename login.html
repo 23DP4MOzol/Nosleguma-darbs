@@ -108,7 +108,7 @@
          <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
        </p>
        <p style="text-align: center; font-size: 0.875rem;">
-         <a href="resend-verification.html" style="color: var(--primary); text-decoration: none;">Resend verification email</a>
+         <a href="#" id="resendVerificationLink" style="color: var(--primary); text-decoration: none;">Resend verification email</a>
        </p>
        <p style="text-align: center; font-size: 0.875rem;">
          <a href="#" id="forgotPasswordLink" style="color: var(--primary); text-decoration: none;">Forgot your password?</a>
@@ -124,6 +124,18 @@
          <a href="#" id="backToLoginLink" style="color: var(--primary); text-decoration: none;">Back to login</a>
        </p>
     </form>
+
+    <!-- Resend Verification Form -->
+    <div id="resendVerificationForm" style="display: none; flex-direction: column; gap: 1.5rem; text-align: center;">
+       <h2 style="color: var(--fg);">Email Not Verified</h2>
+       <p style="color: var(--muted);">Please verify your email address to log in.</p>
+       <p style="color: var(--muted);">Check your spam folder if you don't see the email.</p>
+       <input type="email" id="verificationEmailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+       <button type="button" id="resendVerificationBtn" class="btn-buy-now">Resend Verification Email</button>
+       <p style="text-align: center; font-size: 0.875rem;">
+         <a href="#" id="backToLoginFromVerify" style="color: var(--primary); text-decoration: none;">Back to login</a>
+       </p>
+    </div>
   </main>
 <script type="module" src="./src/pages/login.js"></script>
 

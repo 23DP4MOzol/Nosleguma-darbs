@@ -433,7 +433,9 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       alert('Registration Successful!\n\nPlease check your email inbox for the verification link.\n\nIMPORTANT: You must verify your email address before you can log in.\n\nCheck your spam folder if you dont see the email.');
     }
     
-    window.location.href = 'login.html?reason=verify_required';
+    // Instead of redirecting to login, redirect to login with verify_required reason
+    // which will show the resend verification form
+    window.location.href = 'login.html?reason=verify_required&email=' + encodeURIComponent(email);
 
   } catch (error) {
     console.error('Registration error:', error);

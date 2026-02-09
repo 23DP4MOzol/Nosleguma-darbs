@@ -18,7 +18,7 @@ console.log('login.js module loaded');
 })();
 
 // ============================
-// Check for redirect reason and show message
+// Check for redirect reason and show message/form
 // ============================
 (function checkRedirectReason() {
   console.log('checkRedirectReason running');
@@ -26,12 +26,34 @@ console.log('login.js module loaded');
   const reason = urlParams.get('reason');
   const redirect = urlParams.get('redirect');
   
+  if (reason === 'verify_required') {
+    // Hide login form, show resend verification form
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('resendVerificationForm').style.display = 'flex';
+    
+    // If email was passed in redirect, pre-fill it
+    const redirectEmail = urlParams.get('email');
+    if (redirectEmail) {
+      document.getElementById('verificationEmailInput').value = decodeURIComponent(redirectEmail);
+    }
+    
+    // Start the cooldown timer
+    startResendCooldown();
+    
+    // Show the message after a short delay
+    setTimeout(() => {
+      alert('📧 Email Verification Required\n\nPlease verify your email address to log in.\n\nEnter your email and click "Resend Verification Email" if you need a new verification link.');
+    }, 500);
+    return;
+  }
+  
   if (reason) {
     const messages = {
       'chat': 'You must be logged in to access the chat feature.',
       'settings': 'You must be logged in to access your settings.',
       'products': 'You must be logged in to view your products.',
-      'verify_required': i18n.t && typeof i18n.t === 'function' ? i18n.t('verify_required') : 'Email Verification Required - Please check your email for the verification link.'
+      'password_reset': 'Password reset link sent. Please check your email.',
+      'password_changed': 'Password changed successfully. Please log in with your new password.'
     };
     
     const message = messages[reason] || 'You must be logged in to access this page.';
@@ -117,26 +139,25 @@ function updateResendButton() {
   }
 })();
 
-document.getElementById('resendVerificationLink')?.addEventListener('click', async (e) => {
-  e.preventDefault();
+// Resend verification button (in resend verification form)
+document.getElementById('resendVerificationBtn')?.addEventListener('click', async () => {
+  const email = document.getElementById('verificationEmailInput').value.trim();
+  
+  if (!email) {
+    alert('Please enter your email address.');
+    document.getElementById('verificationEmailInput').focus();
+    return;
+  }
   
   if (resendCooldown > 0) {
     alert(`Please wait ${resendCooldown} seconds before requesting another verification email.`);
     return;
   }
   
-  const email = document.getElementById('emailInput').value.trim();
-  
-  if (!email) {
-    alert('Please enter your email address first, then click the resend link.');
-    document.getElementById('emailInput').focus();
-    return;
-  }
-  
   // Disable button during send
-  const originalText = e.target.textContent;
-  e.target.textContent = 'Sending...';
-  e.target.style.pointerEvents = 'none';
+  const btn = document.getElementById('resendVerificationBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
   
   try {
     const { error } = await supabase.auth.resend({
@@ -145,15 +166,16 @@ document.getElementById('resendVerificationLink')?.addEventListener('click', asy
     });
     
     if (error) {
-      alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again or contact support.');
+      alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
     } else {
       alert('✅ Verification Email Sent!\n\nPlease check your email inbox and click the verification link.\n\nIf you don\'t see the email, check your spam folder.\n\nYou can request another email in 60 seconds.');
       startResendCooldown();
     }
   } catch (error) {
-    alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again or contact support.');
+    alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
   } finally {
-    updateResendButton();
+    btn.disabled = false;
+    btn.textContent = 'Resend Verification Email';
   }
 });
 
@@ -363,10 +385,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         window.history.replaceState(null, '', window.location.pathname);
         
         if (session.user.email_confirmed_at) {
-          // Email is verified - redirect to settings
+          // Email is verified - redirect to index (home page)
           document.body.removeChild(loadingMsg);
           alert('✅ Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!');
-          window.location.href = 'settings.html';
+          window.location.href = 'index.html';
           return;
         }
       }
@@ -391,7 +413,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       if (data.user && data.user.email_confirmed_at) {
         document.body.removeChild(loadingMsg);
         alert('✅ Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!');
-        window.location.href = 'settings.html';
+        window.location.href = 'index.html';
       } else {
         document.body.removeChild(loadingMsg);
         alert('⚠️ Verification Pending\n\nYour verification link is being processed.\n\nIf your email is not confirmed yet, please wait a moment and refresh the page.');
