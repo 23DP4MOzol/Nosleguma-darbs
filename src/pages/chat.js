@@ -313,26 +313,99 @@ async function ensureGlobalMessageListener() {
 }
 
 
-// '+' new chat button
+// ============================
+// Query Parameters Handler - Start chat with specific user
+// ============================
+async function handleQueryParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sellerParam = urlParams.get('seller'); // Can be username (new) or user ID (backward compat)
+  const productId = urlParams.get('product');
+  
+  if (sellerParam && currentUser) {
+    try {
+      let recipientId = sellerParam;
+      
+      // Check if sellerParam looks like a UUID (user ID) or a username
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUuid = uuidRegex.test(sellerParam);
+      
+      // If it looks like a username (not a UUID), look up the user
+      if (!isUuid) {
+        const { data: userRow, error } = await supabase
+          .from('users')
+          .select('id,username')
+          .ilike('username', sellerParam)
+          .maybeSingle();
+        
+        if (error) throw error;
+        if (userRow) {
+          recipientId = userRow.id;
+        } else {
+          console.warn('User not found with username:', sellerParam);
+          return;
+        }
+      }
+      
+      if (recipientId && recipientId !== currentUser.id) {
+        // Get or create conversation
+        const conv = await getOrCreateConversation(productId, currentUser.id, recipientId);
+        if (conv) {
+          await loadConversations();
+          openConversation(conv);
+          // Clear URL params after opening chat
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    } catch (err) {
+      console.error('Error handling query params:', err);
+    }
+  }
+}
+
+// ============================
+// '+' new chat button - Updated to use username
+// ============================
 const newChatBtn = document.querySelector('.chat-list-header .btn-icon-small');
 if (newChatBtn && !newChatBtn._hasHandler) {
   newChatBtn.addEventListener('click', async () => {
     if (!currentUser) return alert('Please log in first');
-    const email = prompt('Enter recipient email to start chat:');
-    if (!email) return;
+    
+    // Ask for username instead of email
+    const username = prompt('Enter recipient username to start chat:');
+    if (!username) return;
+    
     try {
-      const { data: userRow, error } = await supabase.from('users').select('id,username,email').eq('email', email).maybeSingle();
+      // Look up user by username (case-insensitive)
+      const { data: userRow, error } = await supabase
+        .from('users')
+        .select('id,username,email')
+        .ilike('username', username)
+        .maybeSingle();
+      
       if (error) throw error;
-      if (!userRow) return alert('User not found');
+      if (!userRow) return alert('User "' + username + '" not found. Please check the username and try again.');
+      
       const recipientId = userRow.id;
       const conv = await getOrCreateConversation(null, currentUser.id, recipientId);
-      if (conv) { await loadConversations(); openConversation(conv); }
+      if (conv) {
+        await loadConversations();
+        openConversation(conv);
+      }
     } catch (err) {
       console.error('Failed to create/open chat', err);
       alert('Failed to start chat: ' + (err.message || err));
     }
   });
   newChatBtn._hasHandler = true;
+}
+
+// ============================
+// Initialize Chat
+// ============================
+async function initializeChat() {
+  await loadUser();
+  // Handle query parameters after chat is initialized
+  await handleQueryParams();
 }
 
 // Initialize chat after auth check

@@ -1305,8 +1305,9 @@ async function initializeIndexPage() {
     // Action button handlers
     const chatBtn = document.getElementById('chatSellerBtn');
     if (chatBtn) {
+      const sellerUsername = sellerData?.username || '';
       chatBtn.onclick = () => {
-        window.location.href = `chat.html?seller=${product.seller_id}&product=${product.id}`;
+        window.location.href = `chat.html?seller=${encodeURIComponent(sellerUsername)}&product=${encodeURIComponent(product.id)}`;
       };
     }
 

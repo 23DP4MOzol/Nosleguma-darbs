@@ -338,7 +338,7 @@ export const i18n = {
         reserved: "Rezervēts",
         stock: "Krājums",
         description: "Apraksts",
-        category: "Kategorija",
+        category: "Kategorie",
         condition: "Stāvoklis",
         location: "Atrašanās vieta",
         quickView: "Ātrā apskate",
@@ -397,7 +397,7 @@ export const i18n = {
         password: "Parole",
         no_account: "Nav konta?",
         sign_up: "Reģistrēties",
-        remember_password: "Atceraties paroli?",
+        remember_password: "Atcerieties paroli?",
         contacts: "Kontakti",
         select_chat: "Izvēlieties čatu",
         type_message: "Ierakstiet ziņojumu...",
@@ -498,7 +498,7 @@ export const i18n = {
         // Sell page translations
         sell_product_name: "Produkta nosaukums *",
         sell_enter_name: "Ievadiet produkta nosaukumu",
-        sell_category: "Kategorija *",
+        sell_category: "Kategorie *",
         sell_select_category: "Izvēlieties kategoriju",
         sell_price: "Cena (€) *",
         sell_enter_price: "0.00",
@@ -530,14 +530,14 @@ export const i18n = {
         btn_add: "Pievienot līdzekļus",
         btn_withdraw: "Izņemt",
         transactions: "Transakciju vēsture",
-        recent_transactions: "Nesenas transakcijas",
+        recent_transactions: "Nesenās transakcijas",
         filter_all_tx: "Visas",
         filter_deposits: "Iemaksas",
         filter_purchases: "Pirkumi",
         filter_sales: "Pārdošana",
         available_for_purchases: "Pieejams pirkumiem",
         minimum_deposit: "Minimālā iemaksa: €1,00",
-        view_all_deposits: "Skatīt visas iemaksas, pirkumus un pārdošanu",
+        view_all_deposits: "Skatiet visas iemaksas, pirkumus un pārdošanu",
         my_listings: "Pārvaldīt manus sludinājumus",
         listings_subtitle: "Rediģēt vai noņemt savus produktu sludinājumus.",
         no_listings: "Jums vēl nav sludinājumu.",
@@ -607,7 +607,7 @@ export const i18n = {
         enter_email_for_verification: "Ievadiet savu e-pasta adresi, un mēs jums nosūtīsim jaunu verifikācijas saiti.",
         send_verification_link: "Sūtīt verifikācijas saiti",
         verification_sent: "Verifikācijas e-pasts nosūtīts!",
-        check_email_inbox: "Pārbaudiet savu e-pasta iesūtni, lai atrast verifikācijas saiti.",
+        check_email_inbox: "Pārbaudiet savu e-pasta iesūtni, lai atrastu verifikācijas saiti.",
         back_to_login: "Atpakaļ uz pieslēgšanos",
         email_verification_required_page: "E-pasta verifikācija nepieciešama - Lūdzu, ievadiet e-pastu, lai saņemtu jaunu verifikācijas saiti.",
         please_enter_email: "Lūdzu, ievadiet savu e-pasta adresi.",
@@ -620,48 +620,69 @@ export const i18n = {
   
     // Translate a key
     t(key) {
-      return this.strings[this.lang]?.[key] || this.strings['en'][key] || key;
+      const result = this.strings[this.lang]?.[key] || this.strings['en'][key] || key;
+      return result;
     },
   
     // Set current language and update all elements
     setLang(lang) {
-      if (!this.strings[lang]) {
+      const self = this; // Store reference to this
+      
+      if (!self.strings[lang]) {
         console.warn(`Language ${lang} not found, defaulting to English`);
         lang = 'en';
       }
-      this.lang = lang;
+      self.lang = lang;
       localStorage.setItem('language', lang);
   
       // Translate all elements with data-i18n
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.dataset.i18n;
-        el.innerText = this.t(key);
-      });
-
+      try {
+        const i18nElements = document.querySelectorAll('[data-i18n]');
+        i18nElements.forEach(el => {
+          const key = el.dataset.i18n;
+          el.innerText = self.t(key);
+        });
+      } catch (e) {
+        console.warn('Error translating elements:', e);
+      }
+  
       // Translate all placeholders with data-i18n-placeholder
-      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.dataset.i18nPlaceholder;
-        el.placeholder = this.t(key);
-      });
+      try {
+        const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholderElements.forEach(el => {
+          const key = el.dataset.i18nPlaceholder;
+          el.placeholder = self.t(key);
+        });
+      } catch (e) {
+        console.warn('Error translating placeholders:', e);
+      }
   
       // Translate dynamic product cards
-      document.querySelectorAll('.product-card-modern').forEach(card => {
-        const catEl = card.querySelector('.product-category');
-        const priceEl = card.querySelector('.price-amount');
-        const buyBtn = card.querySelector('.btn-buy-now');
-        const reserveBtn = card.querySelector('.product-badge-new');
+      try {
+        const productCards = document.querySelectorAll('.product-card-modern');
+        productCards.forEach(card => {
+          const buyBtn = card.querySelector('.btn-buy-now');
+          const reserveBtn = card.querySelector('.product-badge-new');
   
-        if (buyBtn) buyBtn.innerText = this.t('buyNow');
-        if (reserveBtn && reserveBtn.dataset.status === 'reserved') reserveBtn.innerText = this.t('reserved');
-      });
+          if (buyBtn) buyBtn.innerText = self.t('buyNow');
+          if (reserveBtn && reserveBtn.dataset.status === 'reserved') reserveBtn.innerText = self.t('reserved');
+        });
+      } catch (e) {
+        console.warn('Error translating product cards:', e);
+      }
   
       // Translate modal if open
-      const modal = document.getElementById('productModal');
-      if(modal) {
-        modal.querySelectorAll('[data-i18n]').forEach(el => {
-          const key = el.dataset.i18n;
-          el.innerText = this.t(key);
-        });
+      try {
+        const modal = document.getElementById('productModal');
+        if (modal) {
+          const modalElements = modal.querySelectorAll('[data-i18n]');
+          modalElements.forEach(el => {
+            const key = el.dataset.i18n;
+            el.innerText = self.t(key);
+          });
+        }
+      } catch (e) {
+        console.warn('Error translating modal:', e);
       }
     },
   
@@ -676,24 +697,23 @@ export const i18n = {
     // Load saved language preference
     const savedLang = localStorage.getItem('language') || 'en';
     i18n.setLang(savedLang);
-
+  
     // Update language selector
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = savedLang;
     }
-
+  
     // Load saved theme preference
     const savedTheme = localStorage.getItem('theme') || 'light';
     const html = document.documentElement;
     html.classList.remove('dark', 'light');
     html.classList.add(savedTheme);
     html.setAttribute('data-theme', savedTheme);
-
+  
     // Update theme toggle button
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
       themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
     }
   });
-  
