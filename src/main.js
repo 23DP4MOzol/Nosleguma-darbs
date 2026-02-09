@@ -349,6 +349,12 @@ function initializeAuth() {
   if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === 'function') {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
+      
+      // Add a small delay after SIGNED_IN to allow session to propagate
+      if (event === 'SIGNED_IN') {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       await updateNavbarAuth();
       
       // Handle email confirmation success
@@ -396,8 +402,8 @@ function initializeAuth() {
   (async () => {
     console.log('Checking for existing session...');
     
-    // Wait a bit for session to initialize
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for Supabase auth to initialize
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (session) {
