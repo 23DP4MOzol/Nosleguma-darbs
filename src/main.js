@@ -637,23 +637,38 @@ async function initializeIndexPage() {
   // Stats updater
   async function updateStats() {
     try {
-      // head true + count exact returns count in `count` property in response
+      // Products count
       const productsResp = await supabase.from('products').select('*', { count: 'exact', head: true });
+      
+      // Users count - count unique users from users table
       const usersResp = await supabase.from('users').select('*', { count: 'exact', head: true });
-      // For sellers count trying unique seller_id
-      const sellersResp = await supabase
-        .from('products')
-        .select('seller_id', { count: 'exact', head: true });
+      
+      // Sellers count - count unique seller_id from products table
+      // Using RPC to count distinct values
+      const { data: sellerData, error: sellerError } = await supabase
+        .rpc('count_unique_sellers');
+      
+      // Fallback: if RPC doesn't exist, count manually
+      let sellersCount = 0;
+      if (sellerError || !sellerData) {
+        // Manual count of unique sellers
+        const { data: products } = await supabase.from('products').select('seller_id');
+        if (products) {
+          const uniqueSellers = new Set(products.map(p => p.seller_id));
+          sellersCount = uniqueSellers.size;
+        }
+      } else {
+        sellersCount = sellerData || 0;
+      }
 
       const productsCount = productsResp.count || 0;
       const usersCount = usersResp.count || 0;
-      const sellersCount = sellersResp.count || 0;
 
       // Debug: log the responses
       console.log('Stats response:', {
         products: { count: productsResp.count, error: productsResp.error },
         users: { count: usersResp.count, error: usersResp.error },
-        sellers: { count: sellersResp.count, error: sellersResp.error }
+        sellers: { count: sellersCount, raw: sellerData, error: sellerError }
       });
 
       const statsProductsEl = document.getElementById('statsProducts');
