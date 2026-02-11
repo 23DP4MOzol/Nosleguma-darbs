@@ -273,14 +273,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       console.log('✅ Login successful for:', data.session.user.email);
       loginHandled = true;
       
-      // Wait for the navbar to update before redirecting
-      // This allows the onAuthStateChange in main.js to update the navbar
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Show success message briefly
-      alert('✅ Login Successful!\n\nWelcome back!\n\nRedirecting to home page...');
+      // Force a small delay to let the browser render the navbar update
+      // Use requestAnimationFrame + setTimeout to ensure the DOM updates
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       // Redirect to index
+      console.log('🔄 Redirecting to index.html...');
       window.location.href = 'index.html';
     }
   } catch (err) {

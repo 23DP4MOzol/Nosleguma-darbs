@@ -196,14 +196,24 @@ export async function updateNavbarAuth() {
     }
 
     // Get current session first
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔄 Fetching session...');
     
-    if (sessionError) {
-      console.error('Session error:', sessionError);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      console.log('🔄 Session result:', sessionResult);
+      const { data: { session }, error: sessionError } = sessionResult;
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+      
+      const user = session?.user;
+      console.log('👤 User from session:', user ? user.email : 'null');
+    } catch (sessionErr) {
+      console.error('❌ Session fetch error:', sessionErr);
+      // Continue without user data
+      console.log('👤 No user (session fetch failed)');
     }
-    
-    const user = session?.user;
-    console.log('👤 User from session:', user ? user.email : 'null');
 
     if (user) {
       console.log('✅ User logged in, updating navbar...');
@@ -394,35 +404,11 @@ function initializeAuth() {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
       
-      // Add a small delay after SIGNED_IN to allow session to propagate
-      if (event === 'SIGNED_IN') {
-        console.log('✅ Session established, user signed in');
-        // Wait for session to be fully available
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        // Update navbar first
-        await updateNavbarAuth();
-        
-        // Check if we should redirect (from login page)
-        const currentPath = window.location.pathname;
-        if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
-          console.log('🔄 Redirecting to index.html after sign in');
-          window.location.href = 'index.html';
-        }
-      } else if (event === 'SIGNED_OUT') {
-        await updateNavbarAuth();
-        
-        // Redirect to home on logout (but not if already on home)
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('index.html') && !currentPath.endsWith('/')) {
-          window.location.href = 'index.html';
-        }
-      } else {
-        // For other events (like token refresh), just update navbar
-        await updateNavbarAuth();
-      }
+      // Update navbar for all auth events
+      await updateNavbarAuth();
       
-      // Handle email confirmation success
+      // Only handle redirects for email confirmation callbacks, not for normal logins
+      // Normal logins are handled by the login.js redirect
       if (event === 'SIGNED_IN' && session?.user) {
         // Check if this was from email confirmation
         const hash = window.location.hash;
