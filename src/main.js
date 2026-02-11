@@ -167,8 +167,9 @@ function initializeLanguage() {
 
 export async function updateNavbarAuth() {
   console.log('🔐 updateNavbarAuth() called');
+  
   try {
-    // First check if navbar elements exist - they might not on some pages
+    // First check if navbar elements exist
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const balanceBadge = document.getElementById('balanceBadge');
@@ -176,16 +177,19 @@ export async function updateNavbarAuth() {
     const settingsBtn = document.getElementById('settingsBtn');
     const adminBtn = document.getElementById('adminBtn');
     
-    console.log('🎛️ Navbar elements found:', {
-      loginBtn: !!loginBtn,
-      logoutBtn: !!logoutBtn,
-      balanceBadge: !!balanceBadge,
-      sellBtn: !!sellBtn,
-      settingsBtn: !!settingsBtn,
-      adminBtn: !!adminBtn
+    console.log('🎛️ Navbar elements check:', {
+      loginBtnExists: !!loginBtn,
+      logoutBtnExists: !!logoutBtn,
+      balanceBadgeExists: !!balanceBadge,
+      sellBtnExists: !!sellBtn,
+      settingsBtnExists: !!settingsBtn,
+      adminBtnExists: !!adminBtn
     });
 
-    // No navbar on this page, just return early
+    console.log('👤 loginBtn display before:', loginBtn?.style.display);
+    console.log('👤 logoutBtn display before:', logoutBtn?.style.display);
+
+    // No navbar elements at all on this page
     if (!loginBtn && !logoutBtn) {
       console.log('⚠️ No navbar elements found, skipping navbar update');
       return;
@@ -202,6 +206,22 @@ export async function updateNavbarAuth() {
     console.log('👤 User from session:', user ? user.email : 'null');
 
     if (user) {
+      console.log('✅ User logged in, updating navbar...');
+      
+      // Hide login button, show logout button
+      if (loginBtn) {
+        loginBtn.style.display = 'none';
+        console.log('   Setting loginBtn display to none');
+      }
+      
+      if (logoutBtn) {
+        logoutBtn.style.display = 'inline-block';
+        console.log('   Setting logoutBtn display to inline-block');
+      }
+      
+      console.log('👤 loginBtn display after:', loginBtn?.style.display);
+      console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
+
       // Get user role - try a simple query first
       let userRole = 'user';
       let userData = null;
@@ -216,7 +236,7 @@ export async function updateNavbarAuth() {
         
         if (simpleError) {
           console.warn('Simple user query error:', simpleError.message);
-          // Try without RLS for debugging
+          // Try admin detection by email pattern
           userRole = user.email?.includes('admin') ? 'admin' : 'user';
         } else if (simpleData) {
           userData = simpleData;
@@ -255,9 +275,6 @@ export async function updateNavbarAuth() {
       console.log('Admin button element:', adminBtn);
       console.log('Setting admin button display for role:', userRole);
 
-      if (loginBtn) loginBtn.style.display = 'none';
-      if (logoutBtn) logoutBtn.style.display = 'inline-block';
-
       if (sellBtn) {
         sellBtn.style.opacity = '1';
         sellBtn.style.pointerEvents = 'auto';
@@ -276,8 +293,21 @@ export async function updateNavbarAuth() {
         }
       }
     } else {
-      if (loginBtn) loginBtn.style.display = 'inline-block';
-      if (logoutBtn) logoutBtn.style.display = 'none';
+      console.log('ℹ️ No user logged in, resetting navbar...');
+      
+      if (loginBtn) {
+        loginBtn.style.display = 'inline-block';
+        console.log('   Setting loginBtn display to inline-block');
+      }
+      
+      if (logoutBtn) {
+        logoutBtn.style.display = 'none';
+        console.log('   Setting logoutBtn display to none');
+      }
+      
+      console.log('👤 loginBtn display after:', loginBtn?.style.display);
+      console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
+
       if (balanceBadge) balanceBadge.style.display = 'none';
 
       if (sellBtn) {

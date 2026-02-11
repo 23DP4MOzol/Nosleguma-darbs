@@ -273,6 +273,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       console.log('✅ Login successful for:', data.session.user.email);
       loginHandled = true;
       
+      // Wait for the navbar to update before redirecting
+      // This allows the onAuthStateChange in main.js to update the navbar
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Show success message briefly
       alert('✅ Login Successful!\n\nWelcome back!\n\nRedirecting to home page...');
       
