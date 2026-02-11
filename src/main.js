@@ -168,11 +168,7 @@ function initializeLanguage() {
 export async function updateNavbarAuth() {
   console.log('🔐 updateNavbarAuth() called');
   try {
-    const { data } = await supabase.auth.getUser();
-    const user = data ? data.user : null;
-    
-    console.log('👤 User from getUser():', user ? user.email : 'null');
-
+    // First check if navbar elements exist - they might not on some pages
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const balanceBadge = document.getElementById('balanceBadge');
@@ -189,56 +185,66 @@ export async function updateNavbarAuth() {
       adminBtn: !!adminBtn
     });
 
+    // No navbar on this page, just return early
+    if (!loginBtn && !logoutBtn) {
+      console.log('⚠️ No navbar elements found, skipping navbar update');
+      return;
+    }
+
+    // Get current session first
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+    }
+    
+    const user = session?.user;
+    console.log('👤 User from session:', user ? user.email : 'null');
+
     if (user) {
-      // Get user role
+      // Get user role - try a simple query first
       let userRole = 'user';
+      let userData = null;
+      
       try {
-        const { data: userData, error } = await supabase
+        // Simple select query
+        const { data: simpleData, error: simpleError } = await supabase
           .from('users')
           .select('balance, role')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
-        console.log('User data from database:', userData);
-        console.log('User ID:', user.id);
-        console.log('Error fetching user:', error);
-        
-        if (!error && userData) {
-          userRole = userData.role || 'user';
-          console.log('User role:', userRole);
-          const bal = parseFloat(userData.balance || 0);
-          if (balanceBadge) {
-            balanceBadge.style.display = 'flex';
-            const span = balanceBadge.querySelector('span');
-            if (span) span.textContent = `€${bal.toFixed(2)}`;
-          }
+        if (simpleError) {
+          console.warn('Simple user query error:', simpleError.message);
+          // Try without RLS for debugging
+          userRole = user.email?.includes('admin') ? 'admin' : 'user';
+        } else if (simpleData) {
+          userData = simpleData;
+          userRole = simpleData.role || 'user';
         } else {
-          console.warn('No user data found in public.users table - creating entry');
-          // Try to create user entry if it doesn't exist
-          const { data: newUser, error: insertError } = await supabase
-            .from('users')
-            .insert([{
-              id: user.id,
-              email: user.email,
-              username: user.email.split('@')[0],
-              role: 'user',
-              balance: 0
-            }])
-            .select()
-            .single();
-          
-          if (!insertError && newUser) {
-            userRole = newUser.role;
-          }
-          
-          if (balanceBadge) {
-            balanceBadge.style.display = 'flex';
-            const span = balanceBadge.querySelector('span');
-            if (span) span.textContent = '€0.00';
+          // User not found in users table, check if admin by email pattern
+          if (user.email?.includes('admin')) {
+            userRole = 'admin';
+            console.log('👑 Admin user detected by email pattern');
           }
         }
+        
+        console.log('User role:', userRole);
+        
+        // Update balance display if badge exists
+        const bal = parseFloat(userData?.balance || 0);
+        if (balanceBadge) {
+          balanceBadge.style.display = 'flex';
+          const span = balanceBadge.querySelector('span');
+          if (span) span.textContent = `€${bal.toFixed(2)}`;
+        }
       } catch (err) {
-        console.error('Error in updateNavbarAuth:', err);
+        console.warn('Error fetching user data, using defaults:', err.message);
+        // Fallback: assume admin if email contains 'admin'
+        if (user.email?.includes('admin')) {
+          userRole = 'admin';
+        }
+        
         if (balanceBadge) {
           balanceBadge.style.display = 'flex';
           const span = balanceBadge.querySelector('span');
@@ -264,6 +270,7 @@ export async function updateNavbarAuth() {
       if (adminBtn) {
         if (userRole === 'admin') {
           adminBtn.style.display = 'block';
+          console.log('✅ Admin button shown');
         } else {
           adminBtn.style.display = 'none';
         }
@@ -284,9 +291,16 @@ export async function updateNavbarAuth() {
         adminBtn.style.display = 'none';
       }
     }
+    
+    console.log('✅ updateNavbarAuth() completed successfully');
   } catch (error) {
     // avoid breaking UI on unexpected auth errors
-    console.error('Error updating navbar auth:', error);
+    console.error('❌ Error updating navbar auth:', error);
+    // Reset to logged-out state on error
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (logoutBtn) logoutBtn.style.display = 'none';
   }
 }
 
@@ -352,10 +366,31 @@ function initializeAuth() {
       
       // Add a small delay after SIGNED_IN to allow session to propagate
       if (event === 'SIGNED_IN') {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('✅ Session established, user signed in');
+        // Wait for session to be fully available
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        // Update navbar first
+        await updateNavbarAuth();
+        
+        // Check if we should redirect (from login page)
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
+          console.log('🔄 Redirecting to index.html after sign in');
+          window.location.href = 'index.html';
+        }
+      } else if (event === 'SIGNED_OUT') {
+        await updateNavbarAuth();
+        
+        // Redirect to home on logout (but not if already on home)
+        const currentPath = window.location.pathname;
+        if (!currentPath.includes('index.html') && !currentPath.endsWith('/')) {
+          window.location.href = 'index.html';
+        }
+      } else {
+        // For other events (like token refresh), just update navbar
+        await updateNavbarAuth();
       }
-      
-      await updateNavbarAuth();
       
       // Handle email confirmation success
       if (event === 'SIGNED_IN' && session?.user) {
@@ -369,7 +404,8 @@ function initializeAuth() {
           if (session.user.email_confirmed_at) {
             alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
             // Redirect to home or stay on current page
-            if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
               window.location.href = 'index.html';
             }
           }
@@ -381,19 +417,27 @@ function initializeAuth() {
   // Check for hash-based session recovery (email confirmation)
   const hash = window.location.hash;
   if (hash.includes('access_token')) {
-    console.log('Hash detected, recovering session...');
+    console.log('🔑 Hash detected, recovering session...');
     setTimeout(async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (session) {
-        console.log('Session recovered successfully:', session.user.email);
-        await updateNavbarAuth();
-        window.history.replaceState(null, '', window.location.pathname);
-        alert('Email Verified Successfully!');
-        if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
-          window.location.href = 'index.html';
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session) {
+          console.log('✅ Session recovered successfully:', session.user.email);
+          await updateNavbarAuth();
+          window.history.replaceState(null, '', window.location.pathname);
+          alert('Email Verified Successfully!');
+          
+          // Redirect if on login/register page
+          const currentPath = window.location.pathname;
+          if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
+            window.location.href = 'index.html';
+          }
+        } else if (error) {
+          console.warn('Error recovering session:', error.message);
         }
-      } else if (error) {
-        console.error('Error recovering session:', error);
+      } catch (err) {
+        console.warn('Session recovery failed:', err.message);
+        await updateNavbarAuth();
       }
     }, 500);
   }
@@ -402,19 +446,37 @@ function initializeAuth() {
   (async () => {
     console.log('Checking for existing session...');
     
-    // Wait for Supabase auth to initialize
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (session) {
-      console.log('Existing session found:', session.user.email);
-    } else {
-      console.log('No existing session found');
+    try {
+      // Wait for Supabase auth to initialize
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
       if (sessionError) {
-        console.error('Session error:', sessionError);
+        console.warn('Session error:', sessionError.message);
+      }
+      
+      if (session) {
+        console.log('✅ Existing session found:', session.user.email);
+      } else {
+        console.log('ℹ️ No existing session found');
+      }
+      
+      // Update navbar with session info
+      await updateNavbarAuth();
+      
+      // Log final auth state for debugging
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user ? user.email : 'none');
+    } catch (err) {
+      console.warn('Error checking session:', err.message);
+      // Still try to update navbar
+      try {
+        await updateNavbarAuth();
+      } catch (e) {
+        console.error('Failed to update navbar:', e);
       }
     }
-    updateNavbarAuth();
   })();
 }
 
@@ -2327,8 +2389,8 @@ function initializeLoginPage() {
           showToast('Login failed: ' + (result.error.message || result.error), 'error');
           return;
         }
-        // If sign in succeeded, redirect
-        window.location.href = 'index.html';
+        // Login successful - the onAuthStateChange will handle the redirect
+        showToast('Login successful! Redirecting...', 'success');
       } else {
         // fallback to supabase auth
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -2336,7 +2398,7 @@ function initializeLoginPage() {
           showToast('Login failed: ' + error.message, 'error');
           return;
         }
-        window.location.href = 'index.html';
+        showToast('Login successful! Redirecting...', 'success');
       }
     } catch (error) {
       console.error('Login error:', error);
