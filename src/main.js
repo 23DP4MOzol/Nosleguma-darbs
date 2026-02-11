@@ -2365,46 +2365,14 @@ function initializeSellPage() {
   }
 }
 
-// Login page functions
+// ============================
+// Login page functions - MOVED TO src/pages/login.js
+// ============================
+// The login form handler is now in src/pages/login.js to avoid conflicts
 function initializeLoginPage() {
-  if (!document.getElementById('loginForm')) return;
-
-  const loginForm = document.getElementById('loginForm');
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('emailInput')?.value.trim() || '';
-    const password = document.getElementById('passwordInput')?.value || '';
-
-    if (!email || !password) {
-      showToast('Please fill in all fields', 'error');
-      return;
-    }
-
-    try {
-      const mod = await import('./supabase.js');
-      if (mod && typeof mod.loginUser === 'function') {
-        const result = await mod.loginUser(email, password);
-        if (result && result.error) {
-          showToast('Login failed: ' + (result.error.message || result.error), 'error');
-          return;
-        }
-        // Login successful - the onAuthStateChange will handle the redirect
-        showToast('Login successful! Redirecting...', 'success');
-      } else {
-        // fallback to supabase auth
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          showToast('Login failed: ' + error.message, 'error');
-          return;
-        }
-        showToast('Login successful! Redirecting...', 'success');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      showToast('Login failed. Please try again.', 'error');
-    }
-  });
+  // Login page is now handled by src/pages/login.js
+  // This function is kept for reference but does nothing
+  console.log('initializeLoginPage() - Login is handled by src/pages/login.js');
 }
 
 // Register page functions

@@ -1,6 +1,5 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
-import { updateNavbarAuth } from '../main.js';
 
 console.log('login.js module loaded');
 
@@ -256,54 +255,35 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   console.log('🔐 Attempting login for:', email);
   loginHandled = false;
 
-  // Listen for auth state change - this reliably fires when login succeeds
-  const unsubscribe = supabase.auth.onAuthStateChange(async (event, session) => {
-    try {
-      console.log('📡 Auth event:', event, 'hasSession:', !!session);
-      
-      if (event === 'SIGNED_IN' && session?.user && !loginHandled) {
-        console.log('✅ Login confirmed for:', session.user.email);
-        loginHandled = true;
-        unsubscribe();
-        
-        // Force immediate redirect
-        console.log('🚀 Redirecting to index.html...');
-        window.location.href = 'index.html';
-      }
-    } catch (err) {
-      console.error('❌ Auth event error:', err);
-      // Force redirect anyway
-      if (!loginHandled) {
-        loginHandled = true;
-        console.log('🚀 Emergency redirect...');
-        window.location.href = 'index.html';
-      }
-    }
-  });
-
-  // Make the login call
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  
-  if (error) {
-    loginHandled = true;
-    unsubscribe();
-    console.log('❌ Auth error:', error.message);
-    showLoginError('Login failed', error);
-    return;
-  }
-  
-  // If no error but auth state change didn't fire yet, set a timeout fallback
-  setTimeout(() => {
-    if (!loginHandled) {
+  try {
+    // Make the login call directly
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
       loginHandled = true;
-      unsubscribe();
-      console.log('⏰ Auth timeout - forcing redirect');
+      console.log('❌ Auth error:', error.message);
+      showLoginError('Login failed', error);
+      return;
+    }
+    
+    if (data.session) {
+      console.log('✅ Login successful for:', data.session.user.email);
+      loginHandled = true;
+      
+      // Show success message briefly
+      alert('✅ Login Successful!\n\nWelcome back!\n\nRedirecting to home page...');
+      
+      // Redirect to index
       window.location.href = 'index.html';
     }
-  }, 5000);
+  } catch (err) {
+    console.error('❌ Login error:', err);
+    showLoginError('Login failed', err);
+    loginHandled = true;
+  }
 });
 
 // ============================
