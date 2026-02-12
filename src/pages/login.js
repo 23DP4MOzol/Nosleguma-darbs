@@ -245,9 +245,18 @@ let loginHandled = false;
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  // Prevent duplicate submissions
+  // Prevent duplicate submissions - check if already logged in
   if (loginHandled) {
     console.log('Login already handled, ignoring duplicate submit');
+    return;
+  }
+  
+  // Double-check: if already logged in, redirect to home
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session && session.user) {
+    console.log('Already logged in as:', session.user.email);
+    loginHandled = true;
+    window.location.href = 'index.html';
     return;
   }
   
@@ -258,12 +267,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   if (!email || !password) {
     console.log('❌ Missing email or password');
+    loginHandled = false;
     alert('Please fill in all fields');
     return;
   }
 
   console.log('🔐 Attempting login for:', email);
   loginHandled = true;
+
+  // Disable the submit button to prevent double submissions
+  const submitBtn = document.getElementById('loginForm').querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
+  }
 
   try {
     // Make the login call directly
@@ -275,18 +292,16 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (error) {
       loginHandled = false; // Reset on error so user can try again
       console.log('❌ Auth error:', error.message);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+      }
       showLoginError('Login failed', error);
       return;
     }
     
     if (data.session) {
       console.log('✅ Login successful for:', data.session.user.email);
-      loginHandled = true;
-      
-      // Force a small delay to let the browser render the navbar update
-      // Use requestAnimationFrame + setTimeout to ensure the DOM updates
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      await new Promise(resolve => setTimeout(resolve, 50));
       
       // Redirect to index
       console.log('🔄 Redirecting to index.html...');
@@ -295,6 +310,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   } catch (err) {
     loginHandled = false; // Reset on error so user can try again
     console.error('❌ Login error:', err);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+    }
     showLoginError('Login failed', err);
   }
 });
