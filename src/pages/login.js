@@ -7,6 +7,9 @@ console.log('login.js module loaded');
 // Check if already logged in - redirect to home
 // ============================
 (async function checkAlreadyLoggedIn() {
+  // Wait for Supabase to restore session from cookies
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   const { data: { session } } = await supabase.auth.getSession();
   if (session && session.user) {
     console.log('Already logged in as:', session.user.email);
@@ -241,6 +244,13 @@ let loginHandled = false;
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  
+  // Prevent duplicate submissions
+  if (loginHandled) {
+    console.log('Login already handled, ignoring duplicate submit');
+    return;
+  }
+  
   console.log('📝 Login form submitted');
 
   const email = document.getElementById('emailInput').value.trim();
@@ -253,7 +263,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   }
 
   console.log('🔐 Attempting login for:', email);
-  loginHandled = false;
+  loginHandled = true;
 
   try {
     // Make the login call directly
@@ -263,7 +273,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     });
     
     if (error) {
-      loginHandled = true;
+      loginHandled = false; // Reset on error so user can try again
       console.log('❌ Auth error:', error.message);
       showLoginError('Login failed', error);
       return;
@@ -283,9 +293,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       window.location.href = 'index.html';
     }
   } catch (err) {
+    loginHandled = false; // Reset on error so user can try again
     console.error('❌ Login error:', err);
     showLoginError('Login failed', err);
-    loginHandled = true;
   }
 });
 
