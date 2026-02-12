@@ -168,180 +168,180 @@ function initializeLanguage() {
 export async function updateNavbarAuth() {
   console.log('🔐 updateNavbarAuth() called');
   
+  // First check if navbar elements exist
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const balanceBadge = document.getElementById('balanceBadge');
+  const sellBtn = document.getElementById('sellBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const adminBtn = document.getElementById('adminBtn');
+  
+  console.log('🎛️ Navbar elements check:', {
+    loginBtnExists: !!loginBtn,
+    logoutBtnExists: !!logoutBtn,
+    balanceBadgeExists: !!balanceBadge,
+    sellBtnExists: !!sellBtn,
+    settingsBtnExists: !!settingsBtn,
+    adminBtnExists: !!adminBtn
+  });
+
+  // No navbar elements at all on this page
+  if (!loginBtn && !logoutBtn) {
+    console.log('⚠️ No navbar elements found, skipping navbar update');
+    return;
+  }
+
+  console.log('👤 loginBtn display before:', loginBtn?.style.display);
+  console.log('👤 logoutBtn display before:', logoutBtn?.style.display);
+
+  // Get current session first
+  console.log('🔄 Fetching session...');
+  
+  let user = null;
+  let userRole = 'user';
+  let userData = null;
+  
   try {
-    // First check if navbar elements exist
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const balanceBadge = document.getElementById('balanceBadge');
-    const sellBtn = document.getElementById('sellBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const adminBtn = document.getElementById('adminBtn');
+    const sessionResult = await supabase.auth.getSession();
+    console.log('🔄 Session result:', sessionResult);
+    const { data: { session }, error: sessionError } = sessionResult;
     
-    console.log('🎛️ Navbar elements check:', {
-      loginBtnExists: !!loginBtn,
-      logoutBtnExists: !!logoutBtn,
-      balanceBadgeExists: !!balanceBadge,
-      sellBtnExists: !!sellBtn,
-      settingsBtnExists: !!settingsBtn,
-      adminBtnExists: !!adminBtn
-    });
-
-    console.log('👤 loginBtn display before:', loginBtn?.style.display);
-    console.log('👤 logoutBtn display before:', logoutBtn?.style.display);
-
-    // No navbar elements at all on this page
-    if (!loginBtn && !logoutBtn) {
-      console.log('⚠️ No navbar elements found, skipping navbar update');
-      return;
+    if (sessionError) {
+      console.error('Session error:', sessionError);
     }
+    
+    user = session?.user || null;
+    console.log('👤 User from session:', user ? user.email : 'null');
+    
+    // FORCE immediate navbar update regardless of user state
+    console.log('🎯 About to check user state, user =', user ? 'truthy' : 'null/falsy');
+    
+  } catch (sessionErr) {
+    console.error('❌ Session fetch error:', sessionErr);
+    user = null;
+    console.log('👤 No user (session fetch failed)');
+  }
 
-    // Get current session first
-    console.log('🔄 Fetching session...');
+  console.log('🎯 Checking if user exists:', user !== null, 'user:', user?.email);
+  
+  if (user) {
+    console.log('✅ User logged in, updating navbar...');
+    
+    // CRITICAL: Immediately update navbar visibility
+    if (loginBtn) {
+      loginBtn.style.display = 'none';
+      console.log('🔒 loginBtn hidden, display:', loginBtn.style.display);
+    }
+    
+    if (logoutBtn) {
+      logoutBtn.style.display = 'inline-block';
+      console.log('🔓 logoutBtn shown, display:', logoutBtn.style.display);
+    }
+    
+    console.log('👤 loginBtn display after:', loginBtn?.style.display);
+    console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
+
+    // Get user role - try a simple query first
+    userRole = 'user';
+    userData = null;
     
     try {
-      const sessionResult = await supabase.auth.getSession();
-      console.log('🔄 Session result:', sessionResult);
-      const { data: { session }, error: sessionError } = sessionResult;
+      // Simple select query
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('users')
+        .select('balance, role')
+        .eq('id', user.id)
+        .maybeSingle();
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-      }
-      
-      const user = session?.user;
-      console.log('👤 User from session:', user ? user.email : 'null');
-    } catch (sessionErr) {
-      console.error('❌ Session fetch error:', sessionErr);
-      // Continue without user data
-      console.log('👤 No user (session fetch failed)');
-    }
-
-    if (user) {
-      console.log('✅ User logged in, updating navbar...');
-      
-      // Hide login button, show logout button
-      if (loginBtn) {
-        loginBtn.style.display = 'none';
-        console.log('   Setting loginBtn display to none');
-      }
-      
-      if (logoutBtn) {
-        logoutBtn.style.display = 'inline-block';
-        console.log('   Setting logoutBtn display to inline-block');
-      }
-      
-      console.log('👤 loginBtn display after:', loginBtn?.style.display);
-      console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
-
-      // Get user role - try a simple query first
-      let userRole = 'user';
-      let userData = null;
-      
-      try {
-        // Simple select query
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('users')
-          .select('balance, role')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (simpleError) {
-          console.warn('Simple user query error:', simpleError.message);
-          // Try admin detection by email pattern
-          userRole = user.email?.includes('admin') ? 'admin' : 'user';
-        } else if (simpleData) {
-          userData = simpleData;
-          userRole = simpleData.role || 'user';
-        } else {
-          // User not found in users table, check if admin by email pattern
-          if (user.email?.includes('admin')) {
-            userRole = 'admin';
-            console.log('👑 Admin user detected by email pattern');
-          }
-        }
-        
-        console.log('User role:', userRole);
-        
-        // Update balance display if badge exists
-        const bal = parseFloat(userData?.balance || 0);
-        if (balanceBadge) {
-          balanceBadge.style.display = 'flex';
-          const span = balanceBadge.querySelector('span');
-          if (span) span.textContent = `€${bal.toFixed(2)}`;
-        }
-      } catch (err) {
-        console.warn('Error fetching user data, using defaults:', err.message);
-        // Fallback: assume admin if email contains 'admin'
+      if (simpleError) {
+        console.warn('Simple user query error:', simpleError.message);
+        // Try admin detection by email pattern
+        userRole = user.email?.includes('admin') ? 'admin' : 'user';
+      } else if (simpleData) {
+        userData = simpleData;
+        userRole = simpleData.role || 'user';
+      } else {
+        // User not found in users table, check if admin by email pattern
         if (user.email?.includes('admin')) {
           userRole = 'admin';
-        }
-        
-        if (balanceBadge) {
-          balanceBadge.style.display = 'flex';
-          const span = balanceBadge.querySelector('span');
-          if (span) span.textContent = '€0.00';
+          console.log('👑 Admin user detected by email pattern');
         }
       }
       
-      console.log('Admin button element:', adminBtn);
-      console.log('Setting admin button display for role:', userRole);
-
-      if (sellBtn) {
-        sellBtn.style.opacity = '1';
-        sellBtn.style.pointerEvents = 'auto';
-      }
-      if (settingsBtn) {
-        settingsBtn.style.display = 'inline-block';
-        settingsBtn.style.opacity = '1';
-        settingsBtn.style.pointerEvents = 'auto';
-      }
-      if (adminBtn) {
-        if (userRole === 'admin') {
-          adminBtn.style.display = 'block';
-          console.log('✅ Admin button shown');
-        } else {
-          adminBtn.style.display = 'none';
-        }
-      }
-    } else {
-      console.log('ℹ️ No user logged in, resetting navbar...');
+      console.log('User role:', userRole);
       
-      if (loginBtn) {
-        loginBtn.style.display = 'inline-block';
-        console.log('   Setting loginBtn display to inline-block');
+      // Update balance display if badge exists
+      const bal = parseFloat(userData?.balance || 0);
+      if (balanceBadge) {
+        balanceBadge.style.display = 'flex';
+        const span = balanceBadge.querySelector('span');
+        if (span) span.textContent = `€${bal.toFixed(2)}`;
+      }
+    } catch (err) {
+      console.warn('Error fetching user data, using defaults:', err.message);
+      // Fallback: assume admin if email contains 'admin'
+      if (user.email?.includes('admin')) {
+        userRole = 'admin';
       }
       
-      if (logoutBtn) {
-        logoutBtn.style.display = 'none';
-        console.log('   Setting logoutBtn display to none');
+      if (balanceBadge) {
+        balanceBadge.style.display = 'flex';
+        const span = balanceBadge.querySelector('span');
+        if (span) span.textContent = '€0.00';
       }
-      
-      console.log('👤 loginBtn display after:', loginBtn?.style.display);
-      console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
+    }
+    
+    console.log('Admin button element:', adminBtn);
+    console.log('Setting admin button display for role:', userRole);
 
-      if (balanceBadge) balanceBadge.style.display = 'none';
-
-      if (sellBtn) {
-        sellBtn.style.opacity = '0.6';
-        sellBtn.style.pointerEvents = 'none';
-      }
-      if (settingsBtn) {
-        settingsBtn.style.display = 'none';
-      }
-      if (adminBtn) {
+    if (sellBtn) {
+      sellBtn.style.opacity = '1';
+      sellBtn.style.pointerEvents = 'auto';
+    }
+    if (settingsBtn) {
+      settingsBtn.style.display = 'inline-block';
+      settingsBtn.style.opacity = '1';
+      settingsBtn.style.pointerEvents = 'auto';
+    }
+    if (adminBtn) {
+      if (userRole === 'admin') {
+        adminBtn.style.display = 'block';
+        console.log('✅ Admin button shown');
+      } else {
         adminBtn.style.display = 'none';
       }
     }
+  } else {
+    console.log('ℹ️ No user logged in, resetting navbar...');
     
-    console.log('✅ updateNavbarAuth() completed successfully');
-  } catch (error) {
-    // avoid breaking UI on unexpected auth errors
-    console.error('❌ Error updating navbar auth:', error);
-    // Reset to logged-out state on error
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (loginBtn) loginBtn.style.display = 'inline-block';
-    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (loginBtn) {
+      loginBtn.style.display = 'inline-block';
+      console.log('   Setting loginBtn display to inline-block');
+    }
+    
+    if (logoutBtn) {
+      logoutBtn.style.display = 'none';
+      console.log('   Setting logoutBtn display to none');
+    }
+    
+    console.log('👤 loginBtn display after:', loginBtn?.style.display);
+    console.log('👤 logoutBtn display after:', logoutBtn?.style.display);
+
+    if (balanceBadge) balanceBadge.style.display = 'none';
+
+    if (sellBtn) {
+      sellBtn.style.opacity = '0.6';
+      sellBtn.style.pointerEvents = 'none';
+    }
+    if (settingsBtn) {
+      settingsBtn.style.display = 'none';
+    }
+    if (adminBtn) {
+      adminBtn.style.display = 'none';
+    }
   }
+  
+  console.log('✅ updateNavbarAuth() completed successfully');
 }
 
 function initializeAuth() {
