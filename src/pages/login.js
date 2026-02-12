@@ -7,12 +7,11 @@ console.log('login.js module loaded');
 // Check if already logged in - redirect to home
 // ============================
 (async function checkAlreadyLoggedIn() {
-  // Wait for Supabase to restore session from cookies
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
+  // Check for existing session immediately
   const { data: { session } } = await supabase.auth.getSession();
   if (session && session.user) {
     console.log('Already logged in as:', session.user.email);
+    // Redirect to index without further checks
     window.location.href = 'index.html';
     return;
   }
@@ -302,6 +301,25 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     
     if (data.session) {
       console.log('✅ Login successful for:', data.session.user.email);
+      
+      // Store session in localStorage as a fallback
+      // This helps on static hosting where cookies might not persist immediately
+      try {
+        const sessionData = {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+          user: {
+            id: data.session.user.id,
+            email: data.session.user.email,
+            email_confirmed_at: data.session.user.email_confirmed_at
+          }
+        };
+        localStorage.setItem('vendly_fallback_session', JSON.stringify(sessionData));
+        console.log('📦 Session stored in localStorage fallback');
+      } catch (storageError) {
+        console.warn('Could not store session in localStorage:', storageError.message);
+      }
       
       // Redirect to index
       console.log('🔄 Redirecting to index.html...');

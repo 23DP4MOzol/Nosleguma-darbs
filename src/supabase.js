@@ -4,8 +4,6 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase credentials from environment variables
-// These must be set in your deployment platform (Netlify, Vercel, etc.)
-// or in a local .env file (do not commit real credentials to version control)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -23,7 +21,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
 console.log('Supabase URL configured:', !!supabaseUrl);
 console.log('Supabase Anon Key configured:', !!supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Configure Supabase client for static hosting (Cloudflare Pages)
+// This ensures session cookies are properly persisted and read
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Auto-refresh token before expiration (5 minutes before)
+    autoRefreshToken: true,
+    
+    // Persist session in localStorage
+    persistSession: true,
+    
+    // Detect session from URL (for email confirmation callbacks)
+    detectSessionInUrl: true,
+    
+    // Storage option - use localStorage
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined
+  }
+});
 
 
 // ============================

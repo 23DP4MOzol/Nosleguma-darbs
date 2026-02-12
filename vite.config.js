@@ -2,9 +2,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
-  root: '.',        // root folder (where your HTML files are)
+  root: '.',
   build: {
-    outDir: 'dist', // output folder
+    outDir: 'dist',
     rollupOptions: {
       input: {
         index: 'index.html',
@@ -20,5 +20,8 @@ export default defineConfig({
         terms_lv: 'terms-lv.html'
       }
     }
+  },
+  css: {
+    postcss: './postcss.config.cjs'
   }
 });

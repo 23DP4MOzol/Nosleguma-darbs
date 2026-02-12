@@ -5,10 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="login">Login - Vendly</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
-  <script type="module" crossorigin src="./assets/login-CK_t91KC.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/navbar-Au8OVFrc.js">
-  <link rel="modulepreload" crossorigin href="./assets/main-yX_z8rBf.js">
-  <link rel="stylesheet" crossorigin href="./assets/navbar-C5EQzQ5q.css">
+  <style>
+    #resendVerificationLink.cooldown {
+      color: var(--muted) !important;
+      cursor: not-allowed !important;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    
+    #authLoading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 24px 48px;
+      border-radius: 12px;
+      z-index: 9999;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+    
+    #authLoading::before {
+      content: '';
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    html.dark #authLoading {
+      background: rgba(30, 41, 59, 0.95);
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/login-CafOiSAz.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/navbar-BPm_Vi4m.js">
+  <link rel="modulepreload" crossorigin href="./assets/main-Ny_a3mZ8.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5EQzQ5q.css">
 </head>
 <body>
 
@@ -54,9 +97,6 @@
   </div>
 </nav>
 
-
-
-
   <main class="main-container" style="max-width: 400px; margin-top: 8rem;">
     <section class="section-header-centered">
       <h2 class="section-title" data-i18n="welcome_back">Welcome Back</h2>
@@ -70,7 +110,35 @@
        <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
          <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>
        </p>
+       <p style="text-align: center; font-size: 0.875rem;">
+         <a href="#" id="resendVerificationLink" style="color: var(--primary); text-decoration: none;">Resend verification email</a>
+       </p>
+       <p style="text-align: center; font-size: 0.875rem;">
+         <a href="#" id="forgotPasswordLink" style="color: var(--primary); text-decoration: none;">Forgot your password?</a>
+       </p>
     </form>
+
+    <!-- Forgot Password Form -->
+    <form id="forgotPasswordForm" style="display: none; flex-direction: column; gap: 1.5rem;">
+       <p style="text-align: center; color: var(--fg);">Enter your email address and we'll send you a link to reset your password.</p>
+       <input type="email" id="resetEmailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+       <button type="submit" class="btn-buy-now" data-i18n="send_reset_link">Send Reset Link</button>
+       <p style="text-align: center; font-size: 0.875rem;">
+         <a href="#" id="backToLoginLink" style="color: var(--primary); text-decoration: none;">Back to login</a>
+       </p>
+    </form>
+
+    <!-- Resend Verification Form -->
+    <div id="resendVerificationForm" style="display: none; flex-direction: column; gap: 1.5rem; text-align: center;">
+       <h2 style="color: var(--fg);">Email Not Verified</h2>
+       <p style="color: var(--muted);">Please verify your email address to log in.</p>
+       <p style="color: var(--muted);">Check your spam folder if you don't see the email.</p>
+       <input type="email" id="verificationEmailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
+       <button type="button" id="resendVerificationBtn" class="btn-buy-now">Resend Verification Email</button>
+       <p style="text-align: center; font-size: 0.875rem;">
+         <a href="#" id="backToLoginFromVerify" style="color: var(--primary); text-decoration: none;">Back to login</a>
+       </p>
+    </div>
   </main>
 
 <!-- Import navbar functionality -->

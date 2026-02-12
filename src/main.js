@@ -460,12 +460,13 @@ function initializeAuth() {
 
   // Also try to get session on every page load
   (async () => {
-    console.log('Checking for existing session...');
+    console.log('🔍 Checking for existing session...');
     
     try {
-      // Wait for Supabase auth to initialize
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait for Supabase auth to initialize - longer delay for cookie persistence
+      await new Promise(resolve => setTimeout(resolve, 500));
       
+      // First try getSession which reads from storage/cookies
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -474,8 +475,65 @@ function initializeAuth() {
       
       if (session) {
         console.log('✅ Existing session found:', session.user.email);
+        console.log('📋 Session access token present:', !!session.access_token);
+        console.log('📋 Session expires at:', session.expires_at ? new Date(session.expires_at * 1000) : 'none');
       } else {
-        console.log('ℹ️ No existing session found');
+        console.log('ℹ️ No session from getSession(), trying getUser()...');
+        
+        // Check for fallback session in localStorage
+        const fallbackSessionStr = localStorage.getItem('vendly_fallback_session');
+        if (fallbackSessionStr) {
+          try {
+            const fallbackSession = JSON.parse(fallbackSessionStr);
+            console.log('📦 Found fallback session for:', fallbackSession.user?.email);
+            
+            // Clear fallback after reading
+            localStorage.removeItem('vendly_fallback_session');
+            
+            // Set the session in Supabase
+            if (fallbackSession.access_token) {
+              // Create a session-like object for the navbar
+              sessionStorage.setItem('supabase.auth', JSON.stringify({
+                session_token: fallbackSession.access_token,
+                user: fallbackSession.user
+              }));
+              
+              console.log('📦 Fallback session restored from localStorage');
+              
+              // Update navbar with fallback user info
+              await updateNavbarAuth();
+              
+              // Log final auth state
+              console.log('👤 Current user (from fallback):', fallbackSession.user?.email || 'none');
+              return; // Skip normal session check
+            }
+          } catch (parseError) {
+            console.warn('Could not parse fallback session:', parseError.message);
+            localStorage.removeItem('vendly_fallback_session');
+          }
+        }
+        
+        // Fallback: try getUser() which can recover session from expired tokens
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.warn('Get user error:', userError.message);
+        }
+        
+        if (userData?.user) {
+          console.log('✅ User recovered from getUser():', userData.user.email);
+        } else {
+          console.log('ℹ️ No user found - user is not logged in');
+          
+          // Check if there are any auth cookies/storage
+          console.log('📋 Checking localStorage for supabase auth...');
+          const supabaseAuth = localStorage.getItem('supabase.auth');
+          if (supabaseAuth) {
+            console.log('📋 Found supabase.auth in localStorage (may be expired or corrupted)');
+          } else {
+            console.log('📋 No supabase.auth found in localStorage');
+          }
+        }
       }
       
       // Update navbar with session info
