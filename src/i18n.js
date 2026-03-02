@@ -404,7 +404,9 @@ export const i18n = {
         admin_dashboard_reset: "Dashboard statistics reset",
         admin_data_exported: "All data exported successfully",
         admin_backup_created: "Database backup created",
-        admin_system_status: "System Status"
+        admin_system_status: "System Status",
+        admin_history_cleared: "Transaction history cleared successfully",
+        admin_transactions_deleted: "transactions deleted"
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -804,7 +806,9 @@ export const i18n = {
         admin_dashboard_reset: "Dashboard statistika atiestatīta",
         admin_data_exported: "Visi dati sekmīgi eksportēti",
         admin_backup_created: "Datu bāzes rezerve izveidota",
-        admin_system_status: "Sistēmas stāvoklis"
+        admin_system_status: "Sistēmas stāvoklis",
+        admin_history_cleared: "Transakciju vēsture sekmīgi notīrīta",
+        admin_transactions_deleted: "transakcijas izdzēstas"
       }
     },
   

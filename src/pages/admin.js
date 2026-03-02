@@ -811,10 +811,17 @@ window.clearTransactionHistory = async function() {
   if (!confirm('Are you sure you want to CLEAR ALL transaction history? This action cannot be undone!')) return;
   
   try {
-    const { error } = await supabase.from('user_transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    if (error) throw error;
+    const { data: allTransactions } = await supabase.from('user_transactions').select('id');
+    let deletedCount = 0;
     
-    alert('Transaction history cleared successfully');
+    if (allTransactions && allTransactions.length > 0) {
+      for (const tx of allTransactions) {
+        const { error: delErr } = await supabase.from('user_transactions').delete().eq('id', tx.id);
+        if (!delErr) deletedCount++;
+      }
+    }
+    
+    alert(`✅ ${i18n.t('admin_history_cleared')}\n${deletedCount} ${i18n.t('admin_transactions_deleted')}`);
     loadTransactions();
   } catch (error) {
     alert('Error clearing transaction history: ' + error.message);
