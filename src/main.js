@@ -1844,10 +1844,28 @@ function initializeSettingsPage() {
    async function loadUserSettings() {
      try {
        const { data } = await supabase.auth.getUser();
-       const user = data ? data.user : null;
+       let user = data ? data.user : null;
+
+       // If no user yet, wait briefly for auth to initialize (handle storage race on SIGNED_IN)
        if (!user) {
-         showToast('You must be logged in to access settings.', 'error');
-         setTimeout(() => (window.location.href = 'login.html'), 2000);
+         console.log('No user found yet in loadUserSettings(), waiting for auth event...');
+         // Subscribe to auth state change and load once signed in
+         const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+           if (event === 'SIGNED_IN' && session?.user) {
+             try {
+               sub.subscription.unsubscribe();
+             } catch (e) {}
+             user = session.user;
+             await loadUserSettings(); // retry now that we have user
+           } else if (event === 'SIGNED_OUT') {
+             try {
+               sub.subscription.unsubscribe();
+             } catch (e) {}
+             // If user signs out, redirect to login
+             showToast('You must be logged in to access settings.', 'error');
+             setTimeout(() => (window.location.href = 'login.html'), 1200);
+           }
+         });
          return;
        }
 
