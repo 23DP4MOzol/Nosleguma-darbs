@@ -56,12 +56,34 @@ async function loadUserProfile() {
       .eq('id', currentUser.id)
       .single();
 
+    let resolvedUserData = userData || null;
+
     if (error) {
-      console.warn('Error loading user profile from users table:', error);
+      console.warn('Error loading user profile from users table by id:', error);
+    }
+
+    // If no users row by id, try by email (useful when rows were seeded with different UUIDs)
+    if (!resolvedUserData && currentUser?.email) {
+      try {
+        const { data: emailUser, error: emailError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', currentUser.email)
+          .maybeSingle();
+
+        if (emailError) {
+          console.warn('Error loading user profile from users table by email:', emailError);
+        } else if (emailUser) {
+          resolvedUserData = emailUser;
+          console.log('Loaded users row by email for settings page');
+        }
+      } catch (e) {
+        console.warn('Exception querying users by email:', e.message || e);
+      }
     }
 
     // Update UI with available user data (fallback to auth metadata/localStorage)
-    const displayName = (userData && userData.username) || currentUser.user_metadata?.full_name || 'User';
+    const displayName = (resolvedUserData && resolvedUserData.username) || currentUser.user_metadata?.full_name || 'User';
     document.getElementById('userName').textContent = displayName;
     document.getElementById('userEmailDisplay').textContent = currentUser.email || '—';
     document.getElementById('userEmail').value = currentUser.email || '';
@@ -69,8 +91,8 @@ async function loadUserProfile() {
 
     // Determine balance from users table, auth metadata, or localStorage
     let profileBalance = 0;
-    if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
-      profileBalance = parseFloat(userData.balance) || 0;
+    if (resolvedUserData && typeof resolvedUserData.balance !== 'undefined' && resolvedUserData.balance !== null) {
+      profileBalance = parseFloat(resolvedUserData.balance) || 0;
     } else if (currentUser.user_metadata && (currentUser.user_metadata.balance || currentUser.user_metadata.wallet?.balance)) {
       profileBalance = parseFloat(currentUser.user_metadata.balance || currentUser.user_metadata.wallet.balance) || 0;
     } else if (localStorage.getItem('vendly_balance')) {
@@ -100,6 +122,16 @@ async function loadUserProfile() {
     if (balanceBadge) {
       balanceBadge.style.display = 'flex';
       balanceBadge.querySelector('span').textContent = `€${profileBalance.toFixed(2)}`;
+      // ensure it links to balance page
+      if (balanceBadge.tagName.toLowerCase() !== 'a') {
+        // replace with anchor preserving id/class
+        const a = document.createElement('a');
+        a.id = balanceBadge.id;
+        a.className = balanceBadge.className;
+        a.href = 'balance.html';
+        a.innerHTML = balanceBadge.innerHTML;
+        balanceBadge.replaceWith(a);
+      }
     }
 
     // Show user stats

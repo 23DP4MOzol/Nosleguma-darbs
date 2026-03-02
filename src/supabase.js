@@ -187,14 +187,28 @@ export async function getBalance(userId) {
   }
 }
 
-// Update user balance
-export async function updateBalance(userId, newBalance) {
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ 
-        balance: newBalance,
+        // Best-effort cleanup for any fallback storage keys
+        try {
+          localStorage.removeItem('vendly_fallback_session');
+          localStorage.removeItem('vendly_balance');
+          // older builds may have stored supabase auth key
+          localStorage.removeItem('supabase.auth.token');
+          localStorage.removeItem('supabase.auth');
+        } catch (e) {
+          // ignore
+        }
         updated_at: new Date().toISOString()
+        // Try to clear cookies that Supabase may have set (non-HttpOnly best-effort)
+        try {
+          document.cookie.split(';').forEach(function(c) {
+            const name = c.split('=')[0].trim();
+            if (name) {
+              document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;';
+            }
+          });
+        } catch (e) {
+          // ignore
+        }
       })
       .eq('id', userId);
     

@@ -269,58 +269,58 @@ export async function updateNavbarAuth(sessionParam) {
     userData = null;
     
     try {
-      // Simple select query
-      const { data: simpleData, error: simpleError } = await supabase
-        .from('users')
-        .select('balance, role')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (simpleError) {
-        console.warn('Simple user query error:', simpleError.message);
-        // Try admin detection by email pattern
-        userRole = user.email?.includes('admin') ? 'admin' : 'user';
-      } else if (simpleData) {
-        userData = simpleData;
-        userRole = simpleData.role || 'user';
-        // If users table row exists but role missing, allow email-based admin detection
-        if ((!simpleData.role || simpleData.role === '') && user.email?.includes('admin')) {
-          userRole = 'admin';
-          console.log('👑 Admin inferred from email despite missing role in users table');
-        }
-      } else {
-        // User not found in users table, check if admin by email pattern
-        if (user.email?.includes('admin')) {
-          userRole = 'admin';
-          console.log('👑 Admin user detected by email pattern');
+      // First, try to read users row by id
+      let usersRow = null;
+      try {
+        const { data, error } = await supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
+        if (error) console.warn('Could not load users row by id for navbar:', error.message || error);
+        usersRow = data || null;
+      } catch (e) {
+        console.warn('Exception loading users row by id for navbar:', e.message || e);
+      }
+
+      // If not found by id, try by email (handles seeded rows keyed by email)
+      if (!usersRow && user?.email) {
+        try {
+          const { data: emailRow, error: emailError } = await supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle();
+          if (emailError) console.warn('Could not load users row by email for navbar:', emailError.message || emailError);
+          usersRow = emailRow || null;
+          if (usersRow) console.log('Navbar: loaded users row by email fallback');
+        } catch (e) {
+          console.warn('Exception loading users row by email for navbar:', e.message || e);
         }
       }
-      
-      console.log('User role:', userRole);
-      
-      // Update balance display if badge exists
-        // Try multiple sources for balance: users table, auth user metadata, localStorage
-        let bal = 0;
-        if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
-          bal = parseFloat(userData.balance) || 0;
-        } else if (user?.user_metadata && (user.user_metadata.balance || user.user_metadata.wallet?.balance)) {
-          bal = parseFloat(user.user_metadata.balance || user.user_metadata.wallet.balance) || 0;
-        } else if (localStorage.getItem('vendly_balance')) {
-          bal = parseFloat(localStorage.getItem('vendly_balance')) || 0;
-        }
 
-        if (balanceBadge) {
-          balanceBadge.style.display = 'flex';
-          const span = balanceBadge.querySelector('span');
-          if (span) span.textContent = `€${bal.toFixed(2)}`;
-        }
+      if (usersRow) {
+        userData = usersRow;
+        userRole = usersRow.role || (user.email?.includes('admin') ? 'admin' : 'user');
+      } else {
+        // No users row found; infer admin by email if necessary
+        userRole = user.email?.includes('admin') ? 'admin' : 'user';
+      }
+
+      console.log('User role:', userRole);
+
+      // Determine balance from multiple sources: users table -> auth metadata -> localStorage
+      let bal = 0;
+      if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
+        bal = parseFloat(userData.balance) || 0;
+      } else if (user?.user_metadata && (user.user_metadata.balance || user.user_metadata.wallet?.balance)) {
+        bal = parseFloat(user.user_metadata.balance || user.user_metadata.wallet.balance) || 0;
+      } else if (localStorage.getItem('vendly_balance')) {
+        bal = parseFloat(localStorage.getItem('vendly_balance')) || 0;
+      }
+
+      if (balanceBadge) {
+        balanceBadge.style.display = 'flex';
+        const span = balanceBadge.querySelector('span');
+        if (span) span.textContent = `€${bal.toFixed(2)}`;
+      }
     } catch (err) {
-      console.warn('Error fetching user data, using defaults:', err.message);
-      // Fallback: assume admin if email contains 'admin'
+      console.warn('Error fetching user data for navbar, using defaults:', err?.message || err);
       if (user.email?.includes('admin')) {
         userRole = 'admin';
       }
-      
       if (balanceBadge) {
         balanceBadge.style.display = 'flex';
         const span = balanceBadge.querySelector('span');
@@ -679,6 +679,8 @@ function initializeNavigation() {
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768 && navbarLinks) {
       navbarLinks.classList.remove('active');
+      if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
     }
   });
 }
