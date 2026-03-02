@@ -343,16 +343,72 @@
         </div>
       </div>
       
-      <!-- Statistics Reset -->
+      <!-- User Management -->
+      <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #3b82f6;">
+        <h3>👥 User Management</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Manage user roles, delete users, and admin control</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-primary" onclick="deleteSpecificUser()" style="cursor:pointer;padding:1rem;">
+            🗑️ Delete User
+          </button>
+          <button class="btn btn-success" onclick="promoteUserToAdmin()" style="cursor:pointer;padding:1rem;">
+            ⬆️ Promote to Admin
+          </button>
+          <button class="btn btn-warning" onclick="demoteAdminUser()" style="cursor:pointer;padding:1rem;">
+            ⬇️ Demote Admin
+          </button>
+          <button class="btn btn-danger" onclick="deleteAdminUser()" style="cursor:pointer;padding:1rem;">
+            ❌ Delete Admin
+          </button>
+        </div>
+      </div>
+      
+      <!-- Statistics & Revenue Reset -->
+      <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #f59e0b;">
+        <h3>📊 Statistics & Revenue</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Reset dashboard statistics and revenue tracking</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-warning" onclick="resetDashboardStats()" style="cursor:pointer;padding:1rem;">
+            📈 Reset Dashboard Stats
+          </button>
+          <button class="btn btn-warning" onclick="resetTotalRevenue()" style="cursor:pointer;padding:1rem;">
+            💰 Reset Total Revenue
+          </button>
+        </div>
+      </div>
+      
+      <!-- Complete Data Reset -->
       <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #ef4444;">
         <h3>🗑️ Reset Statistics</h3>
-        <p style="color:#ef4444;margin-bottom:1.5rem;font-weight:500;">⚠️ WARNING: These actions cannot be undone!</p>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Reset transaction history and audit logs</p>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
           <button class="btn btn-danger" onclick="resetAllStatistics()" style="cursor:pointer;padding:1rem;">
             🗑️ Reset All Transactions
           </button>
-          <button class="btn btn-warning" onclick="resetUserStatistics()" style="cursor:pointer;padding:1rem;">
+          <button class="btn btn-danger" onclick="resetUserStatistics()" style="cursor:pointer;padding:1rem;">
             ⚠️ Reset User Transactions
+          </button>
+        </div>
+      </div>
+      
+      <!-- DANGER ZONE -->
+      <div class="admin-card" style="margin-bottom:2rem;border:2px solid #ef4444;border-left:4px solid #ef4444;">
+        <h3 style="color:#ef4444;">🔥 DANGER ZONE - Complete Data Wipe</h3>
+        <p style="color:#ef4444;margin-bottom:1.5rem;font-weight:500;">⚠️⚠️⚠️ WARNING: These actions are COMPLETELY IRREVERSIBLE!</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-danger" onclick="deleteAllProductsAndData()" style="cursor:pointer;padding:1rem;background:#dc2626;border-color:#dc2626;">
+            🔥 DELETE EVERYTHING
+          </button>
+        </div>
+      </div>
+      
+      <!-- System Tools -->
+      <div class="admin-card" style="margin-bottom:2rem;">
+        <h3>🔧 System Tools</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Monitor and maintain system health</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-info" onclick="getSystemHealth()" style="cursor:pointer;padding:1rem;">
+            💻 System Health
           </button>
         </div>
       </div>
@@ -361,12 +417,33 @@
       <div class="admin-card">
         <h3>📖 Quick Reference</h3>
         <div style="background:var(--secondary);padding:1.5rem;border-radius:var(--radius);color:var(--muted);font-size:0.9rem;line-height:1.8;">
-          <p><strong>💳 Adjust Balance:</strong> Add, subtract, or set a specific user's balance</p>
-          <p><strong>👥 Bulk Adjust:</strong> Apply the same amount to all users (useful for system corrections)</p>
-          <p><strong>🔄 Recalculate:</strong> Recompute balance from all transactions (fixes out-of-sync balances)</p>
-          <p><strong>➕ Create Transaction:</strong> Manually log deposits, withdrawals, refunds, etc.</p>
-          <p><strong>🗑️ Reset:</strong> Deletes all transaction records (irreversible - requires double confirmation)</p>
-          <p style="margin-top:1rem;color:#ef4444;"><strong>Always confirm twice before resetting data!</strong></p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;">
+            <div>
+              <p><strong>💰 Balance Management:</strong></p>
+              <p>• Adjust: Add/subtract balance</p>
+              <p>• Bulk: Apply to all users</p>
+              <p>• Recalculate: Fix sync issues</p>
+            </div>
+            <div>
+              <p><strong>👥 User Management:</strong></p>
+              <p>• Delete User: Remove with data</p>
+              <p>• Promote: Make admin</p>
+              <p>• Demote: Remove admin status</p>
+            </div>
+            <div>
+              <p><strong>📊 Reset Options:</strong></p>
+              <p>• Dashboard: All stats</p>
+              <p>• Revenue: Zero out income</p>
+              <p>• Transactions: Clear history</p>
+            </div>
+            <div>
+              <p><strong>⚠️ DANGER:</strong></p>
+              <p>• Delete Everything: Full wipe</p>
+              <p>• Requires triple confirmation</p>
+              <p>• Type YES to proceed</p>
+            </div>
+          </div>
+          <p style="margin-top:1.5rem;color:#ef4444;"><strong>Always confirm twice before irreversible actions!</strong></p>
         </div>
       </div>
     </section>

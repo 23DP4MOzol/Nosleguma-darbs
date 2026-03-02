@@ -1512,6 +1512,350 @@ window.recalculateUserBalance = async function() {
   }
 };
 
+window.deleteAdminUser = async function() {
+  try {
+    const { data: admins, error: adminsErr } = await supabase
+      .from('users')
+      .select('id, email, username')
+      .eq('role', 'admin')
+      .order('created_at', { ascending: false });
+    
+    if (adminsErr) throw adminsErr;
+    
+    if (admins.length === 0) {
+      alert('No admin users found');
+      return;
+    }
+    
+    const email = prompt(`${i18n.t('admin_select_user')}:\n\n${admins.map(a => a.email).join('\n')}`);
+    if (!email) return;
+    
+    const admin = admins.find(a => a.email === email);
+    if (!admin) {
+      alert('Admin not found');
+      return;
+    }
+    
+    if (!confirm(`⚠️ ${i18n.t('admin_confirm_delete_admin')}\n\n${email}`)) return;
+    if (!confirm('⚠️ FINAL CONFIRMATION - This cannot be undone!')) return;
+    
+    // Delete admin user and cascade
+    const { error: delErr } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', admin.id);
+    
+    if (delErr) throw delErr;
+    
+    alert(`✅ ${i18n.t('admin_admin_deleted')}\n${email}`);
+    console.log(`✅ Admin user deleted: ${email}`);
+    
+    await loadUsers();
+    await loadDashboard();
+  } catch (err) {
+    console.error('❌ Delete admin error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.promoteUserToAdmin = async function() {
+  try {
+    const { data: users, error: usersErr } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('role', 'user')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (usersErr) throw usersErr;
+    
+    const email = prompt(`Select user to promote:\n\n${users.map(u => u.email).join('\n')}`);
+    if (!email) return;
+    
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      alert('User not found');
+      return;
+    }
+    
+    if (!confirm(`${i18n.t('admin_confirm_action')}\n\nPromote ${email} to admin?`)) return;
+    
+    const { error } = await supabase
+      .from('users')
+      .update({ role: 'admin' })
+      .eq('id', user.id);
+    
+    if (error) throw error;
+    
+    alert(`✅ ${i18n.t('admin_promote_success')}\n${email}`);
+    console.log(`✅ User promoted to admin: ${email}`);
+    
+    await loadUsers();
+  } catch (err) {
+    console.error('❌ Promote error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.demoteAdminUser = async function() {
+  try {
+    const { data: admins, error: adminsErr } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('role', 'admin')
+      .order('created_at', { ascending: false });
+    
+    if (adminsErr) throw adminsErr;
+    
+    const email = prompt(`Select admin to demote:\n\n${admins.map(a => a.email).join('\n')}`);
+    if (!email) return;
+    
+    const admin = admins.find(a => a.email === email);
+    if (!admin) {
+      alert('Admin not found');
+      return;
+    }
+    
+    if (!confirm(`${i18n.t('admin_confirm_demote')}\n\n${email}`)) return;
+    
+    const { error } = await supabase
+      .from('users')
+      .update({ role: 'user' })
+      .eq('id', admin.id);
+    
+    if (error) throw error;
+    
+    alert(`✅ ${i18n.t('admin_demote_success')}\n${email}`);
+    console.log(`✅ Admin demoted to user: ${email}`);
+    
+    await loadUsers();
+  } catch (err) {
+    console.error('❌ Demote error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.resetDashboardStats = async function() {
+  if (!confirm(`⚠️ ${i18n.t('admin_dashboard_reset')}?\n\nThis resets all dashboard statistics.`)) return;
+  if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
+  
+  try {
+    // Delete all transactions (which resets calculated stats)
+    const { error: txErr } = await supabase
+      .from('user_transactions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+    
+    if (txErr) throw txErr;
+    
+    // Delete all orders
+    const { error: ordErr } = await supabase
+      .from('orders')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+    
+    if (ordErr) console.warn('Order deletion warning:', ordErr);
+    
+    // Reset all user balances to 0
+    const { error: balErr } = await supabase
+      .from('users')
+      .update({ balance: 0 })
+      .neq('role', 'admin');
+    
+    if (balErr) console.warn('Balance reset warning:', balErr);
+    
+    alert(`✅ ${i18n.t('admin_dashboard_reset')}`);
+    console.log('✅ Dashboard statistics reset');
+    
+    await loadDashboard();
+    await loadTransactions();
+  } catch (err) {
+    console.error('❌ Reset dashboard error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.resetTotalRevenue = async function() {
+  if (!confirm(`⚠️ ${i18n.t('admin_reset_revenue')}?\n\nThis deletes all transactions.`)) return;
+  if (!confirm('⚠️ FINAL CONFIRMATION: Are you absolutely sure?')) return;
+  
+  try {
+    // Delete all transactions
+    const { error } = await supabase
+      .from('user_transactions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+    
+    if (error) throw error;
+    
+    // Reset user balances to 0
+    const { error: balErr } = await supabase
+      .from('users')
+      .update({ balance: 0 })
+      .neq('role', 'admin');
+    
+    if (balErr) console.warn('Balance reset warning:', balErr);
+    
+    alert(`✅ ${i18n.t('admin_revenue_reset')}`);
+    console.log('✅ Total revenue reset');
+    
+    await loadDashboard();
+    await loadTransactions();
+  } catch (err) {
+    console.error('❌ Reset revenue error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.deleteAllProductsAndData = async function() {
+  if (!confirm(`⚠️ ${i18n.t('admin_confirm_delete_all')}\n\nThis includes:\n- All users (except admins)\n- All products\n- All orders\n- All transactions\n- All conversations`)) return;
+  if (!confirm('⚠️⚠️⚠️ FINAL CONFIRMATION - Type YES if you understand this is irreversible!')) return;
+  
+  const confirm2 = prompt('⚠️⚠️⚠️ Enter YES to confirm you want to DELETE EVERYTHING:');
+  if (confirm2 !== 'YES') {
+    alert('Cancelled');
+    return;
+  }
+  
+  try {
+    console.log('🔥 DELETING ALL DATA...');
+    
+    // Get all non-admin users
+    const { data: users, error: usersErr } = await supabase
+      .from('users')
+      .select('id')
+      .neq('role', 'admin');
+    
+    if (!usersErr && users && users.length > 0) {
+      // Delete transactions
+      await supabase
+        .from('user_transactions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Delete conversations
+      await supabase
+        .from('conversations')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Delete orders
+      await supabase
+        .from('orders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Delete products
+      await supabase
+        .from('products')
+        .delete()
+        .neq('seller_id', '');
+      
+      // Delete non-admin users
+      for (const user of users) {
+        await supabase
+          .from('users')
+          .delete()
+          .eq('id', user.id);
+      }
+    }
+    
+    alert('🔥 ALL DATA DELETED - System reset to admin-only');
+    console.log('🔥 Complete data wipe completed');
+    
+    await loadDashboard();
+    await loadUsers();
+    await loadProducts();
+  } catch (err) {
+    console.error('❌ Data deletion error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.deleteSpecificUser = async function() {
+  try {
+    const { data: users, error: usersErr } = await supabase
+      .from('users')
+      .select('id, email, username, role')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (usersErr) throw usersErr;
+    
+    const email = prompt(`${i18n.t('admin_select_user')}:\n\n${users.map(u => `${u.email} (${u.role})`).join('\n')}`);
+    if (!email) return;
+    
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      alert('User not found');
+      return;
+    }
+    
+    if (!confirm(`⚠️ Delete ${email} and ALL their data?\nThis includes products, orders, transactions.`)) return;
+    if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
+    
+    // Delete user's data
+    await supabase.from('user_transactions').delete().eq('user_id', user.id);
+    await supabase.from('products').delete().eq('seller_id', user.id);
+    await supabase.from('orders').delete().eq('user_id', user.id);
+    await supabase.from('conversations').delete().eq('user_id', user.id);
+    
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', user.id);
+    
+    if (error) throw error;
+    
+    alert(`✅ ${i18n.t('admin_delete_success')}\n${email}`);
+    console.log(`✅ User deleted: ${email}`);
+    
+    await loadUsers();
+    await loadDashboard();
+  } catch (err) {
+    console.error('❌ User deletion error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.getSystemHealth = async function() {
+  try {
+    const { count: userCount, error: userErr } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    
+    const { count: productCount, error: productErr } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true });
+    
+    const { count: orderCount, error: orderErr } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true });
+    
+    const { count: txCount, error: txErr } = await supabase
+      .from('user_transactions')
+      .select('*', { count: 'exact', head: true });
+    
+    const health = `
+📊 SYSTEM HEALTH REPORT
+======================
+👥 Total Users: ${userCount || 0}
+📦 Total Products: ${productCount || 0}
+🛒 Total Orders: ${orderCount || 0}
+💳 Total Transactions: ${txCount || 0}
+
+Status: ✅ All systems operational
+Last Check: ${new Date().toLocaleString()}
+    `;
+    
+    alert(health);
+    console.log(health);
+  } catch (err) {
+    console.error('❌ Health check error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
 // Modal handlers
 document.getElementById('userDetailModalClose')?.addEventListener('click', () => {
   document.getElementById('userDetailModal').style.display = 'none';
