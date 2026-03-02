@@ -779,11 +779,11 @@ async function initializeIndexPage() {
   // Stats updater
   async function updateStats() {
     try {
-      // Products count
-      const productsResp = await supabase.from('products').select('*', { count: 'exact', head: true });
+      // Products count (use id only for lighter response)
+      const productsResp = await supabase.from('products').select('id', { count: 'exact', head: true });
       
-      // Users count - count unique users from users table
-      const usersResp = await supabase.from('users').select('*', { count: 'exact', head: true });
+      // Users count - count rows in users table (use id only)
+      const usersResp = await supabase.from('users').select('id', { count: 'exact', head: true });
       
       // Sellers count - count unique seller_id from products table
       // Using RPC to count distinct values
@@ -806,11 +806,12 @@ async function initializeIndexPage() {
       const productsCount = productsResp.count || 0;
       const usersCount = usersResp.count || 0;
 
-      // Debug: log the responses
-      console.log('Stats response:', {
-        products: { count: productsResp.count, error: productsResp.error },
-        users: { count: usersResp.count, error: usersResp.error },
-        sellers: { count: sellersCount, raw: sellerData, error: sellerError }
+      // Debug: log full responses for troubleshooting RLS / permission issues
+      console.log('Stats full responses:', {
+        productsResp,
+        usersResp,
+        sellerData,
+        sellerError
       });
 
       const statsProductsEl = document.getElementById('statsProducts');
