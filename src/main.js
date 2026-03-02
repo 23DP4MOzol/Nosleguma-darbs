@@ -273,93 +273,122 @@ export async function updateNavbarAuth(sessionParam) {
       console.log('💰 [BALANCE DEBUG] Starting balance lookup for user id:', user.id);
       let usersRow = null;
       
-      // Add a small delay on the very first balance lookup to allow Supabase to initialize
-      // (first auth event fires before Supabase is fully ready)
-      const delayBefore = 300; // ms
-      console.log(`💰 [BALANCE DEBUG] Waiting ${delayBefore}ms for Supabase to initialize...`);
-      await new Promise(resolve => setTimeout(resolve, delayBefore));
+      // Check if we have a cached balance from a successful query on this session
+      const cachedBalance = sessionStorage.getItem('vendly_balance_cache');
+      if (cachedBalance) {
+        console.log('💰 [BALANCE DEBUG] Using cached balance from sessionStorage:', cachedBalance);
+        try {
+          const cached = JSON.parse(cachedBalance);
+          if (cached && typeof cached.balance !== 'undefined') {
+            usersRow = { balance: cached.balance, role: cached.role || 'user' };
+            console.log('💰 [BALANCE DEBUG] Loaded from cache:', usersRow);
+          }
+        } catch (e) {
+          console.warn('💰 [BALANCE DEBUG] Could not parse cached balance');
+        }
+      }
       
-      // Helper to query with retry on timeout
-      const queryWithRetry = async (queryFn, label, maxRetries = 2) => {
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-          try {
-            console.log(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1}/${maxRetries + 1}...`);
-            
-            const queryPromise = queryFn();
-            const timeoutMs = 3000 + (attempt * 1000); // Increase timeout on retry
-            
-            let completed = false;
-            let result = null;
-            
-            const racePromise = Promise.race([
-              queryPromise.then(res => {
-                completed = true;
-                result = res;
-                return res;
-              }),
-              new Promise((_, reject) => {
-                const timer = setTimeout(() => {
-                  if (!completed) {
-                    reject(new Error(`${label} timeout after ${timeoutMs}ms`));
-                  }
-                }, timeoutMs);
-                // Clear timeout if query completes
-                queryPromise.then(() => clearTimeout(timer)).catch(() => clearTimeout(timer));
-              })
-            ]);
-            
-            const res = await racePromise;
-            console.log(`💰 [BALANCE DEBUG] ${label} succeeded:`, res);
-            return res;
-          } catch (err) {
-            console.warn(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1} failed:`, err?.message);
-            if (attempt < maxRetries) {
-              // Wait before retry
-              await new Promise(resolve => setTimeout(resolve, 500 + (attempt * 500)));
-            } else {
-              throw err;
+      // Only attempt database query if not cached (to avoid slow repeated queries)
+      if (!usersRow) {
+        // Add a longer delay to allow Supabase to fully initialize
+        const delayBefore = 800; // ms - longer to ensure Supabase is ready
+        console.log(`💰 [BALANCE DEBUG] Waiting ${delayBefore}ms for Supabase to fully initialize...`);
+        await new Promise(resolve => setTimeout(resolve, delayBefore));
+        
+        // Helper to query with minimal retries (just 1 fallback attempt)
+        const queryWithRetry = async (queryFn, label, maxRetries = 1) => {
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              console.log(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1}/${maxRetries + 1}...`);
+              
+              const queryPromise = queryFn();
+              const timeoutMs = 2000 + (attempt * 1000); // Shorter timeouts: 2s, 3s
+              
+              let completed = false;
+              let result = null;
+              
+              const racePromise = Promise.race([
+                queryPromise.then(res => {
+                  completed = true;
+                  result = res;
+                  return res;
+                }),
+                new Promise((_, reject) => {
+                  const timer = setTimeout(() => {
+                    if (!completed) {
+                      reject(new Error(`${label} timeout after ${timeoutMs}ms`));
+                    }
+                  }, timeoutMs);
+                  queryPromise.then(() => clearTimeout(timer)).catch(() => clearTimeout(timer));
+                })
+              ]);
+              
+              const res = await racePromise;
+              console.log(`💰 [BALANCE DEBUG] ${label} succeeded`);
+              return res;
+            } catch (err) {
+              console.warn(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1} failed:`, err?.message);
+              if (attempt < maxRetries) {
+                // Shorter wait before retry
+                await new Promise(resolve => setTimeout(resolve, 300));
+              } else {
+                throw err;
+              }
             }
           }
-        }
-      };
-      
-      try {
-        // Try to get by id first
+        };
+        
         try {
-          const result = await queryWithRetry(
-            () => supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
-            'Query by id'
-          );
-          usersRow = result?.data || null;
-          if (result?.error) {
-            console.warn('💰 [BALANCE DEBUG] Query by id returned error:', result.error.message);
-          }
-        } catch (err) {
-          console.warn('💰 [BALANCE DEBUG] Query by id failed after retries:', err?.message);
-        }
-
-        // If not found by id, try by email (handles seeded rows keyed by email)
-        if (!usersRow && user?.email) {
-          console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
+          // Try to get by id first
           try {
             const result = await queryWithRetry(
-              () => supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle(),
-              'Query by email'
+              () => supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
+              'Query by id'
             );
             usersRow = result?.data || null;
             if (result?.error) {
-              console.warn('💰 [BALANCE DEBUG] Query by email returned error:', result.error.message);
-            } else if (usersRow) {
-              console.log('✅ [BALANCE DEBUG] Loaded users row by email fallback:', usersRow);
+              console.warn('💰 [BALANCE DEBUG] Query by id returned error:', result.error.message);
             }
           } catch (err) {
-            console.warn('💰 [BALANCE DEBUG] Query by email failed after retries:', err?.message);
+            console.warn('💰 [BALANCE DEBUG] Query by id failed:', err?.message);
           }
+
+          // If not found by id, try by email
+          if (!usersRow && user?.email) {
+            console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
+            try {
+              const result = await queryWithRetry(
+                () => supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle(),
+                'Query by email'
+              );
+              usersRow = result?.data || null;
+              if (result?.error) {
+                console.warn('💰 [BALANCE DEBUG] Query by email returned error:', result.error.message);
+              } else if (usersRow) {
+                console.log('✅ [BALANCE DEBUG] Loaded users row by email fallback:', usersRow);
+              }
+            } catch (err) {
+              console.warn('💰 [BALANCE DEBUG] Query by email failed:', err?.message);
+            }
+          }
+          
+          console.log('💰 [BALANCE DEBUG] Final usersRow:', usersRow);
+          
+          // Cache the successful result for future page loads
+          if (usersRow && typeof usersRow.balance !== 'undefined') {
+            try {
+              sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+                balance: usersRow.balance,
+                role: usersRow.role
+              }));
+              console.log('💰 [BALANCE DEBUG] Cached balance to sessionStorage');
+            } catch (e) {
+              console.warn('💰 [BALANCE DEBUG] Could not cache balance');
+            }
+          }
+        } catch (e) {
+          console.error('💰 [BALANCE DEBUG] EXCEPTION in balance lookup:', e?.message || e);
         }
-        
-        console.log('💰 [BALANCE DEBUG] Final usersRow:', usersRow);
-      } catch (e) {
-        console.error('💰 [BALANCE DEBUG] EXCEPTION in balance lookup:', e?.message || e);
       }
 
       if (usersRow) {
