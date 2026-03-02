@@ -273,6 +273,12 @@ export async function updateNavbarAuth(sessionParam) {
       console.log('💰 [BALANCE DEBUG] Starting balance lookup for user id:', user.id);
       let usersRow = null;
       
+      // Add a small delay on the very first balance lookup to allow Supabase to initialize
+      // (first auth event fires before Supabase is fully ready)
+      const delayBefore = 300; // ms
+      console.log(`💰 [BALANCE DEBUG] Waiting ${delayBefore}ms for Supabase to initialize...`);
+      await new Promise(resolve => setTimeout(resolve, delayBefore));
+      
       // Helper to query with retry on timeout
       const queryWithRetry = async (queryFn, label, maxRetries = 2) => {
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
