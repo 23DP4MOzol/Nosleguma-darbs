@@ -277,12 +277,21 @@ export async function updateNavbarAuth(sessionParam) {
       console.log('User role:', userRole);
       
       // Update balance display if badge exists
-      const bal = parseFloat(userData?.balance || 0);
-      if (balanceBadge) {
-        balanceBadge.style.display = 'flex';
-        const span = balanceBadge.querySelector('span');
-        if (span) span.textContent = `€${bal.toFixed(2)}`;
-      }
+        // Try multiple sources for balance: users table, auth user metadata, localStorage
+        let bal = 0;
+        if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
+          bal = parseFloat(userData.balance) || 0;
+        } else if (user?.user_metadata && (user.user_metadata.balance || user.user_metadata.wallet?.balance)) {
+          bal = parseFloat(user.user_metadata.balance || user.user_metadata.wallet.balance) || 0;
+        } else if (localStorage.getItem('vendly_balance')) {
+          bal = parseFloat(localStorage.getItem('vendly_balance')) || 0;
+        }
+
+        if (balanceBadge) {
+          balanceBadge.style.display = 'flex';
+          const span = balanceBadge.querySelector('span');
+          if (span) span.textContent = `€${bal.toFixed(2)}`;
+        }
     } catch (err) {
       console.warn('Error fetching user data, using defaults:', err.message);
       // Fallback: assume admin if email contains 'admin'
@@ -569,9 +578,21 @@ function initializeNavigation() {
   const navbarLinks = document.querySelector('.navbar-links');
 
   if (hamburgerBtn && navbarLinks) {
+    // Make hamburger accessible and lock body scroll when open
+    hamburgerBtn.setAttribute('aria-controls', 'navbarLinks');
+    hamburgerBtn.setAttribute('aria-expanded', 'false');
+    navbarLinks.id = navbarLinks.id || 'navbarLinks';
+
     hamburgerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      navbarLinks.classList.toggle('active');
+      const isActive = navbarLinks.classList.toggle('active');
+      hamburgerBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+      // Lock body scroll when menu open on small screens
+      if (isActive && window.innerWidth <= 768) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     });
   }
 
@@ -580,6 +601,8 @@ function initializeNavigation() {
     if (navbarLinks && hamburgerBtn) {
       if (!navbarLinks.contains(e.target) && !hamburgerBtn.contains(e.target)) {
         navbarLinks.classList.remove('active');
+        hamburgerBtn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
       }
     }
   });
