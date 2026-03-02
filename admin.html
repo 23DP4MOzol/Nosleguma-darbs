@@ -838,9 +838,9 @@
     }
   </style>
 
-  <script type="module" src="./src/pages/admin.js"></script>
-  <script type="module" src="./src/navbar.js"></script>
+  <!-- Load main runtime first, then page script (main.js imports navbar.js) -->
   <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/pages/admin.js"></script>
 
 </body>
 </html>

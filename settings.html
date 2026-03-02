@@ -241,10 +241,9 @@
   </div>
 </main>
 
+<!-- Load main runtime first, then page script (main.js imports navbar.js) -->
+<script type="module" src="./src/main.js"></script>
 <script type="module" src="./src/pages/settings.js"></script>
-
-<!-- Import navbar functionality -->
-<script type="module" src="./src/navbar.js"></script>
 
 </body>
 </html>

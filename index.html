@@ -653,7 +653,7 @@
 }
 </style>
 
-<script type="module" src="./src/navbar.js"></script>
+<!-- main.js imports navbar.js; avoid duplicate module script to prevent race conditions -->
 <script type="module" src="./src/main.js"></script>
 
 </body>
