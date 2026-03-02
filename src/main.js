@@ -274,14 +274,21 @@ export async function updateNavbarAuth(sessionParam) {
       let usersRow = null;
       try {
         console.log('💰 [BALANCE DEBUG] Querying users table by id...');
-        const { data, error } = await supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
-        console.log('💰 [BALANCE DEBUG] Query by id result:', { data, error: error?.message || error });
+        const query = supabase.from('users').select('balance, role').eq('id', user.id);
+        console.log('💰 [BALANCE DEBUG] Query object created, calling maybeSingle()...');
+        const result = await query.maybeSingle();
+        console.log('💰 [BALANCE DEBUG] Query returned immediately');
+        const { data, error } = result;
+        console.log('💰 [BALANCE DEBUG] Destructured data and error:', { dataExists: !!data, errorExists: !!error });
+        console.log('💰 [BALANCE DEBUG] Data value:', data);
+        console.log('💰 [BALANCE DEBUG] Error value:', error?.message || error);
         if (error) {
           console.warn('Could not load users row by id for navbar:', error.message || error);
         }
         usersRow = data || null;
         console.log('💰 [BALANCE DEBUG] usersRow after id query:', usersRow);
       } catch (e) {
+        console.error('💰 [BALANCE DEBUG] EXCEPTION in users table query:', e);
         console.warn('Exception loading users row by id for navbar:', e.message || e);
       }
 
