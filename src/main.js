@@ -274,36 +274,75 @@ export async function updateNavbarAuth(sessionParam) {
       let usersRow = null;
       try {
         console.log('💰 [BALANCE DEBUG] Querying users table by id...');
-        const query = supabase.from('users').select('balance, role').eq('id', user.id);
-        console.log('💰 [BALANCE DEBUG] Query object created, calling maybeSingle()...');
-        const result = await query.maybeSingle();
-        console.log('💰 [BALANCE DEBUG] Query returned immediately');
-        const { data, error } = result;
-        console.log('💰 [BALANCE DEBUG] Destructured data and error:', { dataExists: !!data, errorExists: !!error });
-        console.log('💰 [BALANCE DEBUG] Data value:', data);
-        console.log('💰 [BALANCE DEBUG] Error value:', error?.message || error);
+        
+        // Wrap query in timeout to prevent hanging
+        const queryPromise = supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
+        console.log('💰 [BALANCE DEBUG] Query promise created, awaiting with 5s timeout...');
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout after 5s')), 5000)
+        );
+        
+        const result = await Promise.race([queryPromise, timeoutPromise]);
+        console.log('💰 [BALANCE DEBUG] Query completed');
+        
+        let data, error;
+        try {
+          data = result?.data;
+          error = result?.error;
+          console.log('💰 [BALANCE DEBUG] Destructured successfully');
+        } catch (destructErr) {
+          console.error('💰 [BALANCE DEBUG] Error destructuring result:', destructErr);
+          data = result;
+          error = null;
+        }
+        
+        console.log('💰 [BALANCE DEBUG] Data:', data);
+        console.log('💰 [BALANCE DEBUG] Error:', error?.message || error);
+        
         if (error) {
           console.warn('Could not load users row by id for navbar:', error.message || error);
         }
         usersRow = data || null;
         console.log('💰 [BALANCE DEBUG] usersRow after id query:', usersRow);
       } catch (e) {
-        console.error('💰 [BALANCE DEBUG] EXCEPTION in users table query:', e);
+        console.error('💰 [BALANCE DEBUG] EXCEPTION in users table query:', e?.message || e);
         console.warn('Exception loading users row by id for navbar:', e.message || e);
+        usersRow = null;
       }
 
       // If not found by id, try by email (handles seeded rows keyed by email)
       if (!usersRow && user?.email) {
         console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
         try {
-          const { data: emailRow, error: emailError } = await supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle();
-          console.log('💰 [BALANCE DEBUG] Query by email result:', { emailRow, error: emailError?.message || emailError });
+          console.log('💰 [BALANCE DEBUG] Querying users table by email...');
+          
+          const queryPromise = supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Email query timeout after 5s')), 5000)
+          );
+          
+          const emailResult = await Promise.race([queryPromise, timeoutPromise]);
+          console.log('💰 [BALANCE DEBUG] Email query completed');
+          
+          let emailRow, emailError;
+          try {
+            emailRow = emailResult?.data;
+            emailError = emailResult?.error;
+          } catch (destructErr) {
+            console.error('💰 [BALANCE DEBUG] Error destructuring email result:', destructErr);
+            emailRow = emailResult;
+            emailError = null;
+          }
+          
+          console.log('💰 [BALANCE DEBUG] Email query result:', { emailRow, emailError: emailError?.message || emailError });
           if (emailError) console.warn('Could not load users row by email for navbar:', emailError.message || emailError);
           usersRow = emailRow || null;
           if (usersRow) {
             console.log('✅ [BALANCE DEBUG] Navbar: loaded users row by email fallback:', usersRow);
           }
         } catch (e) {
+          console.error('💰 [BALANCE DEBUG] EXCEPTION in email query:', e?.message || e);
           console.warn('Exception loading users row by email for navbar:', e.message || e);
         }
       }
