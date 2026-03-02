@@ -165,7 +165,7 @@ function initializeLanguage() {
 // AUTHENTICATION MANAGEMENT
 // ============================
 
-export async function updateNavbarAuth() {
+export async function updateNavbarAuth(sessionParam) {
   console.log('🔐 updateNavbarAuth() called');
   
   // First check if navbar elements exist
@@ -194,24 +194,30 @@ export async function updateNavbarAuth() {
   console.log('👤 loginBtn display before:', loginBtn?.style.display);
   console.log('👤 logoutBtn display before:', logoutBtn?.style.display);
 
-  // Get current session first
+  // Get current session first (allow session passed from onAuthStateChange to avoid races)
   console.log('🔄 Fetching session...');
-  
+
   let user = null;
+  if (sessionParam && sessionParam.user) {
+    user = sessionParam.user;
+    console.log('🔑 Using session passed from onAuthStateChange:', user?.email);
+  }
   let userRole = 'user';
   let userData = null;
   
   try {
-    const sessionResult = await supabase.auth.getSession();
-    console.log('🔄 Session result:', sessionResult);
-    const { data: { session }, error: sessionError } = sessionResult;
-    
-    if (sessionError) {
-      console.error('Session error:', sessionError);
+    if (!user) {
+      const sessionResult = await supabase.auth.getSession();
+      console.log('🔄 Session result:', sessionResult);
+      const { data: { session }, error: sessionError } = sessionResult;
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+
+      user = session?.user || null;
+      console.log('👤 User from session:', user ? user.email : 'null');
     }
-    
-    user = session?.user || null;
-    console.log('👤 User from session:', user ? user.email : 'null');
     
     // FORCE immediate navbar update regardless of user state
     console.log('🎯 About to check user state, user =', user ? 'truthy' : 'null/falsy');
@@ -403,9 +409,9 @@ function initializeAuth() {
   if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === 'function') {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
-      
-      // Update navbar for all auth events
-      await updateNavbarAuth();
+
+      // Update navbar for all auth events. Pass session from the event to avoid storage race conditions.
+      await updateNavbarAuth(session);
       
       // Only handle redirects for email confirmation callbacks, not for normal logins
       // Normal logins are handled by the login.js redirect
