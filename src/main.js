@@ -270,51 +270,87 @@ export async function updateNavbarAuth(sessionParam) {
     
     try {
       // First, try to read users row by id
+      console.log('💰 [BALANCE DEBUG] Starting balance lookup for user id:', user.id);
       let usersRow = null;
       try {
+        console.log('💰 [BALANCE DEBUG] Querying users table by id...');
         const { data, error } = await supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
-        if (error) console.warn('Could not load users row by id for navbar:', error.message || error);
+        console.log('💰 [BALANCE DEBUG] Query by id result:', { data, error: error?.message || error });
+        if (error) {
+          console.warn('Could not load users row by id for navbar:', error.message || error);
+        }
         usersRow = data || null;
+        console.log('💰 [BALANCE DEBUG] usersRow after id query:', usersRow);
       } catch (e) {
         console.warn('Exception loading users row by id for navbar:', e.message || e);
       }
 
       // If not found by id, try by email (handles seeded rows keyed by email)
       if (!usersRow && user?.email) {
+        console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
         try {
           const { data: emailRow, error: emailError } = await supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle();
+          console.log('💰 [BALANCE DEBUG] Query by email result:', { emailRow, error: emailError?.message || emailError });
           if (emailError) console.warn('Could not load users row by email for navbar:', emailError.message || emailError);
           usersRow = emailRow || null;
-          if (usersRow) console.log('Navbar: loaded users row by email fallback');
+          if (usersRow) {
+            console.log('✅ [BALANCE DEBUG] Navbar: loaded users row by email fallback:', usersRow);
+          }
         } catch (e) {
           console.warn('Exception loading users row by email for navbar:', e.message || e);
         }
       }
 
+      console.log('💰 [BALANCE DEBUG] Final usersRow:', usersRow);
+
       if (usersRow) {
         userData = usersRow;
         userRole = usersRow.role || (user.email?.includes('admin') ? 'admin' : 'user');
+        console.log('💰 [BALANCE DEBUG] userData set from usersRow:', userData);
       } else {
         // No users row found; infer admin by email if necessary
         userRole = user.email?.includes('admin') ? 'admin' : 'user';
+        console.log('💰 [BALANCE DEBUG] No usersRow found, userData is null');
       }
 
       console.log('User role:', userRole);
 
       // Determine balance from multiple sources: users table -> auth metadata -> localStorage
+      console.log('💰 [BALANCE DEBUG] Determining balance from sources...');
+      console.log('💰 [BALANCE DEBUG]   userData:', userData);
+      console.log('💰 [BALANCE DEBUG]   user.user_metadata:', user?.user_metadata);
+      console.log('💰 [BALANCE DEBUG]   localStorage vendly_balance:', localStorage.getItem('vendly_balance'));
+      
       let bal = 0;
       if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
+        console.log('💰 [BALANCE DEBUG] ✅ Using balance from userData:', userData.balance);
         bal = parseFloat(userData.balance) || 0;
       } else if (user?.user_metadata && (user.user_metadata.balance || user.user_metadata.wallet?.balance)) {
-        bal = parseFloat(user.user_metadata.balance || user.user_metadata.wallet.balance) || 0;
+        const metaBal = user.user_metadata.balance || user.user_metadata.wallet.balance;
+        console.log('💰 [BALANCE DEBUG] ✅ Using balance from user_metadata:', metaBal);
+        bal = parseFloat(metaBal) || 0;
       } else if (localStorage.getItem('vendly_balance')) {
-        bal = parseFloat(localStorage.getItem('vendly_balance')) || 0;
+        const storageBal = localStorage.getItem('vendly_balance');
+        console.log('💰 [BALANCE DEBUG] ✅ Using balance from localStorage:', storageBal);
+        bal = parseFloat(storageBal) || 0;
+      } else {
+        console.log('💰 [BALANCE DEBUG] ⚠️ No balance found in any source, defaulting to 0');
       }
 
+      console.log('💰 [BALANCE DEBUG] Final balance value:', bal, 'formatted:', `€${bal.toFixed(2)}`);
+
       if (balanceBadge) {
+        console.log('💰 [BALANCE DEBUG] balanceBadge element found, updating display');
         balanceBadge.style.display = 'flex';
         const span = balanceBadge.querySelector('span');
-        if (span) span.textContent = `€${bal.toFixed(2)}`;
+        if (span) {
+          span.textContent = `€${bal.toFixed(2)}`;
+          console.log('💰 [BALANCE DEBUG] ✅ Balance badge updated with:', span.textContent);
+        } else {
+          console.log('💰 [BALANCE DEBUG] ⚠️ No span found inside balanceBadge');
+        }
+      } else {
+        console.log('💰 [BALANCE DEBUG] ⚠️ balanceBadge element not found');
       }
     } catch (err) {
       console.warn('Error fetching user data for navbar, using defaults:', err?.message || err);
