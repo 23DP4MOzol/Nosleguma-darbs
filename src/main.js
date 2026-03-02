@@ -275,40 +275,59 @@ export async function updateNavbarAuth(sessionParam) {
       try {
         console.log('💰 [BALANCE DEBUG] Querying users table by id...');
         
-        // Wrap query in timeout to prevent hanging
-        const queryPromise = supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
-        console.log('💰 [BALANCE DEBUG] Query promise created, awaiting with 5s timeout...');
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Query timeout after 5s')), 5000)
-        );
-        
-        const result = await Promise.race([queryPromise, timeoutPromise]);
-        console.log('💰 [BALANCE DEBUG] Query completed');
-        
-        let data, error;
+        // Try a simple query first - no filters, just select
         try {
-          data = result?.data;
-          error = result?.error;
-          console.log('💰 [BALANCE DEBUG] Destructured successfully');
-        } catch (destructErr) {
-          console.error('💰 [BALANCE DEBUG] Error destructuring result:', destructErr);
-          data = result;
-          error = null;
+          console.log('💰 [BALANCE DEBUG] Attempting direct query...');
+          const req = supabase.from('users').select('balance, role').eq('id', user.id);
+          console.log('💰 [BALANCE DEBUG] Request builder created');
+          
+          // Add a timeout
+          let completed = false;
+          let queryError = null;
+          let queryData = null;
+          
+          const queryPromise = req.maybeSingle().then(res => {
+            console.log('💰 [BALANCE DEBUG] Query resolved:', res);
+            completed = true;
+            queryData = res?.data;
+            queryError = res?.error;
+            return res;
+          }).catch(err => {
+            console.error('💰 [BALANCE DEBUG] Query rejected:', err);
+            completed = true;
+            queryError = err;
+            throw err;
+          });
+          
+          // Wait with timeout
+          const timeoutId = setTimeout(() => {
+            if (!completed) {
+              console.error('💰 [BALANCE DEBUG] TIMEOUT! Query did not complete within 3s');
+            }
+          }, 3000);
+          
+          try {
+            await queryPromise;
+            clearTimeout(timeoutId);
+          } catch (err) {
+            clearTimeout(timeoutId);
+            throw err;
+          }
+          
+          console.log('💰 [BALANCE DEBUG] Query data:', queryData);
+          console.log('💰 [BALANCE DEBUG] Query error:', queryError?.message || queryError || 'none');
+          
+          if (queryError) {
+            console.warn('⚠️ [BALANCE DEBUG] RLS or query error:', queryError.message || queryError);
+          }
+          usersRow = queryData || null;
+        } catch (queryErr) {
+          console.error('💰 [BALANCE DEBUG] Query exception:', queryErr?.message || queryErr);
         }
         
-        console.log('💰 [BALANCE DEBUG] Data:', data);
-        console.log('💰 [BALANCE DEBUG] Error:', error?.message || error);
-        
-        if (error) {
-          console.warn('Could not load users row by id for navbar:', error.message || error);
-        }
-        usersRow = data || null;
         console.log('💰 [BALANCE DEBUG] usersRow after id query:', usersRow);
       } catch (e) {
-        console.error('💰 [BALANCE DEBUG] EXCEPTION in users table query:', e?.message || e);
-        console.warn('Exception loading users row by id for navbar:', e.message || e);
-        usersRow = null;
+        console.error('💰 [BALANCE DEBUG] EXCEPTION in balance lookup:', e?.message || e);
       }
 
       // If not found by id, try by email (handles seeded rows keyed by email)
