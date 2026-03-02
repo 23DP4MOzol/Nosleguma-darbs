@@ -272,101 +272,89 @@ export async function updateNavbarAuth(sessionParam) {
       // First, try to read users row by id
       console.log('💰 [BALANCE DEBUG] Starting balance lookup for user id:', user.id);
       let usersRow = null;
-      try {
-        console.log('💰 [BALANCE DEBUG] Querying users table by id...');
-        
-        // Try a simple query first - no filters, just select
-        try {
-          console.log('💰 [BALANCE DEBUG] Attempting direct query...');
-          const req = supabase.from('users').select('balance, role').eq('id', user.id);
-          console.log('💰 [BALANCE DEBUG] Request builder created');
-          
-          // Add a timeout
-          let completed = false;
-          let queryError = null;
-          let queryData = null;
-          
-          const queryPromise = req.maybeSingle().then(res => {
-            console.log('💰 [BALANCE DEBUG] Query resolved:', res);
-            completed = true;
-            queryData = res?.data;
-            queryError = res?.error;
-            return res;
-          }).catch(err => {
-            console.error('💰 [BALANCE DEBUG] Query rejected:', err);
-            completed = true;
-            queryError = err;
-            throw err;
-          });
-          
-          // Wait with timeout
-          const timeoutId = setTimeout(() => {
-            if (!completed) {
-              console.error('💰 [BALANCE DEBUG] TIMEOUT! Query did not complete within 3s');
-            }
-          }, 3000);
-          
+      
+      // Helper to query with retry on timeout
+      const queryWithRetry = async (queryFn, label, maxRetries = 2) => {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
           try {
-            await queryPromise;
-            clearTimeout(timeoutId);
+            console.log(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1}/${maxRetries + 1}...`);
+            
+            const queryPromise = queryFn();
+            const timeoutMs = 3000 + (attempt * 1000); // Increase timeout on retry
+            
+            let completed = false;
+            let result = null;
+            
+            const racePromise = Promise.race([
+              queryPromise.then(res => {
+                completed = true;
+                result = res;
+                return res;
+              }),
+              new Promise((_, reject) => {
+                const timer = setTimeout(() => {
+                  if (!completed) {
+                    reject(new Error(`${label} timeout after ${timeoutMs}ms`));
+                  }
+                }, timeoutMs);
+                // Clear timeout if query completes
+                queryPromise.then(() => clearTimeout(timer)).catch(() => clearTimeout(timer));
+              })
+            ]);
+            
+            const res = await racePromise;
+            console.log(`💰 [BALANCE DEBUG] ${label} succeeded:`, res);
+            return res;
           } catch (err) {
-            clearTimeout(timeoutId);
-            throw err;
+            console.warn(`💰 [BALANCE DEBUG] ${label} attempt ${attempt + 1} failed:`, err?.message);
+            if (attempt < maxRetries) {
+              // Wait before retry
+              await new Promise(resolve => setTimeout(resolve, 500 + (attempt * 500)));
+            } else {
+              throw err;
+            }
           }
-          
-          console.log('💰 [BALANCE DEBUG] Query data:', queryData);
-          console.log('💰 [BALANCE DEBUG] Query error:', queryError?.message || queryError || 'none');
-          
-          if (queryError) {
-            console.warn('⚠️ [BALANCE DEBUG] RLS or query error:', queryError.message || queryError);
+        }
+      };
+      
+      try {
+        // Try to get by id first
+        try {
+          const result = await queryWithRetry(
+            () => supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
+            'Query by id'
+          );
+          usersRow = result?.data || null;
+          if (result?.error) {
+            console.warn('💰 [BALANCE DEBUG] Query by id returned error:', result.error.message);
           }
-          usersRow = queryData || null;
-        } catch (queryErr) {
-          console.error('💰 [BALANCE DEBUG] Query exception:', queryErr?.message || queryErr);
+        } catch (err) {
+          console.warn('💰 [BALANCE DEBUG] Query by id failed after retries:', err?.message);
+        }
+
+        // If not found by id, try by email (handles seeded rows keyed by email)
+        if (!usersRow && user?.email) {
+          console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
+          try {
+            const result = await queryWithRetry(
+              () => supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle(),
+              'Query by email'
+            );
+            usersRow = result?.data || null;
+            if (result?.error) {
+              console.warn('💰 [BALANCE DEBUG] Query by email returned error:', result.error.message);
+            } else if (usersRow) {
+              console.log('✅ [BALANCE DEBUG] Loaded users row by email fallback:', usersRow);
+            }
+          } catch (err) {
+            console.warn('💰 [BALANCE DEBUG] Query by email failed after retries:', err?.message);
+          }
         }
         
-        console.log('💰 [BALANCE DEBUG] usersRow after id query:', usersRow);
+        console.log('💰 [BALANCE DEBUG] Final usersRow:', usersRow);
       } catch (e) {
         console.error('💰 [BALANCE DEBUG] EXCEPTION in balance lookup:', e?.message || e);
       }
-
-      // If not found by id, try by email (handles seeded rows keyed by email)
-      if (!usersRow && user?.email) {
-        console.log('💰 [BALANCE DEBUG] No row found by id, trying by email:', user.email);
-        try {
-          console.log('💰 [BALANCE DEBUG] Querying users table by email...');
-          
-          const queryPromise = supabase.from('users').select('balance, role, id').eq('email', user.email).maybeSingle();
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Email query timeout after 5s')), 5000)
-          );
-          
-          const emailResult = await Promise.race([queryPromise, timeoutPromise]);
-          console.log('💰 [BALANCE DEBUG] Email query completed');
-          
-          let emailRow, emailError;
-          try {
-            emailRow = emailResult?.data;
-            emailError = emailResult?.error;
-          } catch (destructErr) {
-            console.error('💰 [BALANCE DEBUG] Error destructuring email result:', destructErr);
-            emailRow = emailResult;
-            emailError = null;
-          }
-          
-          console.log('💰 [BALANCE DEBUG] Email query result:', { emailRow, emailError: emailError?.message || emailError });
-          if (emailError) console.warn('Could not load users row by email for navbar:', emailError.message || emailError);
-          usersRow = emailRow || null;
-          if (usersRow) {
-            console.log('✅ [BALANCE DEBUG] Navbar: loaded users row by email fallback:', usersRow);
-          }
-        } catch (e) {
-          console.error('💰 [BALANCE DEBUG] EXCEPTION in email query:', e?.message || e);
-          console.warn('Exception loading users row by email for navbar:', e.message || e);
-        }
-      }
-
-      console.log('💰 [BALANCE DEBUG] Final usersRow:', usersRow);
 
       if (usersRow) {
         userData = usersRow;
