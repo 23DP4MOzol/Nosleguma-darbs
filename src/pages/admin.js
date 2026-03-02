@@ -1347,22 +1347,25 @@ window.resetAllStatistics = async function() {
   try {
     console.log('🗑️ Resetting all statistics...');
     
-    // Delete all transactions
-    const { error: txErr } = await supabase
+    // Get all transaction IDs first
+    const { data: allTx } = await supabase
       .from('user_transactions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .select('id');
     
-    if (txErr) throw txErr;
+    // Delete all transactions by ID
+    let deletedCount = 0;
+    if (allTx && allTx.length > 0) {
+      for (const tx of allTx) {
+        const { error: delErr } = await supabase
+          .from('user_transactions')
+          .delete()
+          .eq('id', tx.id);
+        if (!delErr) deletedCount++;
+      }
+    }
     
-    // Reset all user balances to 0 (optional - can be skipped)
-    // const { error: balErr } = await supabase
-    //   .from('users')
-    //   .update({ balance: 0 })
-    //   .neq('id', '00000000-0000-0000-0000-000000000000');
-    
-    alert(`✅ ${i18n.t('admin_stats_reset')}`);
-    console.log('✅ All statistics reset successfully');
+    alert(`✅ ${i18n.t('admin_stats_reset')}\nDeleted ${deletedCount} transactions`);
+    console.log(`✅ All statistics reset - deleted ${deletedCount} transactions`);
     
     await loadTransactions();
     await loadDashboard();
@@ -1394,15 +1397,26 @@ window.resetUserStatistics = async function() {
     if (!confirm(`⚠️ Reset all transactions for ${email}?\n\nThis will delete their transaction history!`)) return;
     if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
     
-    const { error } = await supabase
+    // Get all user's transaction IDs
+    const { data: userTx } = await supabase
       .from('user_transactions')
-      .delete()
+      .select('id')
       .eq('user_id', user.id);
     
-    if (error) throw error;
+    // Delete all user's transactions by ID
+    let deletedCount = 0;
+    if (userTx && userTx.length > 0) {
+      for (const tx of userTx) {
+        const { error: delErr } = await supabase
+          .from('user_transactions')
+          .delete()
+          .eq('id', tx.id);
+        if (!delErr) deletedCount++;
+      }
+    }
     
-    alert(`✅ User statistics reset for ${email}`);
-    console.log(`✅ Reset statistics for ${email}`);
+    alert(`✅ User statistics reset for ${email}\nDeleted ${deletedCount} transactions`);
+    console.log(`✅ Reset statistics for ${email} - deleted ${deletedCount} transactions`);
     
     await loadTransactions();
   } catch (err) {
@@ -1640,32 +1654,46 @@ window.resetDashboardStats = async function() {
   if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
   
   try {
-    // Delete all transactions (which resets calculated stats)
-    const { error: txErr } = await supabase
+    // Delete all transactions
+    const { data: allTx } = await supabase
       .from('user_transactions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .select('id');
     
-    if (txErr) throw txErr;
+    let txDeletedCount = 0;
+    if (allTx && allTx.length > 0) {
+      for (const tx of allTx) {
+        const { error: delErr } = await supabase.from('user_transactions').delete().eq('id', tx.id);
+        if (!delErr) txDeletedCount++;
+      }
+    }
     
     // Delete all orders
-    const { error: ordErr } = await supabase
+    const { data: allOrders } = await supabase
       .from('orders')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .select('id');
     
-    if (ordErr) console.warn('Order deletion warning:', ordErr);
+    let ordDeletedCount = 0;
+    if (allOrders && allOrders.length > 0) {
+      for (const order of allOrders) {
+        const { error: delErr } = await supabase.from('orders').delete().eq('id', order.id);
+        if (!delErr) ordDeletedCount++;
+      }
+    }
     
-    // Reset all user balances to 0
-    const { error: balErr } = await supabase
+    // Reset all non-admin user balances to 0
+    const { data: users } = await supabase
       .from('users')
-      .update({ balance: 0 })
+      .select('id')
       .neq('role', 'admin');
     
-    if (balErr) console.warn('Balance reset warning:', balErr);
+    if (users && users.length > 0) {
+      for (const user of users) {
+        await supabase.from('users').update({ balance: 0 }).eq('id', user.id);
+      }
+    }
     
-    alert(`✅ ${i18n.t('admin_dashboard_reset')}`);
-    console.log('✅ Dashboard statistics reset');
+    alert(`✅ ${i18n.t('admin_dashboard_reset')}\nDeleted ${txDeletedCount} transactions, ${ordDeletedCount} orders`);
+    console.log(`✅ Dashboard statistics reset - ${txDeletedCount} transactions, ${ordDeletedCount} orders`);
     
     await loadDashboard();
     await loadTransactions();
@@ -1680,24 +1708,37 @@ window.resetTotalRevenue = async function() {
   if (!confirm('⚠️ FINAL CONFIRMATION: Are you absolutely sure?')) return;
   
   try {
-    // Delete all transactions
-    const { error } = await supabase
+    // Get all transaction IDs
+    const { data: allTx } = await supabase
       .from('user_transactions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .select('id');
     
-    if (error) throw error;
+    // Delete all transactions by ID
+    let deletedCount = 0;
+    if (allTx && allTx.length > 0) {
+      for (const tx of allTx) {
+        const { error: delErr } = await supabase
+          .from('user_transactions')
+          .delete()
+          .eq('id', tx.id);
+        if (!delErr) deletedCount++;
+      }
+    }
     
     // Reset user balances to 0
-    const { error: balErr } = await supabase
+    const { data: users } = await supabase
       .from('users')
-      .update({ balance: 0 })
+      .select('id')
       .neq('role', 'admin');
     
-    if (balErr) console.warn('Balance reset warning:', balErr);
+    if (users && users.length > 0) {
+      for (const user of users) {
+        await supabase.from('users').update({ balance: 0 }).eq('id', user.id);
+      }
+    }
     
-    alert(`✅ ${i18n.t('admin_revenue_reset')}`);
-    console.log('✅ Total revenue reset');
+    alert(`✅ ${i18n.t('admin_revenue_reset')}\nDeleted ${deletedCount} transactions`);
+    console.log(`✅ Total revenue reset - deleted ${deletedCount} transactions`);
     
     await loadDashboard();
     await loadTransactions();
