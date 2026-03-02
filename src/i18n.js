@@ -270,6 +270,10 @@ export const i18n = {
         no_sales: "No sales yet",
         rating: "Rating",
         delete_account_confirm: "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
+        change_password: "Change Password",
+        new_password: "New Password",
+        save_password: "Save Password",
+        cancel: "Cancel",
         // Product page translations
         myProducts: "My Products",
         manageYourProducts: "Manage and view your posted products",
@@ -575,6 +579,10 @@ export const i18n = {
         no_sales: "Vēl nav pārdošanas",
         rating: "Vērtējums",
         delete_account_confirm: "Vai tiešām vēlaties dzēst savu kontu? Šī darbība nav atgriezeniska un visi jūsu dati tiks neatgriezeniski zaudēti.",
+        change_password: "Mainīt paroli",
+        new_password: "Jauna parole",
+        save_password: "Saglabāt paroli",
+        cancel: "Atcelt",
         // Product page translations
         myProducts: "Mani produkti",
         manageYourProducts: "Pārvaldiet un skatiet savus publicētos produktus",
