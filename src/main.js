@@ -2,7 +2,7 @@
 // MAIN.JS - Consolidated JavaScript for all pages
 // =======================================
 
-import { supabase } from './supabase.js';
+import { supabase, logoutUser } from './supabase.js';
 import { i18n } from './i18n.js';
 import './navbar.js';
 import './app.js';
@@ -383,7 +383,23 @@ function initializeAuth() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       try {
-        await supabase.auth.signOut();
+        // Prefer centralized helper which also clears fallback storage
+        let res;
+        if (typeof logoutUser === 'function') {
+          res = await logoutUser();
+        } else {
+          res = await supabase.auth.signOut();
+        }
+
+        if (res && res.error) throw res.error;
+
+        // Ensure app-specific keys cleared
+        try {
+          localStorage.removeItem('vendly_balance');
+          localStorage.removeItem('vendly_fallback_session');
+          localStorage.removeItem('supabase.auth');
+        } catch (e) {}
+
         await updateNavbarAuth();
         window.location.href = './index.html';
       } catch (error) {

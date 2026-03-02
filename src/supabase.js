@@ -116,9 +116,20 @@ export async function registerUser(email, password, username) {
 export async function logoutUser() {
   try {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+
+    // Clear any app-specific fallback/session keys we use
+    try {
+      localStorage.removeItem('vendly_balance');
+      localStorage.removeItem('vendly_fallback_session');
+      localStorage.removeItem('supabase.auth');
+    } catch (e) {
+      // ignore if storage access fails
+    }
+
+    return { error: error || null };
   } catch (error) {
     console.error('Logout error:', error);
+    return { error };
   }
 }
 
