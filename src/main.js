@@ -409,6 +409,36 @@ function initializeAuth() {
     });
   }
 
+  // Delegated logout handler (works if button is added later or listener missed)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest && e.target.closest('#logoutBtn');
+    if (!btn) return;
+    console.log('Logout button (delegated) clicked');
+    try {
+      let res;
+      if (typeof logoutUser === 'function') {
+        res = await logoutUser();
+      } else {
+        res = await supabase.auth.signOut();
+      }
+
+      console.log('Logout result:', res);
+      if (res && res.error) throw res.error;
+
+      try {
+        localStorage.removeItem('vendly_balance');
+        localStorage.removeItem('vendly_fallback_session');
+        localStorage.removeItem('supabase.auth');
+      } catch (e) {}
+
+      await updateNavbarAuth();
+      window.location.href = './index.html';
+    } catch (error) {
+      console.error('Error signing out (delegated):', error);
+      showToast('Error signing out', 'error');
+    }
+  });
+
   if (sellBtn) {
     sellBtn.addEventListener('click', async () => {
       const { data } = await supabase.auth.getUser();
