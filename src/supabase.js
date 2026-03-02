@@ -126,11 +126,44 @@ export async function logoutUser() {
       // ignore if storage access fails
     }
 
+    // Best-effort clear cookies for this origin
+    try {
+      if (typeof document !== 'undefined' && document.cookie) {
+        document.cookie.split(';').forEach(c => {
+          const name = c.split('=')[0].trim();
+          // expire cookie for root path
+          document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
+          // also attempt without path
+          document.cookie = `${name}=;expires=${new Date(0).toUTCString()}`;
+        });
+      }
+    } catch (e) {
+      // ignore cookie clear errors
+    }
+
     return { error: error || null };
   } catch (error) {
     console.error('Logout error:', error);
     return { error };
   }
+}
+
+// Expose helpers for debugging in the browser console (best-effort)
+try {
+  if (typeof window !== 'undefined') {
+    window.supabase = supabase;
+    // define a safe callable wrapper that references the exported function
+    window.logoutUser = async () => {
+      try {
+        return await logoutUser();
+      } catch (e) {
+        console.error('window.logoutUser error', e);
+        return { error: e };
+      }
+    };
+  }
+} catch (e) {
+  // ignore if window assignment fails in some environments
 }
 
 // ============================

@@ -3,6 +3,23 @@
 // =======================================
 
 import { supabase, logoutUser } from './supabase.js';
+
+// Expose to window for debugging convenience (best-effort)
+try {
+  if (typeof window !== 'undefined') {
+    window.supabase = supabase;
+    window.logoutUser = async () => {
+      try {
+        return await logoutUser();
+      } catch (e) {
+        console.error('window.logoutUser error', e);
+        return { error: e };
+      }
+    };
+  }
+} catch (e) {
+  // ignore
+}
 import { i18n } from './i18n.js';
 import './navbar.js';
 import './app.js';
