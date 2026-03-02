@@ -266,6 +266,11 @@ export async function updateNavbarAuth(sessionParam) {
       } else if (simpleData) {
         userData = simpleData;
         userRole = simpleData.role || 'user';
+        // If users table row exists but role missing, allow email-based admin detection
+        if ((!simpleData.role || simpleData.role === '') && user.email?.includes('admin')) {
+          userRole = 'admin';
+          console.log('👑 Admin inferred from email despite missing role in users table');
+        }
       } else {
         // User not found in users table, check if admin by email pattern
         if (user.email?.includes('admin')) {

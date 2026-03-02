@@ -57,16 +57,27 @@ async function loadUserProfile() {
       .single();
 
     if (error) {
-      console.error('Error loading user profile:', error);
-      return;
+      console.warn('Error loading user profile from users table:', error);
     }
 
-    // Update UI with user data
-    document.getElementById('userName').textContent = userData.username || 'User';
-    document.getElementById('userEmailDisplay').textContent = currentUser.email;
-    document.getElementById('userEmail').value = currentUser.email;
-    document.getElementById('userAvatarText').textContent = (userData.username || 'U').charAt(0).toUpperCase();
-    document.getElementById('userBalanceDisplay').textContent = `€${parseFloat(userData.balance || 0).toFixed(2)}`;
+    // Update UI with available user data (fallback to auth metadata/localStorage)
+    const displayName = (userData && userData.username) || currentUser.user_metadata?.full_name || 'User';
+    document.getElementById('userName').textContent = displayName;
+    document.getElementById('userEmailDisplay').textContent = currentUser.email || '—';
+    document.getElementById('userEmail').value = currentUser.email || '';
+    document.getElementById('userAvatarText').textContent = ((userData && userData.username) || (displayName) || 'U').charAt(0).toUpperCase();
+
+    // Determine balance from users table, auth metadata, or localStorage
+    let profileBalance = 0;
+    if (userData && typeof userData.balance !== 'undefined' && userData.balance !== null) {
+      profileBalance = parseFloat(userData.balance) || 0;
+    } else if (currentUser.user_metadata && (currentUser.user_metadata.balance || currentUser.user_metadata.wallet?.balance)) {
+      profileBalance = parseFloat(currentUser.user_metadata.balance || currentUser.user_metadata.wallet.balance) || 0;
+    } else if (localStorage.getItem('vendly_balance')) {
+      profileBalance = parseFloat(localStorage.getItem('vendly_balance')) || 0;
+    }
+
+    document.getElementById('userBalanceDisplay').textContent = `€${profileBalance.toFixed(2)}`;
     
     // Load additional profile fields
     const usernameInput = document.getElementById('usernameInput');
@@ -84,11 +95,11 @@ async function loadUserProfile() {
       whatISellInput.value = userData.what_i_sell;
     }
 
-    // Update navbar balance
+    // Update navbar balance (use same fallback)
     const balanceBadge = document.getElementById('balanceBadge');
     if (balanceBadge) {
       balanceBadge.style.display = 'flex';
-      balanceBadge.querySelector('span').textContent = `€${parseFloat(userData.balance || 0).toFixed(2)}`;
+      balanceBadge.querySelector('span').textContent = `€${profileBalance.toFixed(2)}`;
     }
 
     // Show user stats
