@@ -206,12 +206,20 @@ export async function updateBalance(userId, newBalance) {
 // Add balance (topup)
 export async function addBalance(userId, amount, description = 'Balance top-up') {
   try {
+    // Basic validation
+    if (!userId) throw new Error('addBalance called without userId');
+
     // Ensure user row exists to avoid FK violations when inserting transactions
     try {
-      const { data: existingUser } = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
+      const { data: existingUser, error: fetchErr } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
       if (!existingUser) {
-        // Upsert minimal user record so foreign key constraints succeed
-        await supabase.from('users').upsert({
+        const { error: upsertError } = await supabase.from('users').upsert({
           id: userId,
           email: null,
           username: null,
@@ -219,18 +227,25 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
           role: 'user',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        }, { onConflict: 'id', returning: 'minimal' });
+
+        if (upsertError) {
+          console.error('Failed to upsert users row before addBalance:', upsertError);
+          throw upsertError;
+        }
       }
     } catch (e) {
-      console.warn('Could not ensure users row exists for addBalance:', e?.message || e);
+      console.error('Could not ensure users row exists for addBalance:', e?.message || e);
+      throw e;
     }
 
     // Get current balance
     const currentBalance = await getBalance(userId);
-    const newBalance = currentBalance + parseFloat(amount);
+    const newBalance = currentBalance + parseFloat(amount || 0);
 
-    // Update balance
-    await updateBalance(userId, newBalance);
+    // Update balance; ensure it succeeded
+    const updated = await updateBalance(userId, newBalance);
+    if (!updated) throw new Error('Failed to update user balance');
 
     // Record transaction
     const { error } = await supabase
@@ -243,20 +258,15 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
         created_at: new Date().toISOString()
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting user_transactions in addBalance:', error);
+      throw error;
+    }
 
     // Update local/session caches used by the UI so navbar/balance stay in sync
-    try {
-      // localStorage key used elsewhere
-      localStorage.setItem('vendly_balance', String(newBalance));
-    } catch (e) {
-      // ignore storage errors
-    }
-    try {
-      sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ balance: newBalance, role: 'user' }));
-    } catch (e) {
-      // ignore
-    }
+    try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
+    try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ balance: newBalance, role: 'user' })); } catch (e) {}
+
     return true;
   } catch (error) {
     console.error('Error adding balance:', error);
