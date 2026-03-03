@@ -180,6 +180,21 @@ document.getElementById('resendVerificationBtn')?.addEventListener('click', asyn
   }
 });
 
+// Inline "Resend verification email" link from login form
+document.getElementById('resendVerificationLink')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  // Show the resend verification form and hide the login form
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('resendVerificationForm').style.display = 'flex';
+
+  // Pre-fill email if available
+  const email = document.getElementById('emailInput')?.value.trim();
+  if (email) document.getElementById('verificationEmailInput').value = email;
+
+  // Start cooldown immediately to prevent spamming
+  startResendCooldown();
+});
+
 // ============================
 // Forgot Password Functionality
 // ============================

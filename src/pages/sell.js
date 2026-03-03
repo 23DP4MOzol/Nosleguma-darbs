@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!user) return;
 
   const form = document.getElementById('sellForm');
-  const previewBtn = document.getElementById('previewBtn');
   const productPreview = document.getElementById('productPreview');
 
   // Image type radio buttons
@@ -166,8 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Preview button
-  previewBtn.addEventListener('click', updatePreview);
+  // Live preview updates automatically on input; no preview button needed
 
   // Form submission
   form.addEventListener('submit', async (e) => {
