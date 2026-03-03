@@ -280,9 +280,12 @@ export async function updateNavbarAuth(sessionParam) {
         console.log('💰 [BALANCE DEBUG] Using cached balance from sessionStorage:', cachedBalance);
         try {
           const cached = JSON.parse(cachedBalance);
-          if (cached && typeof cached.balance !== 'undefined') {
+          // Only accept cached balances that belong to the current authenticated user
+          if (cached && typeof cached.balance !== 'undefined' && cached.userId && cached.userId === user.id) {
             usersRow = { balance: cached.balance, role: cached.role || 'user' };
-            console.log('💰 [BALANCE DEBUG] Loaded from cache:', usersRow);
+            console.log('💰 [BALANCE DEBUG] Loaded from cache (owner match):', usersRow);
+          } else {
+            console.log('💰 [BALANCE DEBUG] Cached balance exists but does not belong to this user; ignoring.');
           }
         } catch (e) {
           console.warn('💰 [BALANCE DEBUG] Could not parse cached balance');

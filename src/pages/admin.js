@@ -16,20 +16,69 @@ async function checkAdminAuth() {
     window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href) + '&reason=admin';
     return false;
   }
-  
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  
-  if (!userData || userData.role !== 'admin') {
-    alert('Access denied. Admin privileges required.');
-    window.location.href = 'index.html';
-    return false;
+
+  // Try to read role from the users table
+  try {
+    const { data: userData, error: userErr } = await supabase
+      .from('users')
+      .select('id, role, email')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userErr) {
+      console.warn('Error fetching users row for admin check:', userErr.message || userErr);
+    }
+
+    // If we found a users row, validate role
+    if (userData && userData.role === 'admin') {
+      return user;
+    }
+
+    // Fallback: check by email (some setups store users under email only)
+    if (user.email) {
+      try {
+        const { data: byEmail } = await supabase
+          .from('users')
+          .select('id, role')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        if (byEmail && byEmail.role === 'admin') {
+          return user;
+        }
+      } catch (e) {
+        console.warn('Email lookup for admin check failed:', e?.message || e);
+      }
+    }
+
+    // If no users row exists but the auth metadata claims admin, create a minimal users row and allow access
+    if (!userData) {
+      const claimedRole = user.user_metadata?.role || user.app_metadata?.role;
+      if (claimedRole === 'admin') {
+        try {
+          await supabase.from('users').upsert({
+            id: user.id,
+            email: user.email,
+            username: user.user_metadata?.username || user.email?.split('@')[0] || null,
+            balance: 0,
+            role: 'admin',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+          return user;
+        } catch (e) {
+          console.warn('Failed to create users row for admin fallback:', e?.message || e);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error during admin auth check:', e?.message || e);
   }
-  
-  return user;
+
+  // Final deny
+  alert('Access denied. Admin privileges required.');
+  window.location.href = 'index.html';
+  return false;
 }
 
 // ============================
