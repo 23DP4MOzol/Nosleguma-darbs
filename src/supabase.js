@@ -219,15 +219,25 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
       if (fetchErr) throw fetchErr;
 
       if (!existingUser) {
-        const { error: upsertError } = await supabase.from('users').upsert({
+        // Try to get the authenticated user's email to avoid inserting null into a NOT NULL column
+        let emailToUse = undefined;
+        try {
+          const { data: { user: authUser } = {} } = await supabase.auth.getUser();
+          if (authUser && authUser.email) emailToUse = authUser.email;
+        } catch (e) {
+          // ignore - we'll upsert without email if unavailable
+        }
+
+        const upsertPayload = {
           id: userId,
-          email: null,
-          username: null,
           balance: 0,
           role: 'user',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'id', returning: 'minimal' });
+        };
+        if (emailToUse) upsertPayload.email = emailToUse;
+
+        const { error: upsertError } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id', returning: 'minimal' });
 
         if (upsertError) {
           console.error('Failed to upsert users row before addBalance:', upsertError);
