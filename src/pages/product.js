@@ -409,8 +409,11 @@ function editProduct(productId) {
 }
 
 // Delete product
+import { showConfirmModal, showInfoModal } from '../ui/modal.js';
+
 async function deleteProduct(productId) {
-  if (!confirm('Are you sure you want to delete this product?')) return;
+  const confirmed = await showConfirmModal({ title: 'Delete Product', message: 'Are you sure you want to delete this product?', okText: 'Delete', cancelText: 'Cancel' });
+  if (!confirmed) return;
 
   try {
     const { error } = await supabase
@@ -422,11 +425,11 @@ async function deleteProduct(productId) {
 
     // Reload products
     loadProducts();
-    alert('Product deleted successfully');
+    await showInfoModal('Product deleted successfully', 'Deleted');
 
   } catch (error) {
     console.error('Error deleting product:', error);
-    alert('Error deleting product');
+    await showInfoModal('Error deleting product', 'Error');
   }
 }
 

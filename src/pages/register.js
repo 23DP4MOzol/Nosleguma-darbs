@@ -354,19 +354,14 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   termsError.classList.remove('show');
 
   // Anti-scam warning before final submission
-  const confirmScamWarning = confirm(
-    '⚠️ IMPORTANT ANTI-SCAM WARNING\n\n' +
-    'By proceeding, you acknowledge that:\n' +
-    '• Scamming is a serious crime\n' +
-    '• You may face criminal prosecution\n' +
-    '• You may be sued civilly\n' +
-    '• We cooperate with law enforcement\n\n' +
-    'Do you acknowledge and agree?'
-  );
-  
-  if (!confirmScamWarning) {
-    return;
-  }
+  const { showConfirmModal } = await import('../ui/modal.js');
+  const confirmScamWarning = await showConfirmModal({
+    title: 'Anti-scam Warning',
+    message: '⚠️ IMPORTANT ANTI-SCAM WARNING\n\nBy proceeding, you acknowledge that:\n• Scamming is a serious crime\n• You may face criminal prosecution\n• You may be sued civilly\n• We cooperate with law enforcement\n\nDo you acknowledge and agree?',
+    okText: 'I Agree',
+    cancelText: 'Cancel'
+  });
+  if (!confirmScamWarning) return;
 
   try {
     // First, check if email already exists in users table

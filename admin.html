@@ -461,6 +461,23 @@
     </div>
   </div>
 
+  <!-- Confirm / Prompt Modal -->
+  <div id="confirmModal" class="confirm-modal" style="display:none;">
+    <div class="confirm-overlay" id="confirmModalOverlay"></div>
+    <div class="confirm-content">
+      <button class="confirm-close" id="confirmModalClose">×</button>
+      <div class="confirm-body">
+        <h3 id="confirmTitle">Confirm</h3>
+        <div id="confirmMessage" style="margin:0.5rem 0;color:var(--muted);"></div>
+        <input id="confirmInput" type="text" placeholder="" style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:6px;margin-top:0.75rem;display:none;" />
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+          <button class="btn btn-secondary" id="confirmCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="confirmOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <style>
     /* Admin Panel Styles */
     .admin-sidebar {
@@ -798,6 +815,16 @@
     .settings-section label {
       display: block;
       margin-bottom: 0.5rem;
+    }
+
+    /* Confirm modal styles */
+    .confirm-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1200; }
+    .confirm-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
+    .confirm-content { position: relative; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; width: 520px; max-width: calc(100% - 40px); padding: 1rem 1.25rem; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1201; }
+    .confirm-close { position: absolute; right: 8px; top: 6px; background: none; border: none; font-size: 1.25rem; cursor: pointer; }
+    .confirm-body h3 { margin: 0 0 0.25rem 0; }
+    .confirm-body p, .confirm-body div { margin: 0; }
+    #confirmInput { box-sizing: border-box; }
     }
     
     .settings-section input[type="number"] {

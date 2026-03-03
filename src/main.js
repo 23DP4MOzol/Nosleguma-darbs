@@ -24,6 +24,7 @@ import { i18n } from './i18n.js';
 import './navbar.js';
 import './app.js';
 import './product-modal.js';
+import { showConfirmModal, showInfoModal } from './ui/modal.js';
 // AI widget disabled - requires Netlify functions setup
 // import './ai-widget.js';
 
@@ -1333,7 +1334,8 @@ async function initializeIndexPage() {
         if (deleteBtn) {
           deleteBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+            const confirmed = await showConfirmModal({ title: 'Delete Product', message: `Are you sure you want to delete "${product.name}"?`, okText: 'Delete', cancelText: 'Cancel' });
+            if (confirmed) {
               await handleDeleteProduct(product.id);
             }
           });
@@ -2490,8 +2492,8 @@ function initializeSettingsPage() {
    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
    if (deleteAccountBtn) {
      deleteAccountBtn.addEventListener('click', async () => {
-       const confirmed = confirm(i18n.t ? i18n.t('delete_account_confirm') || 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.' : 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.');
-       if (!confirmed) return;
+      const confirmed = await showConfirmModal({ title: 'Delete Account', message: i18n.t ? i18n.t('delete_account_confirm') || 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.' : 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.', okText: 'Delete', cancelText: 'Cancel' });
+      if (!confirmed) return;
 
        try {
          const { data } = await supabase.auth.getUser();

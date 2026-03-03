@@ -181,7 +181,7 @@ function displayUsers(users) {
       <td>
         <button class="btn btn-sm" data-action="view-user" data-id="${user.id}">View</button>
         <button class="btn btn-sm btn-warning" data-action="edit-user" data-id="${user.id}" data-balance="${user.balance}">Edit</button>
-        ${user.role !== 'admin' ? `<button class="btn btn-sm btn-danger" data-action="delete-user" data-id="${user.id}">Delete</button>` : ''}
+        ${user.role !== 'admin' ? `<button class="btn btn-sm btn-success" data-action="promote-user" data-id="${user.id}">Promote</button><button class="btn btn-sm btn-danger" data-action="delete-user" data-id="${user.id}">Delete</button>` : `<button class="btn btn-sm btn-warning" data-action="demote-user" data-id="${user.id}">Demote</button><button class="btn btn-sm btn-danger" data-action="delete-user" data-id="${user.id}">Delete</button>`}
       </td>
     </tr>
   `).join('');
@@ -476,7 +476,8 @@ window.editUser = async function(userId, currentBalance) {
 };
 
 window.deleteUser = async function(userId) {
-  if (!confirm('Are you sure you want to DELETE this user? This cannot be undone! All their data (balance, products, orders) will be removed.')) return;
+  const confirmed = await showConfirmModal({ title: 'Delete User', message: 'Are you sure you want to DELETE this user? This cannot be undone! All their data (balance, products, orders) will be removed.', okText: 'Delete', cancelText: 'Cancel' });
+  if (!confirmed) return;
   
   try {
     console.log('🗑️ Deleting user:', userId);
@@ -614,7 +615,8 @@ function displayProducts(products) {
 }
 
 window.deleteProduct = async function(productId) {
-  if (!confirm('Delete this product?')) return;
+  const confirmed = await showConfirmModal({ title: 'Delete Product', message: 'Delete this product?', okText: 'Delete', cancelText: 'Cancel' });
+  if (!confirmed) return;
   
   const { error } = await supabase.from('products').delete().eq('id', productId);
   if (error) {
@@ -808,7 +810,8 @@ function formatTransactionDate(dateStr) {
 }
 
 window.clearTransactionHistory = async function() {
-  if (!confirm('Are you sure you want to CLEAR ALL transaction history? This action cannot be undone!')) return;
+  const confirmed = await showConfirmModal({ title: 'Clear Transaction History', message: 'Are you sure you want to CLEAR ALL transaction history? This action cannot be undone!', okText: 'Clear', cancelText: 'Cancel' });
+  if (!confirmed) return;
   
   try {
     const { data: allTransactions } = await supabase.from('user_transactions').select('id');
@@ -1193,6 +1196,8 @@ async function initialize() {
     switch(action) {
       case 'view-user': viewUserDetails(id); break;
       case 'edit-user': editUser(id, btn.dataset.balance); break;
+      case 'promote-user': promoteUserById(id); break;
+      case 'demote-user': demoteUserById(id); break;
       case 'delete-user': deleteUser(id); break;
       case 'delete-product': deleteProduct(id); break;
       case 'view-conversation': viewConversation(id); break;
@@ -1213,6 +1218,64 @@ async function initialize() {
 // ============================
 // MANUAL ADMIN ACTIONS
 // ============================
+
+// Modal helpers (HTML modal used for confirmations/prompts)
+function showConfirmModal({ title = 'Confirm', message = '', placeholder = '', showInput = false, okText = 'Confirm', cancelText = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    const overlay = document.getElementById('confirmModalOverlay');
+    const closeBtn = document.getElementById('confirmModalClose');
+    const titleEl = document.getElementById('confirmTitle');
+    const msgEl = document.getElementById('confirmMessage');
+    const inputEl = document.getElementById('confirmInput');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+
+    titleEl.innerText = title;
+    msgEl.innerHTML = message;
+    okBtn.innerText = okText;
+    cancelBtn.innerText = cancelText;
+
+    if (showInput) {
+      inputEl.style.display = 'block';
+      inputEl.placeholder = placeholder || '';
+      inputEl.value = '';
+      setTimeout(() => inputEl.focus(), 100);
+    } else {
+      inputEl.style.display = 'none';
+    }
+
+    function cleanup() {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onCancel);
+    }
+
+    function onOk() {
+      const value = showInput ? inputEl.value : true;
+      cleanup();
+      resolve(value);
+    }
+
+    function onCancel() {
+      cleanup();
+      resolve(false);
+    }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onCancel);
+
+    modal.style.display = 'flex';
+  });
+}
+
+function showInfoModal(message, title = 'Info') {
+  return showConfirmModal({ title, message, showInput: false, okText: 'OK', cancelText: 'Close' });
+}
 
 window.adjustUserBalance = async function() {
   try {
@@ -1252,7 +1315,8 @@ window.adjustUserBalance = async function() {
     else if (action === '3') newBalance = amount;
     else return;
     
-    if (!confirm(`${i18n.t('admin_confirm_balance')}\n${selectedUser.email}: €${selectedUser.balance} → €${newBalance}`)) return;
+    const conf = await showConfirmModal({ title: 'Confirm Balance Change', message: `${i18n.t('admin_confirm_balance')}\n${selectedUser.email}: €${selectedUser.balance} → €${newBalance}`, okText: 'Confirm', cancelText: 'Cancel' });
+    if (!conf) return;
     
     // Update balance
     const { error: updateErr } = await supabase
@@ -1322,7 +1386,8 @@ window.createManualTransaction = async function() {
     const description = prompt(`${i18n.t('admin_reason')}:`);
     if (!description) return;
     
-    if (!confirm(`${i18n.t('admin_confirm_create_tx')}\n${email}: ${types[typeIdx]} €${amount}\n${description}`)) return;
+    const confirmed = await showConfirmModal({ title: 'Create Transaction', message: `${i18n.t('admin_confirm_create_tx')}\n${email}: ${types[typeIdx]} €${amount}\n${description}`, okText: 'Create', cancelText: 'Cancel' });
+    if (!confirmed) return;
     
     // Create transaction
     const { error: txErr } = await supabase
@@ -1348,8 +1413,10 @@ window.createManualTransaction = async function() {
 };
 
 window.resetAllStatistics = async function() {
-  if (!confirm(`⚠️ ${i18n.t('admin_confirm_reset')}\n\nThis will DELETE all transaction records!`)) return;
-  if (!confirm('⚠️ FINAL CONFIRMATION: Are you absolutely sure? This cannot be undone!')) return;
+  const step1 = await showConfirmModal({ title: 'Reset All Statistics', message: `${i18n.t('admin_confirm_reset')}\n\nThis will DELETE all transaction records!`, okText: 'Continue', cancelText: 'Cancel' });
+  if (!step1) return;
+  const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'FINAL CONFIRMATION: Are you absolutely sure? This cannot be undone!', okText: 'Yes, delete', cancelText: 'No' });
+  if (!step2) return;
   
   try {
     console.log('🗑️ Resetting all statistics...');
@@ -1401,8 +1468,10 @@ window.resetUserStatistics = async function() {
       return;
     }
     
-    if (!confirm(`⚠️ Reset all transactions for ${email}?\n\nThis will delete their transaction history!`)) return;
-    if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
+    const step1 = await showConfirmModal({ title: 'Reset User Transactions', message: `Reset all transactions for ${email}?\n\nThis will delete their transaction history!`, okText: 'Continue', cancelText: 'Cancel' });
+    if (!step1) return;
+    const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'FINAL CONFIRMATION: Are you sure?', okText: 'Yes, reset', cancelText: 'No' });
+    if (!step2) return;
     
     // Get all user's transaction IDs
     const { data: userTx } = await supabase
@@ -1443,7 +1512,8 @@ window.bulkAdjustBalances = async function() {
     const reason = prompt('Reason for bulk adjustment:');
     if (!reason) return;
     
-    if (!confirm(`⚠️ Add €${amount} to ALL users?\nReason: ${reason}`)) return;
+    const confirmed = await showConfirmModal({ title: 'Bulk Adjust Balances', message: `Add €${amount} to ALL users?\nReason: ${reason}`, okText: 'Apply', cancelText: 'Cancel' });
+    if (!confirmed) return;
     
     const { data: users, error: usersErr } = await supabase
       .from('users')
@@ -1514,7 +1584,8 @@ window.recalculateUserBalance = async function() {
     
     const calculatedBalance = txs.reduce((sum, t) => sum + t.amount, 0);
     
-    if (!confirm(`Recalculate balance for ${email}?\n\nCalculated balance: €${Math.max(0, calculatedBalance).toFixed(2)}`)) return;
+    const confirmed = await showConfirmModal({ title: 'Recalculate Balance', message: `Recalculate balance for ${email}?\n\nCalculated balance: €${Math.max(0, calculatedBalance).toFixed(2)}`, okText: 'Recalculate', cancelText: 'Cancel' });
+    if (!confirmed) return;
     
     const { error: updateErr } = await supabase
       .from('users')
@@ -1557,8 +1628,10 @@ window.deleteAdminUser = async function() {
       return;
     }
     
-    if (!confirm(`⚠️ ${i18n.t('admin_confirm_delete_admin')}\n\n${email}`)) return;
-    if (!confirm('⚠️ FINAL CONFIRMATION - This cannot be undone!')) return;
+    const step1 = await showConfirmModal({ title: 'Delete Admin User', message: `${i18n.t('admin_confirm_delete_admin')}\n\n${email}`, okText: 'Delete', cancelText: 'Cancel' });
+    if (!step1) return;
+    const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'FINAL CONFIRMATION - This cannot be undone!', okText: 'Yes, delete', cancelText: 'No' });
+    if (!step2) return;
     
     // Delete admin user and cascade
     const { error: delErr } = await supabase
@@ -1599,7 +1672,8 @@ window.promoteUserToAdmin = async function() {
       return;
     }
     
-    if (!confirm(`${i18n.t('admin_confirm_action')}\n\nPromote ${email} to admin?`)) return;
+    const confirmed = await showConfirmModal({ title: 'Promote to Admin', message: `${i18n.t('admin_confirm_action')}\n\nPromote ${email} to admin?`, okText: 'Promote', cancelText: 'Cancel' });
+    if (!confirmed) return;
     
     const { error } = await supabase
       .from('users')
@@ -1637,7 +1711,8 @@ window.demoteAdminUser = async function() {
       return;
     }
     
-    if (!confirm(`${i18n.t('admin_confirm_demote')}\n\n${email}`)) return;
+    const confirmed = await showConfirmModal({ title: 'Demote Admin', message: `${i18n.t('admin_confirm_demote')}\n\n${email}`, okText: 'Demote', cancelText: 'Cancel' });
+    if (!confirmed) return;
     
     const { error } = await supabase
       .from('users')
@@ -1656,9 +1731,43 @@ window.demoteAdminUser = async function() {
   }
 };
 
+window.promoteUserById = async function(userId) {
+  try {
+    const { data: user, error } = await supabase.from('users').select('id, email').eq('id', userId).single();
+    if (error) throw error;
+    const confirmed = await showConfirmModal({ title: 'Promote to Admin', message: `Promote ${user.email} to admin?`, okText: 'Promote', cancelText: 'Cancel' });
+    if (!confirmed) return;
+    const { error: updateErr } = await supabase.from('users').update({ role: 'admin' }).eq('id', userId);
+    if (updateErr) throw updateErr;
+    await showInfoModal(`✅ ${i18n.t('admin_promote_success')}\n${user.email}`);
+    await loadUsers();
+  } catch (err) {
+    console.error('❌ Promote by id error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
+window.demoteUserById = async function(userId) {
+  try {
+    const { data: user, error } = await supabase.from('users').select('id, email').eq('id', userId).single();
+    if (error) throw error;
+    const confirmed = await showConfirmModal({ title: 'Demote Admin', message: `Demote ${user.email} from admin?`, okText: 'Demote', cancelText: 'Cancel' });
+    if (!confirmed) return;
+    const { error: updateErr } = await supabase.from('users').update({ role: 'user' }).eq('id', userId);
+    if (updateErr) throw updateErr;
+    await showInfoModal(`✅ ${i18n.t('admin_demote_success')}\n${user.email}`);
+    await loadUsers();
+  } catch (err) {
+    console.error('❌ Demote by id error:', err);
+    alert(`${i18n.t('admin_error')}: ${err.message}`);
+  }
+};
+
 window.resetDashboardStats = async function() {
-  if (!confirm(`⚠️ ${i18n.t('admin_dashboard_reset')}?\n\nThis resets all dashboard statistics.`)) return;
-  if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
+  const step1 = await showConfirmModal({ title: 'Reset Dashboard Stats', message: `${i18n.t('admin_dashboard_reset')}?\n\nThis resets all dashboard statistics.`, okText: 'Continue', cancelText: 'Cancel' });
+  if (!step1) return;
+  const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'Are you sure?', okText: 'Yes, reset', cancelText: 'No' });
+  if (!step2) return;
   
   try {
     // Delete all transactions
@@ -1711,8 +1820,10 @@ window.resetDashboardStats = async function() {
 };
 
 window.resetTotalRevenue = async function() {
-  if (!confirm(`⚠️ ${i18n.t('admin_reset_revenue')}?\n\nThis deletes all transactions.`)) return;
-  if (!confirm('⚠️ FINAL CONFIRMATION: Are you absolutely sure?')) return;
+  const step1 = await showConfirmModal({ title: 'Reset Total Revenue', message: `${i18n.t('admin_reset_revenue')}?\n\nThis deletes all transactions.`, okText: 'Continue', cancelText: 'Cancel' });
+  if (!step1) return;
+  const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'Are you absolutely sure?', okText: 'Yes, delete', cancelText: 'No' });
+  if (!step2) return;
   
   try {
     // Get all transaction IDs
@@ -1756,12 +1867,11 @@ window.resetTotalRevenue = async function() {
 };
 
 window.deleteAllProductsAndData = async function() {
-  if (!confirm(`⚠️ ${i18n.t('admin_confirm_delete_all')}\n\nThis includes:\n- All users (except admins)\n- All products\n- All orders\n- All transactions\n- All conversations`)) return;
-  if (!confirm('⚠️⚠️⚠️ FINAL CONFIRMATION - Type YES if you understand this is irreversible!')) return;
-  
-  const confirm2 = prompt('⚠️⚠️⚠️ Enter YES to confirm you want to DELETE EVERYTHING:');
-  if (confirm2 !== 'YES') {
-    alert('Cancelled');
+  const step1 = await showConfirmModal({ title: 'Delete Everything', message: `${i18n.t('admin_confirm_delete_all')}\n\nThis includes:\n- All users (except admins)\n- All products\n- All orders\n- All transactions\n- All conversations`, okText: 'Continue', cancelText: 'Cancel' });
+  if (!step1) return;
+  const step2 = await showConfirmModal({ title: 'FINAL CONFIRMATION', message: 'FINAL CONFIRMATION - Type YES to confirm you want to DELETE EVERYTHING', showInput: true, placeholder: 'Type YES to confirm', okText: 'Confirm', cancelText: 'Cancel' });
+  if (!step2 || (typeof step2 === 'string' && step2 !== 'YES')) {
+    await showInfoModal('Cancelled');
     return;
   }
   
@@ -1839,8 +1949,10 @@ window.deleteSpecificUser = async function() {
       return;
     }
     
-    if (!confirm(`⚠️ Delete ${email} and ALL their data?\nThis includes products, orders, transactions.`)) return;
-    if (!confirm('⚠️ FINAL CONFIRMATION: Are you sure?')) return;
+    const step1 = await showConfirmModal({ title: 'Delete User', message: `Delete ${email} and ALL their data?\nThis includes products, orders, transactions.`, okText: 'Delete', cancelText: 'Cancel' });
+    if (!step1) return;
+    const step2 = await showConfirmModal({ title: 'Final Confirmation', message: 'FINAL CONFIRMATION: Are you sure?', okText: 'Yes, delete', cancelText: 'No' });
+    if (!step2) return;
     
     // Delete user's data
     await supabase.from('user_transactions').delete().eq('user_id', user.id);

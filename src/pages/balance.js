@@ -1,6 +1,7 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import '../main.js';
+import { showConfirmModal, showInfoModal } from '../ui/modal.js';
 
 // ============================
 // Initialize Theme from localStorage
@@ -422,20 +423,21 @@ async function loadUserProducts(userId) {
       btn.onclick = async (e) => {
         e.stopPropagation();
         const id = e.target.getAttribute('data-id');
-        if (!confirm(i18n.t('delete_listing_confirm'))) return;
-        
+        const confirmed = await showConfirmModal({ title: 'Delete Listing', message: i18n.t('delete_listing_confirm'), okText: 'Delete', cancelText: 'Cancel' });
+        if (!confirmed) return;
+
         // Show loading state
         btn.textContent = '⏳...';
         btn.disabled = true;
-        
+
         try {
           const { error } = await supabase.from('products').delete().eq('id', id);
           if (error) throw error;
-          alert(i18n.t('listing_deleted'));
+          await showInfoModal(i18n.t('listing_deleted'), 'Deleted');
           loadUserProducts(userId);
         } catch (err) {
           console.error('Error deleting listing', err);
-          alert(i18n.t('failed_to_delete') + ': ' + (err.message || err));
+          await showInfoModal(i18n.t('failed_to_delete') + ': ' + (err.message || err), 'Error');
           btn.textContent = `🗑️ ${i18n.t('delete_listing')}`;
           btn.disabled = false;
         }
