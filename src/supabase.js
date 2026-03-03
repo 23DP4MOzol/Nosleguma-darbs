@@ -235,7 +235,27 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
-        if (emailToUse) upsertPayload.email = emailToUse;
+
+        // If emailToUse matches an existing different user, skip including it to avoid unique constraint violation
+        if (emailToUse) {
+          try {
+            const { data: emailOwner, error: emailFetchErr } = await supabase
+              .from('users')
+              .select('id')
+              .eq('email', emailToUse)
+              .maybeSingle();
+            if (emailFetchErr) throw emailFetchErr;
+
+            if (!emailOwner || emailOwner.id === userId) {
+              upsertPayload.email = emailToUse;
+            } else {
+              console.warn('Email belongs to a different users row; skipping email in upsert to avoid unique constraint');
+            }
+          } catch (e) {
+            // If the lookup fails for any reason, avoid including the email to be safe
+            console.warn('Could not verify email uniqueness before upsert, skipping email field:', e?.message || e);
+          }
+        }
 
         const { error: upsertError } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id', returning: 'minimal' });
 
@@ -275,7 +295,7 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
 
     // Update local/session caches used by the UI so navbar/balance stay in sync
     try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
-    try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ balance: newBalance, role: 'user' })); } catch (e) {}
+    try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ userId: userId, balance: newBalance, role: 'user' })); } catch (e) {}
 
     return true;
   } catch (error) {

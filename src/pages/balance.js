@@ -209,21 +209,43 @@ async function loadUser() {
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'flex';
     // Fetch user balance and role
-    const { data, error } = await supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle();
-    if (error) console.warn('Error fetching user balance:', error);
-    if (data) {
-      const balance = parseFloat(data.balance || 0);
-      balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
-      currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
-
-      // Show admin controls if user is admin
-      if (data.role === 'admin') {
-        const adminBtnEl = document.getElementById('adminBtn');
-        if (adminBtnEl) adminBtnEl.style.display = 'flex';
+    // First try session cache for instant UI
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('vendly_balance_cache') || 'null');
+      if (cached && cached.userId === user.id && typeof cached.balance !== 'undefined') {
+        const balance = parseFloat(cached.balance || 0);
+        balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
+        currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
+        if (cached.role === 'admin') {
+          const adminBtnEl = document.getElementById('adminBtn');
+          if (adminBtnEl) adminBtnEl.style.display = 'flex';
+        }
       }
-    } else {
-      balanceBadge.querySelector('span').innerText = `€0.00`;
-      currentBalanceEl.innerText = `€0.00`;
+    } catch (e) {
+      // ignore parse errors
+    }
+
+    // Fire a fresh query to ensure we have the latest data
+    try {
+      const { data, error } = await supabase.from('users').select('id, balance, role').eq('id', user.id).maybeSingle();
+      if (error) console.warn('Error fetching user balance:', error);
+      if (data) {
+        const balance = parseFloat(data.balance || 0);
+        balanceBadge.querySelector('span').innerText = `€${balance.toFixed(2)}`;
+        currentBalanceEl.innerText = `€${balance.toFixed(2)}`;
+        // Cache it for navbar and other pages
+        try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ userId: data.id, balance: data.balance, role: data.role })); } catch (e) {}
+        if (data.role === 'admin') {
+          const adminBtnEl = document.getElementById('adminBtn');
+          if (adminBtnEl) adminBtnEl.style.display = 'flex';
+        }
+      } else {
+        // no data
+        balanceBadge.querySelector('span').innerText = `€0.00`;
+        currentBalanceEl.innerText = `€0.00`;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch users row in loadUser:', e?.message || e);
     }
     loadTransactions(user.id, currentTransactionFilter);
     // Also load user's own products for management

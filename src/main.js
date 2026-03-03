@@ -310,6 +310,7 @@ export async function updateNavbarAuth(sessionParam) {
               
               // Cache it
               sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+                userId: usersRow.id || user.id,
                 balance: usersRow.balance,
                 role: usersRow.role
               }));
@@ -337,6 +338,7 @@ export async function updateNavbarAuth(sessionParam) {
                 usersRow = result.data;
                 console.log('💰 [BALANCE DEBUG] Background email query succeeded:', usersRow);
                 sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+                  userId: usersRow.id || user.id,
                   balance: usersRow.balance,
                   role: usersRow.role
                 }));
