@@ -1,5 +1,6 @@
 import { supabase, getCurrentUser, logoutUser, uploadAvatar } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { themeManager } from '../theme.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -23,16 +24,7 @@ document.getElementById('langSelect').addEventListener('change', e => {
   i18n.setLang(e.target.value);
 });
 
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-});
+// Theme toggle is handled by centralized theme.js
 
 // ============================
 // Hamburger Mobile Menu
@@ -404,8 +396,9 @@ document.querySelectorAll('input[name="avatarType"]').forEach(radio => {
 // ============================
 // Theme Toggle
 // ============================
+// User theme toggle button in settings - triggers centralized theme toggle
 document.getElementById('userThemeToggle')?.addEventListener('click', () => {
-  document.getElementById('themeToggle').click();
+  themeManager.toggle();
 });
 
 // ============================

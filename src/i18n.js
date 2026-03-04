@@ -980,16 +980,5 @@ export const i18n = {
       langSelect.value = savedLang;
     }
   
-    // Load saved theme preference
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    const html = document.documentElement;
-    html.classList.remove('dark', 'light');
-    html.classList.add(savedTheme);
-    html.setAttribute('data-theme', savedTheme);
-  
-    // Update theme toggle button
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-      themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    }
+    // Theme is now handled by centralized theme.js module
   });

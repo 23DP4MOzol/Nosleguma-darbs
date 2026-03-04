@@ -1,6 +1,7 @@
 // Import necessary modules
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { themeManager } from '../theme.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -232,17 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ============================
-// Initialize Theme from localStorage
-// ============================
-function initializeTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  const html = document.documentElement;
-  html.classList.remove('light', 'dark');
-  html.classList.add(savedTheme);
-  html.setAttribute('data-theme', savedTheme);
-  document.getElementById('themeToggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-}
+// Theme is handled by centralized theme.js
 
 // ============================
 // Initialize Language from localStorage
@@ -259,7 +250,6 @@ function initializeLanguage() {
 // ============================
 // Initialize on page load
 // ============================
-initializeTheme();
 initializeLanguage();
 
 // ============================
@@ -271,19 +261,7 @@ document.getElementById('langSelect').addEventListener('change', e => {
   i18n.setLang(lang);
 });
 
-// ============================
-// Theme Toggle
-// ============================
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-});
+// Theme toggle is handled by theme.js
 
 document.getElementById('hamburgerBtn').addEventListener('click', () => {
   document.querySelector('.navbar-links').classList.toggle('active');

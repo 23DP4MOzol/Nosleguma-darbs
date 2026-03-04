@@ -39,17 +39,7 @@ langSelect.addEventListener('change', e => i18n.setLang(e.target.value));
 // ============================
 // Dark/Light Mode Toggle
 // ============================
-const themeToggle = document.getElementById('themeToggle');
-themeToggle.addEventListener('click', () => {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-});
+// Theme toggle is handled by centralized theme.js
 
 // ============================
 // Hamburger Menu

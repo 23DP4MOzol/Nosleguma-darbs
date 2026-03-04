@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { themeManager } from '../theme.js';
 
 // ============================
 // Terms Content (English)
@@ -239,23 +240,7 @@ document.getElementById('langSelect').addEventListener('change', e => {
 // ============================
 // Dark/Light Mode Toggle
 // ============================
-const savedTheme = localStorage.getItem("theme") || "light";
-document.documentElement.classList.add(savedTheme);
-document.documentElement.setAttribute("data-theme", savedTheme);
-const themeToggle = document.getElementById('themeToggle');
-if (themeToggle) {
-  themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
-  themeToggle.addEventListener('click', () => {
-    const html = document.documentElement;
-    const currentTheme = html.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    html.classList.remove('dark', 'light');
-    html.classList.add(newTheme);
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    themeToggle.textContent = newTheme === 'dark' ? "☀️" : "🌙";
-  });
-}
+// Theme is handled by centralized theme.js
 
 // ============================
 // Hamburger Mobile Menu

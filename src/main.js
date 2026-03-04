@@ -21,6 +21,7 @@ try {
   // ignore
 }
 import { i18n } from './i18n.js';
+import { themeManager } from './theme.js';
 import './navbar.js';
 import './app.js';
 import './product-modal.js';
@@ -101,45 +102,8 @@ export function escapeHtml(input = '') {
 // ============================
 // THEME MANAGEMENT
 // ============================
-
-function initializeTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  const html = document.documentElement;
-  html.setAttribute('data-theme', savedTheme);
-
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    themeToggle.addEventListener('click', toggleTheme);
-  }
-
-  const userThemeToggle = document.getElementById('userThemeToggle');
-  if (userThemeToggle) {
-    userThemeToggle.textContent = i18n.t('toggle_theme');
-    // Note: userThemeToggle has its own event listener in initializeSettingsPage
-  }
-}
-
-function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-  html.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-
-  // Update navbar theme toggle with emoji
-  const navThemeToggle = document.getElementById('themeToggle');
-  if (navThemeToggle) {
-    navThemeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-  }
-
-  // Update settings theme toggle with translated text
-  const userThemeToggle = document.getElementById('userThemeToggle');
-  if (userThemeToggle) {
-    userThemeToggle.textContent = i18n.t('toggle_theme');
-  }
-}
+// Theme is now handled by centralized theme.js module
+// Imported at the top of this file
 
 // ============================
 // LANGUAGE MANAGEMENT
@@ -2836,7 +2800,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize common functionality
   initializeNavigation();
   initializeAuth();
-  initializeTheme();
+  // Theme is initialized automatically by theme.js
+  themeManager.init(); // Ensure it's initialized
   initializeLanguage();
 
   // Initialize page-specific functionality
