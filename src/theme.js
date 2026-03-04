@@ -6,6 +6,19 @@ const THEME_KEY = 'theme';
 const THEME_LIGHT = 'light';
 const THEME_DARK = 'dark';
 
+// Apply theme immediately on script load (before DOM fully renders)
+// This prevents flash of wrong colors
+(function() {
+  try {
+    const savedTheme = localStorage.getItem(THEME_KEY) || THEME_LIGHT;
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.classList.remove('light', 'dark');
+  } catch (e) {
+    // localStorage might not be available
+    document.documentElement.setAttribute('data-theme', THEME_LIGHT);
+  }
+})();
+
 class ThemeManager {
   constructor() {
     this.initialized = false;

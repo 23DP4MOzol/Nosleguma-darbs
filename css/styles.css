@@ -35,6 +35,66 @@
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Light mode explicit styling */
+html[data-theme="light"],
+html.light {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --accent: #8b5cf6;
+  --secondary: #f1f5f9;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --card-bg: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* Light mode universal element styling */
+html[data-theme="light"] button,
+html.light button,
+html[data-theme="light"] input,
+html.light input,
+html[data-theme="light"] select,
+html.light select,
+html[data-theme="light"] textarea,
+html.light textarea {
+  color: var(--fg);
+  background-color: var(--card-bg);
+  border-color: var(--border);
+}
+
+html[data-theme="light"] h1,
+html.light h1,
+html[data-theme="light"] h2,
+html.light h2,
+html[data-theme="light"] h3,
+html.light h3,
+html[data-theme="light"] h4,
+html.light h4,
+html[data-theme="light"] h5,
+html.light h5,
+html[data-theme="light"] h6,
+html.light h6,
+html[data-theme="light"] p,
+html.light p,
+html[data-theme="light"] span,
+html.light span,
+html[data-theme="light"] label,
+html.light label,
+html[data-theme="light"] a,
+html.light a {
+  color: var(--fg);
+}
+
 /* Dark Mode Variables */
 html[data-theme="dark"],
 html.dark {
@@ -135,7 +195,129 @@ body {
   transition: var(--transition);
 }
 
-/* Dark mode navbar */
+/* Light mode navbar */
+html[data-theme="light"] .navbar,
+html.light .navbar {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom-color: var(--border);
+}
+
+html[data-theme="light"] .navbar-logo,
+html.light .navbar-logo {
+  color: var(--fg);
+}
+
+html[data-theme="light"] .btn-nav,
+html.light .btn-nav {
+  background: var(--secondary);
+  color: var(--fg);
+  border: none;
+}
+
+html[data-theme="light"] .btn-nav:hover,
+html.light .btn-nav:hover {
+  background: var(--primary);
+  color: white;
+}
+
+html[data-theme="light"] .btn-login,
+html.light .btn-login {
+  color: white;
+}
+
+html[data-theme="light"] .icon-btn,
+html.light .icon-btn {
+  background: var(--secondary);
+  color: var(--fg);
+  border: 2px solid var(--border);
+}
+
+html[data-theme="light"] .icon-btn:hover,
+html.light .icon-btn:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+html[data-theme="light"] .dropdown-btn,
+html.light .dropdown-btn {
+  background: var(--secondary);
+  color: var(--fg);
+  border: none;
+}
+
+html[data-theme="light"] .dropdown-btn:hover,
+html.light .dropdown-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+html[data-theme="light"] .dropdown-menu,
+html.light .dropdown-menu {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+html[data-theme="light"] .dropdown-item,
+html.light .dropdown-item {
+  color: var(--fg);
+}
+
+html[data-theme="light"] .dropdown-item:hover,
+html.light .dropdown-item:hover {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+html[data-theme="light"] .category-select,
+html.light .category-select {
+  background: var(--secondary);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+html[data-theme="light"] .category-select option,
+html.light .category-select option {
+  background: var(--card-bg);
+  color: var(--fg);
+}
+
+html[data-theme="light"] .search-input,
+html.light .search-input {
+  background: var(--secondary);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+html[data-theme="light"] .search-input:focus,
+html.light .search-input:focus {
+  background: var(--card-bg);
+  border-color: var(--primary);
+}
+
+html[data-theme="light"] .hamburger-btn,
+html.light .hamburger-btn {
+  color: var(--fg);
+}
+
+html[data-theme="light"] #themeToggle,
+html.light #themeToggle {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border: 2px solid var(--border) !important;
+}
+
+html[data-theme="light"] #themeToggle:hover,
+html.light #themeToggle:hover {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .balance-badge,
+html.light .balance-badge {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
 html.dark .navbar,
 html[data-theme="dark"] .navbar {
   background: rgba(15, 23, 42, 0.95);
