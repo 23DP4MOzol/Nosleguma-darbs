@@ -209,73 +209,16 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
     // Basic validation
     if (!userId) throw new Error('addBalance called without userId');
 
-    // Ensure user row exists to avoid FK violations when inserting transactions
-    try {
-      const { data: existingUser, error: fetchErr } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-      if (fetchErr) throw fetchErr;
-
-      if (!existingUser) {
-            // Try to get the authenticated user's email to avoid inserting null into a NOT NULL column
-            let emailToUse = undefined;
-            try {
-              const { data: { user: authUser } = {} } = await supabase.auth.getUser();
-              if (authUser && authUser.email) emailToUse = authUser.email;
-            } catch (e) {
-              // ignore - we'll upsert without email if unavailable
-            }
-
-        const upsertPayload = {
-          id: userId,
-          balance: 0,
-          role: 'user',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        // Ensure we always provide a non-null, unique email value for NOT NULL / UNIQUE constraints.
-        // Prefer the authenticated email when it's safe; otherwise generate a stable fallback per user id.
-        const generateFallbackEmail = (id) => `vendly+${id}@internal.local`;
-
-        if (emailToUse) {
-          try {
-            const { data: emailOwner, error: emailFetchErr } = await supabase
-              .from('users')
-              .select('id')
-              .eq('email', emailToUse)
-              .maybeSingle();
-            if (emailFetchErr) throw emailFetchErr;
-
-            if (!emailOwner || emailOwner.id === userId) {
-              upsertPayload.email = emailToUse;
-            } else {
-              // Email belongs to another users row; use a generated per-user fallback to satisfy NOT NULL + UNIQUE
-              console.warn('Email belongs to a different users row; using generated fallback email to satisfy NOT NULL constraint');
-              upsertPayload.email = generateFallbackEmail(userId);
-            }
-          } catch (e) {
-            // If the lookup fails for any reason, use a generated fallback to be safe
-            console.warn('Could not verify email uniqueness before upsert, using generated fallback email:', e?.message || e);
-            upsertPayload.email = generateFallbackEmail(userId);
-          }
-        } else {
-          // No auth email available; generate a per-user fallback email so NOT NULL constraint is satisfied.
-          upsertPayload.email = generateFallbackEmail(userId);
-        }
-
-        const { error: upsertError } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id', returning: 'minimal' });
-
-        if (upsertError) {
-          console.error('Failed to upsert users row before addBalance:', upsertError);
-          throw upsertError;
-        }
-      }
-    } catch (e) {
-      console.error('Could not ensure users row exists for addBalance:', e?.message || e);
-      throw e;
+    // Verify user row exists - addBalance should only work for existing users
+    const { data: existingUser, error: fetchErr } = await supabase
+      .from('users')
+      .select('id, balance')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (fetchErr) throw fetchErr;
+    if (!existingUser) {
+      throw new Error('User not found. Cannot add balance to non-existent user.');
     }
 
     // Get current balance
