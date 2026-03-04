@@ -209,76 +209,88 @@ html.light .navbar-logo {
 
 html[data-theme="light"] .btn-nav,
 html.light .btn-nav {
-  background: var(--secondary);
-  color: var(--fg);
-  border: none;
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border: none !important;
 }
 
 html[data-theme="light"] .btn-nav:hover,
 html.light .btn-nav:hover {
-  background: var(--primary);
-  color: white;
+  background: var(--primary) !important;
+  color: white !important;
 }
 
 html[data-theme="light"] .btn-login,
 html.light .btn-login {
-  color: white;
+  color: white !important;
 }
 
 html[data-theme="light"] .icon-btn,
 html.light .icon-btn {
-  background: var(--secondary);
-  color: var(--fg);
-  border: 2px solid var(--border);
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border: 2px solid var(--border) !important;
 }
 
 html[data-theme="light"] .icon-btn:hover,
 html.light .icon-btn:hover {
-  background: var(--border);
-  color: var(--fg);
+  background: var(--border) !important;
+  color: var(--fg) !important;
 }
 
 html[data-theme="light"] .dropdown-btn,
 html.light .dropdown-btn {
-  background: var(--secondary);
-  color: var(--fg);
-  border: none;
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border: none !important;
 }
 
 html[data-theme="light"] .dropdown-btn:hover,
 html.light .dropdown-btn:hover {
-  background: var(--primary);
-  color: white;
+  background: var(--primary) !important;
+  color: white !important;
 }
 
 html[data-theme="light"] .dropdown-menu,
 html.light .dropdown-menu {
-  background: var(--card-bg);
-  border-color: var(--border);
+  background: var(--card-bg) !important;
+  border-color: var(--border) !important;
 }
 
 html[data-theme="light"] .dropdown-item,
 html.light .dropdown-item {
-  color: var(--fg);
+  color: var(--fg) !important;
 }
 
 html[data-theme="light"] .dropdown-item:hover,
 html.light .dropdown-item:hover {
-  background: var(--secondary);
-  color: var(--primary);
+  background: var(--secondary) !important;
+  color: var(--primary) !important;
 }
 
 html[data-theme="light"] .category-select,
 html.light .category-select {
-  background: var(--secondary);
-  color: var(--fg);
-  border-color: var(--border);
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
 }
 
 html[data-theme="light"] .category-select option,
 html.light .category-select option {
   background: var(--card-bg);
   color: var(--fg);
+}
+
+html[data-theme="light"] .btn-sell,
+html.light .btn-sell {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  border: none !important;
+}
+
+html[data-theme="light"] .btn-sell:hover,
+html.light .btn-sell:hover {
+  opacity: 0.9;
 }
 
 html[data-theme="light"] .search-input,
@@ -296,7 +308,8 @@ html.light .search-input:focus {
 
 html[data-theme="light"] .hamburger-btn,
 html.light .hamburger-btn {
-  color: var(--fg);
+  color: var(--fg) !important;
+  background: var(--secondary) !important;
 }
 
 html[data-theme="light"] #themeToggle,
