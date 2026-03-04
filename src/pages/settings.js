@@ -207,8 +207,6 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
     }
 
     let updates = {
-      id: currentUser.id,
-      email: currentUser.email || `vendly+${currentUser.id}@internal.local`,
       username: username,
       bio: bio,
       what_i_sell: whatISell,
@@ -216,11 +214,40 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       updated_at: new Date().toISOString()
     };
 
+    // Prefer updating the row by auth user id; if absent, fallback to auth email.
+    // This avoids duplicate email conflicts caused by legacy rows with a different id.
+    let targetColumn = 'id';
+    let targetValue = currentUser.id;
+
+    try {
+      const { data: rowById } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      if (!rowById && currentUser.email) {
+        const { data: rowByEmail } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', currentUser.email)
+          .maybeSingle();
+
+        if (rowByEmail) {
+          targetColumn = 'email';
+          targetValue = currentUser.email;
+        }
+      }
+    } catch (lookupErr) {
+      console.warn('Could not resolve safest users row target, defaulting to id:', lookupErr?.message || lookupErr);
+    }
+
     let error = null;
     for (let attempt = 0; attempt < 6; attempt++) {
       const result = await supabase
         .from('users')
-        .upsert(updates, { onConflict: 'id' });
+        .update(updates)
+        .eq(targetColumn, targetValue);
 
       error = result.error || null;
       if (!error) break;
