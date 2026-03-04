@@ -54,7 +54,7 @@ export async function loadProducts(containerId='productsContainer'){
     card.className='product-card-modern';
     card.innerHTML=`
       <div class="product-image-container">
-        <img class="product-image" src="${p.image_url||'https://via.placeholder.com/600x400'}" alt="${escapeHtml(p.name)}">
+        <img class="product-image" src="${p.image_url||'https://placehold.co/600x400/667eea/white?text=No+Image'}" alt="${escapeHtml(p.name)}">
         <button class="product-like-btn" data-id="${p.id}">❤</button>
         ${p.is_reserved?'<span class="product-badge-new">Reserved</span>':''}
         <div class="product-overlay">

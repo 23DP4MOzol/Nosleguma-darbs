@@ -347,7 +347,7 @@ document.getElementById('previewProfileBtn')?.addEventListener('click', async ()
         <div class="profile-products">
           ${products?.map(product => `
             <div class="profile-product-card">
-              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="profile-product-image">
+              <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="profile-product-image">
               <div class="profile-product-info">
                 <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
                 <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>

@@ -46,7 +46,7 @@ export async function showProductModal(product) {
   };
   
   const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
-  const imageUrl = product.image_url || 'https://via.placeholder.com/600x400';
+  const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
   const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
   
   // Calculate listing fee

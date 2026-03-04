@@ -441,7 +441,7 @@ function showUserDetailModal(user, stats) {
         <div class="admin-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem;">
           ${stats.products.map(p => `
             <div class="admin-card">
-              <img src="${p.image_url || 'https://via.placeholder.com/150'}" style="width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:0.75rem;">
+              <img src="${p.image_url || 'https://placehold.co/150/667eea/white?text=No+Image'}" style="width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:0.75rem;">
               <h4 style="margin:0 0 0.5rem;">${p.name}</h4>
               <div style="color:var(--muted);font-size:0.875rem;margin-bottom:0.75rem;">${p.condition || 'N/A'}</div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -649,7 +649,7 @@ function displayProducts(products) {
   
   tbody.innerHTML = products.map(p => `
     <tr>
-      <td><img src="${p.image_url || 'https://via.placeholder.com/50'}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>
+      <td><img src="${p.image_url || 'https://placehold.co/50/667eea/white?text=No+Image'}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>
       <td>${p.name}</td>
       <td>${p.users?.username || 'Unknown'}</td>
       <td>€${parseFloat(p.price).toFixed(2)}</td>

@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const location = document.getElementById('productLocationInput').value || '';
     const description = document.getElementById('productDescriptionInput').value || 'Product description...';
 
-    let imageUrl = 'https://via.placeholder.com/300x200';
+    let imageUrl = 'https://placehold.co/300x200/667eea/white?text=Upload+Image';
 
     // Check if file is selected
     const fileRadio = document.querySelector('input[name="imageType"][value="file"]');
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         imageUrl = productImageFileInput.dataset.previewUrl;
       }
     } else {
-      imageUrl = document.getElementById('productImageInput').value || 'https://via.placeholder.com/300x200';
+      imageUrl = document.getElementById('productImageInput').value || 'https://placehold.co/300x200/667eea/white?text=Upload+Image';
     }
 
     // Calculate and display listing fee (€0.50 to €1.00)
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     productPreview.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 1rem;">
         <div style="width: 100%; height: 250px; border-radius: 12px; overflow: hidden; background: var(--secondary); position: relative;">
-          <img src="${imageUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/300x200'">
+          <img src="${imageUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/300x200/667eea/white?text=Upload+Image'">
           ${stock > 0 ? '' : '<div style="position: absolute; top: 10px; left: 10px; background: #ef4444; color: white; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600;">Out of Stock</div>'}
         </div>
         <div>
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fileInput = document.getElementById('productImageFileInput');
         if (fileInput && fileInput.files[0]) {
           // Use the data URL from the preview for file uploads
-          imageUrl = fileInput.dataset.previewUrl || 'https://via.placeholder.com/300x200';
+          imageUrl = fileInput.dataset.previewUrl || 'https://placehold.co/300x200/667eea/white?text=Upload+Image';
         }
       } else {
         // URL input

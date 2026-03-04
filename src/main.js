@@ -864,7 +864,7 @@ async function showUserProfile(userId) {
         <div class="profile-products">
           ${products?.map(product => `
             <div class="profile-product-card">
-              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="profile-product-image">
+              <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="profile-product-image">
               <div class="profile-product-info">
                 <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
                 <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>
@@ -1245,7 +1245,7 @@ async function initializeIndexPage() {
     grid.innerHTML = '';
 
     productsToRender.forEach(product => {
-      const imageUrl = product.image_url || 'https://via.placeholder.com/300x200';
+      const imageUrl = product.image_url || 'https://placehold.co/300x200/667eea/white?text=No+Image';
       const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
       const stock = product.stock != null ? product.stock : 0;
       const categoryText = escapeHtml(product.category || 'other');
@@ -1279,7 +1279,7 @@ async function initializeIndexPage() {
       
       card.innerHTML = `
         <div class="product-image-container">
-          <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://via.placeholder.com/300x200'">
+          <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://placehold.co/300x200/667eea/white?text=No+Image'">
           <button class="product-like-btn" data-id="${escapeHtml(product.id)}" aria-label="Like">❤️</button>
           ${product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
           <div class="product-overlay">
@@ -1525,7 +1525,7 @@ async function initializeIndexPage() {
     };
     
     const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
-    const imageUrl = product.image_url || 'https://via.placeholder.com/600x400';
+    const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
     const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
     
     modalBody.innerHTML = `
@@ -2176,7 +2176,7 @@ function initializeSettingsPage() {
        if (products && products.length > 0) {
          container.innerHTML = products.map(product => `
            <div class="product-card-modern" style="margin:0; display:flex; align-items:center; gap:1rem; padding:1rem;">
-             <img src="${product.image_url || 'https://via.placeholder.com/80x60'}" alt="${product.name}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
+             <img src="${product.image_url || 'https://placehold.co/80x60/667eea/white?text=No+Image'}" alt="${product.name}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
              <div style="flex:1;">
                <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${product.name}</h4>
                <div style="font-size:0.875rem; color:var(--muted);">€${parseFloat(product.price).toFixed(2)} • ${product.stock} in stock</div>

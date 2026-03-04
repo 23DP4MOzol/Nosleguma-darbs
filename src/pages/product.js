@@ -181,7 +181,7 @@ function displayProducts(products) {
   grid.innerHTML = products.map(product => `
     <div class="product-card-modern" data-product-id="${product.id}">
       <div class="product-image-container">
-        <img src="${product.image_url || 'https://via.placeholder.com/400x300'}" alt="${product.name}" class="product-image">
+        <img src="${product.image_url || 'https://placehold.co/400x300/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
         <button class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}">
           ${userFavorites.has(product.id) ? '❤️' : '🤍'}
         </button>
@@ -350,7 +350,7 @@ async function showUserProfile(userId) {
         ${products?.map(product => `
           <div class="product-card-modern" style="margin:0;">
             <div class="product-image-container">
-              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="product-image">
+              <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
             </div>
             <div class="product-info" style="padding:1rem;">
               <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
