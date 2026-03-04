@@ -293,9 +293,94 @@ document.getElementById('previewProfileBtn')?.addEventListener('click', async ()
 
   const username = document.getElementById('usernameInput')?.value?.trim() || 'User';
   const bio = document.getElementById('bioInput')?.value?.trim();
+  const whatISell = document.getElementById('whatISellInput')?.value?.trim();
   const avatarUrl = document.getElementById('avatarUrlInput')?.value?.trim();
 
-  alert(`Profile Preview:\n\nUsername: ${username}\nBio: ${bio || 'Not set'}\nAvatar URL: ${avatarUrl || 'Not set'}`);
+  // Get user's current products and stats for preview
+  try {
+    const { data: products } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select('rating, comment, created_at, buyer_id, users!buyer_id(username)')
+      .eq('seller_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    let averageRating = 0;
+    if (reviews && reviews.length > 0) {
+      averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    }
+
+    const escapeHtml = (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+
+    const profileHtml = `
+      <div class="profile-header">
+        <div class="profile-avatar">
+          ${avatarUrl ? `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` : username.charAt(0).toUpperCase()}
+        </div>
+        <h2 class="profile-name">${escapeHtml(username)}</h2>
+        ${bio ? `<p class="profile-bio">${escapeHtml(bio)}</p>` : ''}
+        ${whatISell ? `<p class="profile-bio" style="font-style: italic;">🏷️ ${escapeHtml(whatISell)}</p>` : ''}
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <div class="profile-stat-value">${products?.length || 0}</div>
+            <div class="profile-stat-label">Products</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">${averageRating.toFixed(1)} ⭐</div>
+            <div class="profile-stat-label">Rating (${reviews?.length || 0} reviews)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h3>Recent Products</h3>
+        <div class="profile-products">
+          ${products?.map(product => `
+            <div class="profile-product-card">
+              <img src="${product.image_url || 'https://via.placeholder.com/200x150'}" alt="${product.name}" class="profile-product-image">
+              <div class="profile-product-info">
+                <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
+                <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>
+              </div>
+            </div>
+          `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h3>Reviews & Comments</h3>
+        <div class="profile-reviews">
+          ${reviews?.map(review => `
+            <div class="profile-review">
+              <div class="profile-review-header">
+                <span class="profile-review-buyer">${escapeHtml(review.users?.username || 'Anonymous')}</span>
+                <span class="profile-review-rating">⭐ ${review.rating}/5</span>
+                <span class="profile-review-date">${new Date(review.created_at).toLocaleDateString()}</span>
+              </div>
+              <p class="profile-review-comment">${escapeHtml(review.comment || 'No comment')}</p>
+            </div>
+          `).join('') || '<p style="text-align:center; color:var(--muted);">No reviews yet.</p>'}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('profilePreviewContent').innerHTML = profileHtml;
+    document.getElementById('profilePreviewModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  } catch (error) {
+    console.error('Error loading profile preview:', error);
+    alert('Failed to load profile preview');
+  }
 });
 
 // ============================
