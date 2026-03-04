@@ -48,6 +48,10 @@ class ThemeManager {
     const currentTheme = this.getTheme();
     const newTheme = currentTheme === THEME_DARK ? THEME_LIGHT : THEME_DARK;
     this.applyTheme(newTheme);
+    
+    // Force browser to recalculate all styles
+    // This ensures all CSS variables are updated immediately
+    document.body.offsetHeight;
   }
 
   // Update the toggle button text

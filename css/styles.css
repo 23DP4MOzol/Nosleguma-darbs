@@ -36,8 +36,8 @@
 }
 
 /* Dark Mode Variables */
-html.dark,
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html.dark {
   --bg: #0f172a;
   --fg: #f1f5f9;
   --primary: #60a5fa;
@@ -58,6 +58,43 @@ html[data-theme="dark"] {
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
 }
 
+/* Universal dark mode element styling */
+html[data-theme="dark"] button,
+html.dark button,
+html[data-theme="dark"] input,
+html.dark input,
+html[data-theme="dark"] select,
+html.dark select,
+html[data-theme="dark"] textarea,
+html.dark textarea {
+  color: var(--fg);
+  background-color: var(--card-bg);
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] h1,
+html.dark h1,
+html[data-theme="dark"] h2,
+html.dark h2,
+html[data-theme="dark"] h3,
+html.dark h3,
+html[data-theme="dark"] h4,
+html.dark h4,
+html[data-theme="dark"] h5,
+html.dark h5,
+html[data-theme="dark"] h6,
+html.dark h6,
+html[data-theme="dark"] p,
+html.dark p,
+html[data-theme="dark"] span,
+html.dark span,
+html[data-theme="dark"] label,
+html.dark label,
+html[data-theme="dark"] a,
+html.dark a {
+  color: var(--fg);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -68,6 +105,11 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="dark"],
+html.dark {
+  color-scheme: dark;
 }
 
 body {
@@ -98,6 +140,100 @@ html.dark .navbar,
 html[data-theme="dark"] .navbar {
   background: rgba(15, 23, 42, 0.95);
   border-bottom-color: var(--border);
+}
+
+html.dark .navbar-logo,
+html[data-theme="dark"] .navbar-logo {
+  color: var(--fg);
+}
+
+html.dark .btn-nav,
+html[data-theme="dark"] .btn-nav {
+  background: var(--secondary);
+  color: var(--fg);
+}
+
+html.dark .btn-nav:hover,
+html[data-theme="dark"] .btn-nav:hover {
+  background: var(--primary);
+  color: white;
+}
+
+html.dark .btn-login,
+html[data-theme="dark"] .btn-login {
+  color: white;
+}
+
+html.dark .icon-btn,
+html[data-theme="dark"] .icon-btn {
+  background: var(--secondary);
+  color: var(--fg);
+}
+
+html.dark .icon-btn:hover,
+html[data-theme="dark"] .icon-btn:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+html.dark .dropdown-btn,
+html[data-theme="dark"] .dropdown-btn {
+  background: var(--secondary);
+  color: var(--fg);
+}
+
+html.dark .dropdown-btn:hover,
+html[data-theme="dark"] .dropdown-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+html.dark .dropdown-menu,
+html[data-theme="dark"] .dropdown-menu {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+html.dark .dropdown-item,
+html[data-theme="dark"] .dropdown-item {
+  color: var(--fg);
+}
+
+html.dark .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-item:hover {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+html.dark .category-select,
+html[data-theme="dark"] .category-select {
+  background: var(--secondary);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+html.dark .category-select option,
+html[data-theme="dark"] .category-select option {
+  background: var(--card-bg);
+  color: var(--fg);
+}
+
+html.dark .search-input,
+html[data-theme="dark"] .search-input {
+  background: var(--secondary);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+html.dark .search-input:focus,
+html[data-theme="dark"] .search-input:focus {
+  background: var(--card-bg);
+  border-color: var(--primary);
+}
+
+html.dark .hamburger-btn,
+html[data-theme="dark"] .hamburger-btn {
+  color: var(--fg);
 }
 
 .navbar-container {
@@ -228,6 +364,13 @@ html[data-theme="dark"] .navbar {
   white-space: nowrap;
 }
 
+html.dark .balance-badge,
+html[data-theme="dark"] .balance-badge {
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+  border-color: #059669;
+  color: #d1fae5;
+}
+
 .icon-btn {
   position: relative;
   display: flex;
@@ -264,6 +407,20 @@ html[data-theme="dark"] .navbar {
   border-radius: 100px;
   padding: 0 4px;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Theme Toggle Button */
+#themeToggle {
+  font-size: 1.25rem;
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border: 2px solid var(--border) !important;
+}
+
+#themeToggle:hover {
+  background: var(--primary) !important;
+  color: white !important;
+  transform: translateY(-2px);
 }
 
 .btn-sell {
@@ -1652,6 +1809,22 @@ html[data-theme="dark"] .navbar {
  border: 1px solid var(--border);
  border-radius: 4px;
  margin-bottom: 1rem;
+ background: var(--card-bg);
+ color: var(--fg);
+}
+
+.profile-review-form textarea::placeholder,
+.profile-review-form select::placeholder {
+ color: var(--muted);
+}
+
+html.dark .profile-review-form select,
+html.dark .profile-review-form textarea,
+html[data-theme="dark"] .profile-review-form select,
+html[data-theme="dark"] .profile-review-form textarea {
+ background: var(--card-bg);
+ color: var(--fg);
+ border-color: var(--border);
 }
 
 .profile-review-form button {
@@ -2595,6 +2768,22 @@ html[data-theme="dark"] .navbar {
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+html.dark .form-input,
+html[data-theme="dark"] .form-input {
+  background: var(--card-bg);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+html.dark .form-input::placeholder,
+html[data-theme="dark"] .form-input::placeholder {
+  color: var(--muted);
 }
 
 .form-row {
