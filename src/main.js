@@ -105,8 +105,6 @@ export function escapeHtml(input = '') {
 function initializeTheme() {
   const savedTheme = localStorage.getItem('theme') || 'light';
   const html = document.documentElement;
-  html.classList.remove('light', 'dark');
-  html.classList.add(savedTheme);
   html.setAttribute('data-theme', savedTheme);
 
   const themeToggle = document.getElementById('themeToggle');
@@ -127,8 +125,6 @@ function toggleTheme() {
   const currentTheme = html.getAttribute('data-theme') || 'light';
   const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-  html.classList.remove('dark', 'light');
-  html.classList.add(newTheme);
   html.setAttribute('data-theme', newTheme);
   localStorage.setItem('theme', newTheme);
 
