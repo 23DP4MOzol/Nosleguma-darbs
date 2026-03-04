@@ -9,7 +9,12 @@ module.exports = {
     "./product.html",
     "./sell.html",
     "./settings.html",
+    "./orders.html",
+    "./register.html",
+    "./terms.html",
+    "./terms-lv.html",
     "./js/**/*.js",
+    "./src/**/*.js",
   ],
   theme: {
     extend: {},

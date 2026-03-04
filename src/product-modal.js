@@ -184,10 +184,26 @@ window.toggleLikeProduct = function(productId) {
   alert('Product liked! (Feature coming soon)');
 };
 
-// Use existing handlers from main.js
+// Import checkout modal
+import { showCheckoutModal } from './checkout-modal.js';
+
+// Use checkout modal for purchases
 window.handlePurchase = async function(productId) {
-  const event = new CustomEvent('purchaseProduct', { detail: { productId } });
-  document.dispatchEvent(event);
+  // Find product data
+  const { data: product, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', productId)
+    .single();
+  
+  if (error || !product) {
+    alert('Product not found');
+    return;
+  }
+  
+  // Close current modal and show checkout
+  document.getElementById('productModal').style.display = 'none';
+  showCheckoutModal(product);
 };
 
 window.handleReserve = async function(productId) {

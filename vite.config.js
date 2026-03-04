@@ -16,6 +16,7 @@ export default defineConfig({
         register: 'register.html',
         sell: 'sell.html',
         settings: 'settings.html',
+        orders: 'orders.html',
         terms: 'terms.html',
         terms_lv: 'terms-lv.html'
       }

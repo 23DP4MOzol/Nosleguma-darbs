@@ -24,6 +24,7 @@ import { i18n } from './i18n.js';
 import './navbar.js';
 import './app.js';
 import './product-modal.js';
+import './checkout-modal.js';
 import { showConfirmModal, showInfoModal } from './ui/modal.js';
 // AI widget disabled - requires Netlify functions setup
 // import './ai-widget.js';
