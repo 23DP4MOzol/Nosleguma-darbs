@@ -1,4 +1,4 @@
-import { supabase, getCurrentUser, logoutUser } from '../supabase.js';
+import { supabase, getCurrentUser, logoutUser, uploadAvatar } from '../supabase.js';
 import { i18n } from '../i18n.js';
 
 // ============================
@@ -87,7 +87,7 @@ async function loadUserProfile() {
     document.getElementById('userName').textContent = displayName;
     document.getElementById('userEmailDisplay').textContent = currentUser.email || '—';
     document.getElementById('userEmail').value = currentUser.email || '';
-    document.getElementById('userAvatarText').textContent = ((userData && userData.username) || (displayName) || 'U').charAt(0).toUpperCase();
+    document.getElementById('userAvatarText').textContent = ((resolvedUserData && resolvedUserData.username) || (displayName) || 'U').charAt(0).toUpperCase();
 
     // Determine balance from users table, auth metadata, or localStorage
     let profileBalance = 0;
@@ -103,18 +103,35 @@ async function loadUserProfile() {
     
     // Load additional profile fields
     const usernameInput = document.getElementById('usernameInput');
-    if (usernameInput && userData.username) {
-      usernameInput.value = userData.username;
+    if (usernameInput && resolvedUserData?.username) {
+      usernameInput.value = resolvedUserData.username;
     }
     
     const bioInput = document.getElementById('bioInput');
-    if (bioInput && userData.bio) {
-      bioInput.value = userData.bio;
+    if (bioInput && resolvedUserData?.bio) {
+      bioInput.value = resolvedUserData.bio;
     }
     
     const whatISellInput = document.getElementById('whatISellInput');
-    if (whatISellInput && userData.what_i_sell) {
-      whatISellInput.value = userData.what_i_sell;
+    if (whatISellInput && resolvedUserData?.what_i_sell) {
+      whatISellInput.value = resolvedUserData.what_i_sell;
+    }
+
+    const avatarImg = document.getElementById('userAvatar');
+    const avatarText = document.getElementById('userAvatarText');
+    const avatarUrlInput = document.getElementById('avatarUrlInput');
+    const avatarUrl = resolvedUserData?.avatar_url || currentUser.user_metadata?.avatar_url || '';
+
+    if (avatarUrl) {
+      if (avatarImg) {
+        avatarImg.src = avatarUrl;
+        avatarImg.style.display = 'block';
+      }
+      if (avatarText) avatarText.style.display = 'none';
+      if (avatarUrlInput) avatarUrlInput.value = avatarUrl;
+    } else {
+      if (avatarImg) avatarImg.style.display = 'none';
+      if (avatarText) avatarText.style.display = 'inline';
     }
 
     // Update navbar balance (use same fallback)
@@ -177,9 +194,18 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
   const username = document.getElementById('usernameInput')?.value?.trim();
   const bio = document.getElementById('bioInput')?.value?.trim();
   const whatISell = document.getElementById('whatISellInput')?.value?.trim();
-  const avatarUrl = document.getElementById('avatarUrlInput')?.value?.trim();
+  let avatarUrl = document.getElementById('avatarUrlInput')?.value?.trim() || '';
 
   try {
+    const fileRadio = document.querySelector('input[name="avatarType"][value="file"]');
+    if (fileRadio?.checked) {
+      const fileInput = document.getElementById('avatarFileInput');
+      const file = fileInput?.files?.[0];
+      if (file) {
+        avatarUrl = await uploadAvatar(file, currentUser.id);
+      }
+    }
+
     const updates = {
       id: currentUser.id,
       username: username,
@@ -189,11 +215,36 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('users')
       .upsert(updates, { onConflict: 'id' });
 
+    // Fallback for schemas where users.avatar_url does not exist
+    if (error?.code === 'PGRST204' && /avatar_url/i.test(error?.message || '')) {
+      const fallbackUpdates = {
+        id: currentUser.id,
+        username: username,
+        bio: bio,
+        what_i_sell: whatISell,
+        updated_at: new Date().toISOString()
+      };
+
+      const fallbackResult = await supabase
+        .from('users')
+        .upsert(fallbackUpdates, { onConflict: 'id' });
+
+      error = fallbackResult.error || null;
+    }
+
     if (error) throw error;
+
+    if (avatarUrl) {
+      try {
+        await supabase.auth.updateUser({ data: { avatar_url: avatarUrl } });
+      } catch (metadataErr) {
+        console.warn('Could not save avatar in auth metadata:', metadataErr?.message || metadataErr);
+      }
+    }
 
     alert('Profile saved successfully!');
     loadUserProfile();

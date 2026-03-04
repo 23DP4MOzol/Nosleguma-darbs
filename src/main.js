@@ -250,6 +250,8 @@ export async function updateNavbarAuth(sessionParam) {
   
   if (user) {
     console.log('✅ User logged in, updating navbar...');
+    const emailLooksAdmin = !!user?.email && /admin/i.test(user.email);
+    const metadataRole = user?.user_metadata?.role;
     
     // CRITICAL: Immediately update navbar visibility
     if (loginBtn) {
@@ -364,11 +366,14 @@ export async function updateNavbarAuth(sessionParam) {
 
       if (usersRow) {
         userData = usersRow;
-        userRole = usersRow.role || (user.email?.includes('admin') ? 'admin' : 'user');
+        userRole = usersRow.role || 'user';
+        if (metadataRole === 'admin' || emailLooksAdmin) {
+          userRole = 'admin';
+        }
         console.log('💰 [BALANCE DEBUG] userData set from usersRow:', userData);
       } else {
         // No users row found; infer admin by email if necessary
-        userRole = user.email?.includes('admin') ? 'admin' : 'user';
+        userRole = (metadataRole === 'admin' || emailLooksAdmin) ? 'admin' : 'user';
         console.log('💰 [BALANCE DEBUG] No usersRow found, userData is null');
       }
 
@@ -413,7 +418,7 @@ export async function updateNavbarAuth(sessionParam) {
       }
     } catch (err) {
       console.warn('Error fetching user data for navbar, using defaults:', err?.message || err);
-      if (user.email?.includes('admin')) {
+      if (metadataRole === 'admin' || emailLooksAdmin) {
         userRole = 'admin';
       }
       if (balanceBadge) {
@@ -2064,6 +2069,7 @@ function initializeSettingsPage() {
          return;
        }
        const userData = resp.data;
+       const metadataAvatar = user?.user_metadata?.avatar_url || null;
        
        // Update email fields
        const emailEl = document.getElementById('userEmail');
@@ -2085,13 +2091,14 @@ function initializeSettingsPage() {
        const avatarImg = document.getElementById('userAvatar');
        const avatarText = document.getElementById('userAvatarText');
        const avatarUrlInput = document.getElementById('avatarUrlInput');
-       if (userData.avatar_url) {
+       if (userData.avatar_url || metadataAvatar) {
+         const finalAvatarUrl = userData.avatar_url || metadataAvatar;
          if (avatarImg) {
-           avatarImg.src = userData.avatar_url;
+           avatarImg.src = finalAvatarUrl;
            avatarImg.style.display = 'block';
          }
          if (avatarText) avatarText.style.display = 'none';
-         if (avatarUrlInput) avatarUrlInput.value = userData.avatar_url;
+         if (avatarUrlInput) avatarUrlInput.value = finalAvatarUrl;
        } else {
          if (avatarText) avatarText.textContent = (userData.username || 'U').charAt(0).toUpperCase();
        }
@@ -2298,7 +2305,7 @@ function initializeSettingsPage() {
            avatarUrl = document.getElementById('avatarUrlInput')?.value || null;
          }
 
-         const { error } = await supabase
+         let { error } = await supabase
            .from('users')
            .update({
              username: username || null,
@@ -2310,7 +2317,35 @@ function initializeSettingsPage() {
            })
            .eq('id', user.id);
 
+         // Fallback for schemas without users.avatar_url column
+         if (error?.code === 'PGRST204' && /avatar_url/i.test(error?.message || '')) {
+           const fallbackPayload = {
+             username: username || null,
+             bio: bio || null,
+             what_i_sell: whatISell || null,
+             language: language || 'en',
+             updated_at: new Date().toISOString()
+           };
+
+           const fallbackResult = await supabase
+             .from('users')
+             .update(fallbackPayload)
+             .eq('id', user.id);
+
+           error = fallbackResult.error || null;
+         }
+
          if (error) throw error;
+
+         if (avatarUrl) {
+           try {
+             await supabase.auth.updateUser({
+               data: { avatar_url: avatarUrl }
+             });
+           } catch (metadataErr) {
+             console.warn('Could not persist avatar in auth metadata:', metadataErr?.message || metadataErr);
+           }
+         }
 
          showToast(i18n.t('profile_updated'), 'success');
          loadUserSettings();
