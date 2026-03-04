@@ -208,6 +208,7 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
 
     let updates = {
       id: currentUser.id,
+      email: currentUser.email || `vendly+${currentUser.id}@internal.local`,
       username: username,
       bio: bio,
       what_i_sell: whatISell,
