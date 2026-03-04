@@ -29,6 +29,11 @@ class ThemeManager {
   // Apply theme to document
   applyTheme(theme, save = true) {
     const html = document.documentElement;
+    
+    // Remove any conflicting classes (defensive cleanup)
+    html.classList.remove('light', 'dark');
+    
+    // Set data-theme attribute (our single source of truth)
     html.setAttribute('data-theme', theme);
     
     if (save) {
