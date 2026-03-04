@@ -206,7 +206,7 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       }
     }
 
-    const updates = {
+    let updates = {
       id: currentUser.id,
       username: username,
       bio: bio,
@@ -215,25 +215,26 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       updated_at: new Date().toISOString()
     };
 
-    let { error } = await supabase
-      .from('users')
-      .upsert(updates, { onConflict: 'id' });
-
-    // Fallback for schemas where users.avatar_url does not exist
-    if (error?.code === 'PGRST204' && /avatar_url/i.test(error?.message || '')) {
-      const fallbackUpdates = {
-        id: currentUser.id,
-        username: username,
-        bio: bio,
-        what_i_sell: whatISell,
-        updated_at: new Date().toISOString()
-      };
-
-      const fallbackResult = await supabase
+    let error = null;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const result = await supabase
         .from('users')
-        .upsert(fallbackUpdates, { onConflict: 'id' });
+        .upsert(updates, { onConflict: 'id' });
 
-      error = fallbackResult.error || null;
+      error = result.error || null;
+      if (!error) break;
+
+      // Remove missing columns dynamically for older schemas
+      if (error.code === 'PGRST204') {
+        const missingColumn = (error.message || '').match(/'([^']+)' column/)?.[1];
+        if (missingColumn && Object.prototype.hasOwnProperty.call(updates, missingColumn)) {
+          delete updates[missingColumn];
+          console.warn(`users.${missingColumn} column missing; retrying profile save without it`);
+          continue;
+        }
+      }
+
+      break;
     }
 
     if (error) throw error;

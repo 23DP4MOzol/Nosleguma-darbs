@@ -2305,34 +2305,36 @@ function initializeSettingsPage() {
            avatarUrl = document.getElementById('avatarUrlInput')?.value || null;
          }
 
-         let { error } = await supabase
-           .from('users')
-           .update({
-             username: username || null,
-             avatar_url: avatarUrl,
-             bio: bio || null,
-             what_i_sell: whatISell || null,
-             language: language || 'en',
-             updated_at: new Date().toISOString()
-           })
-           .eq('id', user.id);
+         let updatePayload = {
+           username: username || null,
+           avatar_url: avatarUrl,
+           bio: bio || null,
+           what_i_sell: whatISell || null,
+           language: language || 'en',
+           updated_at: new Date().toISOString()
+         };
 
-         // Fallback for schemas without users.avatar_url column
-         if (error?.code === 'PGRST204' && /avatar_url/i.test(error?.message || '')) {
-           const fallbackPayload = {
-             username: username || null,
-             bio: bio || null,
-             what_i_sell: whatISell || null,
-             language: language || 'en',
-             updated_at: new Date().toISOString()
-           };
-
-           const fallbackResult = await supabase
+         let error = null;
+         for (let attempt = 0; attempt < 6; attempt++) {
+           const result = await supabase
              .from('users')
-             .update(fallbackPayload)
+             .update(updatePayload)
              .eq('id', user.id);
 
-           error = fallbackResult.error || null;
+           error = result.error || null;
+           if (!error) break;
+
+           // Remove missing columns dynamically for older schemas
+           if (error.code === 'PGRST204') {
+             const missingColumn = (error.message || '').match(/'([^']+)' column/)?.[1];
+             if (missingColumn && Object.prototype.hasOwnProperty.call(updatePayload, missingColumn)) {
+               delete updatePayload[missingColumn];
+               console.warn(`users.${missingColumn} column missing; retrying profile update without it`);
+               continue;
+             }
+           }
+
+           break;
          }
 
          if (error) throw error;
