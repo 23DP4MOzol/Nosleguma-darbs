@@ -1622,7 +1622,13 @@ async function initializeIndexPage() {
       } catch (e) { /* reviews table may not exist yet */ }
     }
     
-    // Get real product stats from favorites\n    let productLikes = parseInt(product.likes_count || 0);\n    try {\n      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);\n      productLikes = count || productLikes;\n    } catch (e) { /* favorites may not exist */ }\n    const productViews = parseInt(product.views_count || 0);
+    // Get real product stats from favorites
+    let productLikes = parseInt(product.likes_count || 0);
+    try {
+      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);
+      productLikes = count || productLikes;
+    } catch (e) { /* favorites may not exist */ }
+    const productViews = parseInt(product.views_count || 0);
     
     const conditionEmoji = {
       'new': '✨',
@@ -1667,7 +1673,17 @@ async function initializeIndexPage() {
             <p>${escapeHtml(product.description) || 'No description provided.'}</p>
           </div>
           
-          <!-- Product Stats -->\n          <div class=\"modal-stats\">\n            <div class=\"modal-stat\">\n              <div class=\"modal-stat-value\">\u2764\ufe0f ${productLikes}</div>\n              <div class=\"modal-stat-label\">Likes</div>\n            </div>\n            <div class=\"modal-stat\">\n              <div class=\"modal-stat-value\">\ud83d\udc41 ${productViews}</div>\n              <div class=\"modal-stat-label\">Views</div>\n            </div>\n          </div>
+          <!-- Product Stats -->
+          <div class="modal-stats">
+            <div class="modal-stat">
+              <div class="modal-stat-value">❤️ ${productLikes}</div>
+              <div class="modal-stat-label">Likes</div>
+            </div>
+            <div class="modal-stat">
+              <div class="modal-stat-value">👁️ ${productViews}</div>
+              <div class="modal-stat-label">Views</div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -2730,7 +2746,14 @@ function initializeSettingsPage() {
    }
  };
 
-// Sell page functions - MOVED TO src/pages/sell.js\nfunction initializeSellPage() {\n  // Sell page is now handled by src/pages/sell.js to avoid conflicts\n  // This function is kept for reference but does nothing\n  if (document.getElementById('sellForm')) {\n    console.log('initializeSellPage() - Sell page is handled by src/pages/sell.js');\n  }\n}
+// Sell page functions - MOVED TO src/pages/sell.js
+function initializeSellPage() {
+  // Sell page is now handled by src/pages/sell.js to avoid conflicts
+  // This function is kept for reference but does nothing
+  if (document.getElementById('sellForm')) {
+    console.log('initializeSellPage() - Sell page is handled by src/pages/sell.js');
+  }
+}
 
 // ============================
 // Login page functions - MOVED TO src/pages/login.js
