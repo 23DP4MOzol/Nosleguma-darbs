@@ -2932,6 +2932,264 @@ html.dark .badge-inactive {
   color: #9ca3af !important;
 }
 
+/* =======================================================
+   LIGHT MODE - BUTTON & BADGE COLOR PRESERVATION
+   Same specificity fix as dark mode: the universal light-mode
+   button rule (html.light button) overrides class-based styles.
+   ======================================================= */
+
+html[data-theme="light"] .btn-primary,
+html.light .btn-primary {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="light"] .btn-primary:hover,
+html.light .btn-primary:hover {
+  background: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .btn-secondary,
+html.light .btn-secondary {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="light"] .btn-secondary:hover,
+html.light .btn-secondary:hover {
+  background: var(--border) !important;
+  border-color: var(--fg) !important;
+  color: var(--fg) !important;
+}
+
+html[data-theme="light"] .btn-success,
+html.light .btn-success {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #10b981 !important;
+}
+
+html[data-theme="light"] .btn-success:hover,
+html.light .btn-success:hover {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .btn-danger,
+html.light .btn-danger {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+html[data-theme="light"] .btn-danger:hover,
+html.light .btn-danger:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .btn-warning,
+html.light .btn-warning {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #f59e0b !important;
+}
+
+html[data-theme="light"] .btn-warning:hover,
+html.light .btn-warning:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .btn-info,
+html.light .btn-info {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+html[data-theme="light"] .btn-info:hover,
+html.light .btn-info:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .btn-sm,
+html.light .btn-sm {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="light"] .btn-sm:hover,
+html.light .btn-sm:hover {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+/* Tab buttons should stay transparent in light mode */
+html[data-theme="light"] .tab-btn,
+html.light .tab-btn {
+  background: transparent !important;
+  color: var(--muted) !important;
+  border-color: transparent !important;
+  border-bottom: 3px solid transparent;
+}
+
+html[data-theme="light"] .tab-btn:hover,
+html.light .tab-btn:hover {
+  color: var(--fg) !important;
+}
+
+html[data-theme="light"] .tab-btn.active,
+html.light .tab-btn.active {
+  color: var(--primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+/* Filter tabs light mode */
+html[data-theme="light"] .filter-tab,
+html.light .filter-tab {
+  background: transparent !important;
+  color: var(--muted) !important;
+}
+
+html[data-theme="light"] .filter-tab.active,
+html.light .filter-tab.active {
+  color: var(--primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+html[data-theme="light"] .filter-tab:hover,
+html.light .filter-tab:hover {
+  color: var(--fg) !important;
+}
+
+/* Logout button light mode */
+html[data-theme="light"] .btn-logout,
+html.light .btn-logout {
+  background: transparent !important;
+  color: var(--error) !important;
+  border-color: var(--error) !important;
+}
+
+html[data-theme="light"] .btn-logout:hover,
+html.light .btn-logout:hover {
+  background: var(--error) !important;
+  color: white !important;
+}
+
+/* Send button light mode */
+html[data-theme="light"] .btn-send,
+html.light .btn-send {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* Buy/Cart buttons light mode */
+html[data-theme="light"] .btn-buy-now,
+html.light .btn-buy-now {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="light"] .btn-add-cart,
+html.light .btn-add-cart {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+/* Quick view button light mode */
+html[data-theme="light"] .btn-quick-view,
+html.light .btn-quick-view {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: var(--fg) !important;
+}
+
+/* Badge light mode - preserve text colors against backgrounds */
+html[data-theme="light"] .badge-admin,
+html.light .badge-admin {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="light"] .badge-user,
+html.light .badge-user {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+
+html[data-theme="light"] .badge-seller,
+html.light .badge-seller {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+html[data-theme="light"] .badge-purchase,
+html.light .badge-purchase {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+html[data-theme="light"] .badge-sale,
+html.light .badge-sale {
+  background: #fed7aa !important;
+  color: #92400e !important;
+}
+
+html[data-theme="light"] .badge-topup,
+html.light .badge-topup {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+html[data-theme="light"] .badge-fee,
+html.light .badge-fee {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html[data-theme="light"] .badge-completed,
+html.light .badge-completed {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+html[data-theme="light"] .badge-pending,
+html.light .badge-pending {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+html[data-theme="light"] .badge-cancelled,
+html.light .badge-cancelled {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html[data-theme="light"] .badge-active,
+html.light .badge-active {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+html[data-theme="light"] .badge-inactive,
+html.light .badge-inactive {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
 
 /* =======================================================
    ORDERS PAGE STYLES
