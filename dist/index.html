@@ -4,11 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="page_title">Vendly - Home</title>
-  <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
+  <link rel="manifest" href="./assets/manifest-D_19pU2Q.webmanifest">
+  <meta name="theme-color" content="#0ea5a4">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/navbar-BPm_Vi4m.js"></script>
-  <script type="module" crossorigin src="./assets/main-Ny_a3mZ8.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/styles-C5EQzQ5q.css">
+  <script type="module" crossorigin src="./assets/main-EQVsCH43.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/styles-DK5J3eBH.css">
 </head>
 <body>
 
@@ -655,7 +656,61 @@
   }
 }
 </style>
-
+
+<!-- main.js imports navbar.js; avoid duplicate module script to prevent race conditions -->
+
+<!-- SITE FOOTER — placed at the very bottom of the page -->
+<footer class="site-footer">
+  <div class="footer-container">
+    <div class="footer-col">
+      <a href="index.html" class="footer-logo">VENDLY</a>
+      <p class="footer-desc" data-i18n="footer_desc">Buy and sell with confidence — local marketplace for unique items.</p>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer_pages">Pages</h4>
+      <ul>
+        <li><a href="index.html" data-i18n="footer_home">Home</a></li>
+        <li><a href="balance.html" data-i18n="footer_balance">Balance</a></li>
+        <li><a href="orders.html" data-i18n="footer_orders">Orders</a></li>
+        <li><a href="product.html" data-i18n="footer_product">Product</a></li>
+        <li><a href="sell.html" data-i18n="footer_sell">Sell</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer_community">Community</h4>
+      <ul>
+        <li><a href="chat.html" data-i18n="footer_chat">Chat</a></li>
+        <li><a href="admin.html" id="footerAdmin" style="display:none;" data-i18n="footer_admin">Admin</a></li>
+        <li><a href="register.html" data-i18n="footer_register">Register</a></li>
+        <li><a href="login.html" data-i18n="footer_login">Login</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4 data-i18n="footer_support">Support</h4>
+      <ul>
+        <li><a href="settings.html" data-i18n="footer_settings">Settings</a></li>
+        <li><a href="terms.html" data-i18n="footer_terms_en">Terms (EN)</a></li>
+        <li><a href="terms-lv.html" data-i18n="footer_terms_lv">Noteikumi (LV)</a></li>
+        <li><a href="resend-verification.html" data-i18n="footer_resend">Resend verification</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="footer-copy">© <span id="footerYear"></span> Vendly. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    <div class="footer-social">
+      <a href="#" aria-label="Twitter">Twitter</a>
+      <a href="#" aria-label="Facebook">Facebook</a>
+      <a href="#" aria-label="Instagram">Instagram</a>
+    </div>
+  </div>
+</footer>
+<script>
+  try { document.getElementById('footerYear').textContent = new Date().getFullYear(); } catch(e){}
+</script>
 
 </body>
 </html>

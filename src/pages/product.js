@@ -1,6 +1,6 @@
 import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from '../supabase.js';
 import { i18n } from '../i18n.js';
-import { showInfoModal } from '../ui/modal.js';
+import { showInfoModal, showConfirmModal } from '../ui/modal.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -401,8 +401,6 @@ function editProduct(productId) {
 }
 
 // Delete product
-import { showConfirmModal, showInfoModal } from '../ui/modal.js';
-
 async function deleteProduct(productId) {
   const confirmed = await showConfirmModal({ title: 'Delete Product', message: 'Are you sure you want to delete this product?', okText: 'Delete', cancelText: 'Cancel' });
   if (!confirmed) return;

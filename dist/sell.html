@@ -6,10 +6,9 @@
   <title data-i18n="sell">Vendly - Sell Item</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/sell-BjkCb0yY.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/navbar-BPm_Vi4m.js">
-  <link rel="modulepreload" crossorigin href="./assets/main-Ny_a3mZ8.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C5EQzQ5q.css">
+  <script type="module" crossorigin src="./assets/sell-D6d-pImW.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-EQVsCH43.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-DK5J3eBH.css">
 </head>
 <body>
 
@@ -179,9 +178,7 @@
           <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
             📤 List Product
           </button>
-          <button type="button" id="previewBtn" class="btn-secondary" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
-            👁️ Preview
-          </button>
+          <!-- Preview button removed (live preview updates automatically) -->
         </div>
       </form>
     </div>
@@ -199,12 +196,12 @@
         </div>
 
         <div class="preview-info" style="margin-top: 1.5rem; padding: 1rem; background: var(--secondary); border-radius: 8px; border-left: 4px solid var(--primary);">
-          <h4 style="margin: 0 0 0.5rem 0; color: var(--fg); font-size: 0.875rem; font-weight: 600;">💡 Tips for Better Listings</h4>
+          <h4 style="margin: 0 0 0.5rem 0; color: var(--fg); font-size: 0.875rem; font-weight: 600;" data-i18n="sell_tips_title">💡 Tips for Better Listings</h4>
           <ul style="margin: 0; padding-left: 1rem; color: var(--muted); font-size: 0.875rem; line-height: 1.5;">
-            <li>Use high-quality photos</li>
-            <li>Write detailed descriptions</li>
-            <li>Set competitive prices</li>
-            <li>Choose accurate condition</li>
+            <li data-i18n="sell_tip_photos">Use high-quality photos</li>
+            <li data-i18n="sell_tip_description">Write detailed descriptions</li>
+            <li data-i18n="sell_tip_pricing">Set competitive prices</li>
+            <li data-i18n="sell_tip_condition">Choose accurate condition</li>
           </ul>
         </div>
       </div>
@@ -253,9 +250,8 @@
   background: #e5e7eb;
 }
 </style>
-
 
-<!-- Import navbar functionality -->
+<!-- Load main runtime first, then page script (main.js imports navbar.js) -->
 
 </body>
 </html>

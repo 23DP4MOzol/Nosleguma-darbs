@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Vendly</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
-  <script type="module" crossorigin src="./assets/admin-BRyRVFWY.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/navbar-BPm_Vi4m.js">
-  <link rel="modulepreload" crossorigin href="./assets/main-Ny_a3mZ8.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C5EQzQ5q.css">
+  <script type="module" crossorigin src="./assets/admin-C6Z65pWY.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-EQVsCH43.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-DK5J3eBH.css">
 </head>
 <body>
 
@@ -197,43 +196,72 @@
     <!-- Transactions Section -->
     <section id="section-transactions" class="admin-section" style="display:none;">
       <div class="admin-header">
-        <h2>💳 Transaction History</h2>
+        <h2>💳 All User Transactions</h2>
+        <p style="color:var(--muted);margin-top:0.5rem;">Monitor all deposits, withdrawals, purchases, sales, and fees</p>
       </div>
       
-      <div class="admin-filters">
-        <input type="date" id="tx-date-from" class="admin-date" placeholder="From Date">
-        <input type="date" id="tx-date-to" class="admin-date" placeholder="To Date">
-        <select id="tx-type" class="admin-select">
-          <option value="all">All Types</option>
-          <option value="topup">Top Up</option>
-          <option value="purchase">Purchase</option>
-          <option value="sale">Sale</option>
-          <option value="fee">Fee</option>
-          <option value="withdrawal">Withdrawal</option>
-        </select>
-        <select id="tx-amount" class="admin-select">
-          <option value="all">All Amounts</option>
-          <option value="profit">Profit (+)</option>
-          <option value="loss">Loss (-)</option>
-        </select>
-        <button class="btn btn-primary" onclick="loadTransactions()">Filter</button>
-        <button class="btn btn-secondary" onclick="exportTransactions()">Export</button>
-        <button class="btn btn-danger" onclick="clearTransactionHistory()">Clear History</button>
+      <!-- Transaction Statistics -->
+      <div id="transactions-stats-container" style="margin-bottom:2rem;"></div>
+      
+      <!-- Filters -->
+      <div class="admin-filters-enhanced" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem;padding:1.5rem;background:var(--secondary);border-radius:var(--radius);border:1px solid var(--border);">
+        <div>
+          <label style="display:block;margin-bottom:0.5rem;font-weight:500;font-size:0.875rem;">📅 From Date</label>
+          <input type="date" id="tx-date-from" class="admin-date" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--fg);">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5rem;font-weight:500;font-size:0.875rem;">📅 To Date</label>
+          <input type="date" id="tx-date-to" class="admin-date" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--fg);">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5rem;font-weight:500;font-size:0.875rem;">💳 Type</label>
+          <select id="tx-type" class="admin-select" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--fg);">
+            <option value="all">All Types</option>
+            <option value="deposit">📥 Deposit</option>
+            <option value="withdraw">📤 Withdrawal</option>
+            <option value="topup">➕ Top-up</option>
+            <option value="purchase">🛒 Purchase</option>
+            <option value="sale">💵 Sale</option>
+            <option value="fee">💸 Fee</option>
+            <option value="refund">↩️ Refund</option>
+            <option value="transfer">↔️ Transfer</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:0.5rem;font-weight:500;font-size:0.875rem;">💰 Amount</label>
+          <select id="tx-amount" class="admin-select" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--fg);">
+            <option value="all">All Amounts</option>
+            <option value="profit">📈 Income (+)</option>
+            <option value="loss">📉 Expenses (-)</option>
+          </select>
+        </div>
       </div>
       
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="loadTransactions()" style="cursor:pointer;">🔍 Apply Filters</button>
+        <button class="btn btn-secondary" onclick="exportTransactions()" style="cursor:pointer;">📥 Export CSV</button>
+        <button class="btn btn-danger" onclick="clearTransactionHistory()" style="cursor:pointer;">🗑️ Clear History</button>
+      </div>
+      
+      <!-- Transactions Table -->
       <div class="admin-card">
-        <table class="admin-table">
-          <thead>
+        <table class="admin-table" style="width:100%;border-collapse:collapse;">
+          <thead style="background:var(--secondary);">
             <tr>
-              <th>Date</th>
-              <th>User</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th>Status</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">📅 Date</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">👤 User</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">💳 Type</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">📝 Description</th>
+              <th style="padding:0.75rem;text-align:right;border-bottom:2px solid var(--border);">💰 Amount</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">✓ Status</th>
+              <th style="padding:0.75rem;text-align:right;border-bottom:2px solid var(--border);">💳 Balance</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">🔧 Action</th>
             </tr>
           </thead>
-          <tbody id="transactions-table-body"><tr><td colspan="7">Loading...</td></tr></tbody>
+          <tbody id="transactions-table-body">
+            <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted);">⏳ Loading transactions...</td></tr>
+          </tbody>
         </table>
       </div>
     </section>
@@ -285,10 +313,140 @@
     <!-- Settings Section -->
     <section id="section-settings" class="admin-section" style="display:none;">
       <div class="admin-header">
-        <h2>⚙️ Site Settings</h2>
+        <h2>⚙️ Manual Admin Actions</h2>
+        <p style="color:var(--muted);margin-top:0.5rem;">⚠️ Use these tools carefully - they directly modify user data</p>
       </div>
-      <div class="admin-card" id="site-settings-form">
-        <p>Loading settings...</p>
+      
+      <!-- Balance Adjustments -->
+      <div class="admin-card" style="margin-bottom:2rem;">
+        <h3>💰 Balance Management</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Adjust user balances, add funds, or subtract balance</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-primary" onclick="adjustUserBalance()" style="cursor:pointer;padding:1rem;">
+            💳 Adjust User Balance
+          </button>
+          <button class="btn btn-secondary" onclick="bulkAdjustBalances()" style="cursor:pointer;padding:1rem;">
+            👥 Bulk Adjust All Users
+          </button>
+          <button class="btn btn-info" onclick="recalculateUserBalance()" style="cursor:pointer;padding:1rem;">
+            🔄 Recalculate Balance
+          </button>
+        </div>
+      </div>
+      
+      <!-- Transaction Management -->
+      <div class="admin-card" style="margin-bottom:2rem;">
+        <h3>💳 Transaction Management</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Create manual transactions, deposits, withdrawals, and refunds</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-success" onclick="createManualTransaction()" style="cursor:pointer;padding:1rem;">
+            ➕ Create Transaction
+          </button>
+        </div>
+      </div>
+      
+      <!-- User Management -->
+      <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #3b82f6;">
+        <h3>👥 User Management</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Manage user roles, delete users, and admin control</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-primary" onclick="deleteSpecificUser()" style="cursor:pointer;padding:1rem;">
+            🗑️ Delete User
+          </button>
+          <button class="btn btn-success" onclick="promoteUserToAdmin()" style="cursor:pointer;padding:1rem;">
+            ⬆️ Promote to Admin
+          </button>
+          <button class="btn btn-warning" onclick="demoteAdminUser()" style="cursor:pointer;padding:1rem;">
+            ⬇️ Demote Admin
+          </button>
+          <button class="btn btn-danger" onclick="deleteAdminUser()" style="cursor:pointer;padding:1rem;">
+            ❌ Delete Admin
+          </button>
+        </div>
+      </div>
+      
+      <!-- Statistics & Revenue Reset -->
+      <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #f59e0b;">
+        <h3>📊 Statistics & Revenue</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Reset dashboard statistics and revenue tracking</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-warning" onclick="resetDashboardStats()" style="cursor:pointer;padding:1rem;">
+            📈 Reset Dashboard Stats
+          </button>
+          <button class="btn btn-warning" onclick="resetTotalRevenue()" style="cursor:pointer;padding:1rem;">
+            💰 Reset Total Revenue
+          </button>
+        </div>
+      </div>
+      
+      <!-- Complete Data Reset -->
+      <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #ef4444;">
+        <h3>🗑️ Reset Statistics</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Reset transaction history and audit logs</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-danger" onclick="resetAllStatistics()" style="cursor:pointer;padding:1rem;">
+            🗑️ Reset All Transactions
+          </button>
+          <button class="btn btn-danger" onclick="resetUserStatistics()" style="cursor:pointer;padding:1rem;">
+            ⚠️ Reset User Transactions
+          </button>
+        </div>
+      </div>
+      
+      <!-- DANGER ZONE -->
+      <div class="admin-card" style="margin-bottom:2rem;border:2px solid #ef4444;border-left:4px solid #ef4444;">
+        <h3 style="color:#ef4444;">🔥 DANGER ZONE - Complete Data Wipe</h3>
+        <p style="color:#ef4444;margin-bottom:1.5rem;font-weight:500;">⚠️⚠️⚠️ WARNING: These actions are COMPLETELY IRREVERSIBLE!</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-danger" onclick="deleteAllProductsAndData()" style="cursor:pointer;padding:1rem;background:#dc2626;border-color:#dc2626;">
+            🔥 DELETE EVERYTHING
+          </button>
+        </div>
+      </div>
+      
+      <!-- System Tools -->
+      <div class="admin-card" style="margin-bottom:2rem;">
+        <h3>🔧 System Tools</h3>
+        <p style="color:var(--muted);margin-bottom:1.5rem;">Monitor and maintain system health</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+          <button class="btn btn-info" onclick="getSystemHealth()" style="cursor:pointer;padding:1rem;">
+            💻 System Health
+          </button>
+        </div>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="admin-card">
+        <h3>📖 Quick Reference</h3>
+        <div style="background:var(--secondary);padding:1.5rem;border-radius:var(--radius);color:var(--muted);font-size:0.9rem;line-height:1.8;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;">
+            <div>
+              <p><strong>💰 Balance Management:</strong></p>
+              <p>• Adjust: Add/subtract balance</p>
+              <p>• Bulk: Apply to all users</p>
+              <p>• Recalculate: Fix sync issues</p>
+            </div>
+            <div>
+              <p><strong>👥 User Management:</strong></p>
+              <p>• Delete User: Remove with data</p>
+              <p>• Promote: Make admin</p>
+              <p>• Demote: Remove admin status</p>
+            </div>
+            <div>
+              <p><strong>📊 Reset Options:</strong></p>
+              <p>• Dashboard: All stats</p>
+              <p>• Revenue: Zero out income</p>
+              <p>• Transactions: Clear history</p>
+            </div>
+            <div>
+              <p><strong>⚠️ DANGER:</strong></p>
+              <p>• Delete Everything: Full wipe</p>
+              <p>• Requires triple confirmation</p>
+              <p>• Type YES to proceed</p>
+            </div>
+          </div>
+          <p style="margin-top:1.5rem;color:#ef4444;"><strong>Always confirm twice before irreversible actions!</strong></p>
+        </div>
       </div>
     </section>
     
@@ -301,6 +459,23 @@
       <button class="modal-close" id="userDetailModalClose">×</button>
       <div class="modal-body" id="userDetailContent">
         <!-- Content loaded dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm / Prompt Modal -->
+  <div id="confirmModal" class="confirm-modal" style="display:none;">
+    <div class="confirm-overlay" id="confirmModalOverlay"></div>
+    <div class="confirm-content">
+      <button class="confirm-close" id="confirmModalClose">×</button>
+      <div class="confirm-body">
+        <h3 id="confirmTitle">Confirm</h3>
+        <div id="confirmMessage" style="margin:0.5rem 0;color:var(--muted);"></div>
+        <input id="confirmInput" type="text" placeholder="" style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:6px;margin-top:0.75rem;display:none;" />
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+          <button class="btn btn-secondary" id="confirmCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="confirmOkBtn">Confirm</button>
+        </div>
       </div>
     </div>
   </div>
@@ -645,6 +820,16 @@
       display: block;
       margin-bottom: 0.5rem;
     }
+
+    /* Confirm modal styles */
+    .confirm-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1200; }
+    .confirm-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
+    .confirm-content { position: relative; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; width: 520px; max-width: calc(100% - 40px); padding: 1rem 1.25rem; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1201; }
+    .confirm-close { position: absolute; right: 8px; top: 6px; background: none; border: none; font-size: 1.25rem; cursor: pointer; }
+    .confirm-body h3 { margin: 0 0 0.25rem 0; }
+    .confirm-body p, .confirm-body div { margin: 0; }
+    #confirmInput { box-sizing: border-box; }
+    
     
     .settings-section input[type="number"] {
       width: 100px;
@@ -842,7 +1027,8 @@
       }
     }
   </style>
-
+
+  <!-- Load main runtime first, then page script (main.js imports navbar.js) -->
 
 </body>
 </html>
