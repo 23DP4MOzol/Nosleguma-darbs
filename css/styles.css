@@ -680,6 +680,12 @@ html.dark .site-footer {
 /* set current year script hook */
 .site-footer #footerYear { font-weight:700; color:var(--fg); }
 
+/* Pin footer to the very bottom of the viewport when content is short */
+.site-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
 .btn-sell {
   display: flex;
   align-items: center;

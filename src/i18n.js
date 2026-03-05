@@ -448,7 +448,27 @@ export const i18n = {
         checkout_title: "🛒 Checkout",
         checkout_meetup_location: "e.g., Starbucks, Brīvības iela 372, Rīga",
         checkout_notes: "Any special instructions...",
-        checkout_payment_btn: "Proceed to Payment"
+        checkout_payment_btn: "Proceed to Payment",
+
+        // Footer
+        footer_desc: "Buy and sell with confidence — local marketplace for unique items.",
+        footer_pages: "Pages",
+        footer_home: "Home",
+        footer_balance: "Balance",
+        footer_orders: "Orders",
+        footer_product: "Product",
+        footer_sell: "Sell",
+        footer_community: "Community",
+        footer_chat: "Chat",
+        footer_admin: "Admin",
+        footer_register: "Register",
+        footer_login: "Login",
+        footer_support: "Support",
+        footer_settings: "Settings",
+        footer_terms_en: "Terms (EN)",
+        footer_terms_lv: "Noteikumi (LV)",
+        footer_resend: "Resend verification",
+        footer_rights: "All rights reserved."
       },
       lv: {
         welcome: "Laipni lūdzam",
@@ -890,7 +910,27 @@ export const i18n = {
         checkout_title: "🛒 Apmaksa",
         checkout_meetup_location: "piemēram, Starbucks, Brīvības iela 372, Rīga",
         checkout_notes: "Jebkādi īpaši norādījumi...",
-        checkout_payment_btn: "Turpināt uz Maksājumu"
+        checkout_payment_btn: "Turpināt uz Maksājumu",
+
+        // Footer
+        footer_desc: "Pērc un pārdod droši — vietējais tirgus unikāliem priekšmetiem.",
+        footer_pages: "Lapas",
+        footer_home: "Sākums",
+        footer_balance: "Bilance",
+        footer_orders: "Pasūtījumi",
+        footer_product: "Produkts",
+        footer_sell: "Pārdot",
+        footer_community: "Kopiena",
+        footer_chat: "Čats",
+        footer_admin: "Administratora panelis",
+        footer_register: "Reģistrēties",
+        footer_login: "Ieiet",
+        footer_support: "Atbalsts",
+        footer_settings: "Iestatījumi",
+        footer_terms_en: "Noteikumi (EN)",
+        footer_terms_lv: "Noteikumi (LV)",
+        footer_resend: "Atkārtoti nosūtīt verifikāciju",
+        footer_rights: "Visas tiesības aizsargātas."
       }
     },
   
