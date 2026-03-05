@@ -234,9 +234,9 @@ function displayProducts(products) {
         </div>
         <h3 class="product-name">${product.name}</h3>
         <div class="product-meta" style="display:flex; gap:1rem; align-items:center; margin-bottom:0.25rem;">
-          <span style="font-size:0.8rem; color:var(--muted);">\u2764\ufe0f ${likesCount}</span>
-          <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udc41 ${viewsCount}</span>
-          <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${product.stock || 0}</span>
+          <span style="font-size:0.8rem; color:var(--muted);" data-likes>❤️ ${likesCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);">👁️ ${viewsCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);">📦 ${product.stock || 0}</span>
         </div>
         ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">Sold on ${soldDate}</div>` : ''}
         <p class="product-description">${product.description || 'No description available.'}</p>
@@ -267,6 +267,17 @@ function displayProducts(products) {
 
 // Attach event listeners to product cards
 function attachProductEventListeners() {
+  // Product card click - navigate to product listing page
+  document.querySelectorAll('.product-card-modern').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const productId = card.dataset.productId;
+      // Only navigate if clicking on the card itself, not buttons
+      if (!e.target.closest('button')) {
+        window.location.href = `product.html?id=${productId}`;
+      }
+    });
+  });
+
   // Favorite buttons
   document.querySelectorAll('.product-like-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -279,6 +290,7 @@ function attachProductEventListeners() {
   // Quick view buttons
   document.querySelectorAll('.btn-quick-view').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const productId = btn.dataset.productId;
       showProductModal(productId);
     });
@@ -287,6 +299,7 @@ function attachProductEventListeners() {
   // Buy/Add to cart buttons
   document.querySelectorAll('.btn-buy-now, .btn-add-cart').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const productId = btn.dataset.productId;
       const action = btn.classList.contains('btn-buy-now') ? 'buy' : 'cart';
       handleProductAction(productId, action);
@@ -296,6 +309,7 @@ function attachProductEventListeners() {
   // Edit/Delete buttons (for own products)
   document.querySelectorAll('.btn-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const productId = btn.dataset.productId;
       editProduct(productId);
     });
@@ -303,6 +317,7 @@ function attachProductEventListeners() {
 
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const productId = btn.dataset.productId;
       deleteProduct(productId);
     });
@@ -329,16 +344,51 @@ async function toggleFavorite(productId) {
       userFavorites.add(productId);
     }
 
-    // Update UI
+    // Update UI immediately
     const btn = document.querySelector(`.product-like-btn[data-product-id="${productId}"]`);
     if (btn) {
       btn.classList.toggle('liked', !isFavorited);
       btn.textContent = !isFavorited ? '❤️' : '🤍';
     }
 
+    // Update likes count display
+    updateProductLikesCount(productId);
+
   } catch (error) {
     console.error('Error toggling favorite:', error);
     await showInfoModal('Favorites functionality is not available yet. Please contact support.', 'Error');
+  }
+}
+
+// Update product likes count in real-time
+async function updateProductLikesCount(productId) {
+  try {
+    const { count } = await supabase
+      .from('favorites')
+      .select('*', { count: 'exact', head: true })
+      .eq('product_id', productId);
+    
+    if (count !== null) {
+      // Update the likes count in the product card
+      const card = document.querySelector(`[data-product-id="${productId}"]`);
+      if (card) {
+        const likesSpan = card.querySelector('[data-likes]');
+        if (likesSpan) {
+          likesSpan.textContent = `❤️ ${count}`;
+        }
+      }
+      
+      // Update product in allProducts array
+      const productIndex = allProducts.findIndex(p => p.id === productId);
+      if (productIndex !== -1) {
+        allProducts[productIndex].likes_count = count;
+      }
+      
+      // Update stats
+      updateRevenueStats();
+    }
+  } catch (error) {
+    console.error('Error updating likes count:', error);
   }
 }
 
@@ -505,6 +555,32 @@ document.getElementById('profileModalOverlay')?.addEventListener('click', () => 
 });
 
 // ============================
+// Real-time Subscription to Favorites
+// ============================
+function setupRealtimeListeners() {
+  if (!currentUser) return;
+  
+  // Subscribe to changes on favorites table
+  const subscription = supabase
+    .channel(`favorites-${currentUser.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'favorites'
+      },
+      (payload) => {
+        // Reload products to get updated likes counts
+        loadProducts();
+      }
+    )
+    .subscribe();
+
+  return subscription;
+}
+
+// ============================
 // Initialize Page (after auth check)
 // ============================
 async function initializePage() {
@@ -513,6 +589,8 @@ async function initializePage() {
   
   loadUser().then(() => {
     loadProducts();
+    // Setup real-time listeners for favorites
+    setupRealtimeListeners();
   });
 }
 
