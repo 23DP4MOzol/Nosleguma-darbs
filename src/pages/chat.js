@@ -72,6 +72,12 @@ async function loadUser() {
       }
     } catch(e){ /* ignore */ }
     await loadConversations();
+
+    // On mobile: show sidebar (contact list) by default
+    if (window.innerWidth <= 768) {
+      const sidebar = document.querySelector('.chat-sidebar');
+      if (sidebar) sidebar.classList.add('mobile-visible');
+    }
   } else {
     loginBtn.style.display = 'flex';
     logoutBtn.style.display = 'none';
@@ -172,6 +178,15 @@ async function openConversation(conv) {
     messageSub = null;
   }
   activeConversation = conv;
+
+  // On mobile: hide sidebar, show back button
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.chat-sidebar');
+    const backBtn = document.getElementById('chatBackBtn');
+    if (sidebar) sidebar.classList.remove('mobile-visible');
+    if (backBtn) backBtn.style.display = '';
+  }
+
   const other = conv.buyer?.id === currentUser.id ? conv.seller : conv.buyer;
   document.getElementById('activeUserAvatar').innerText = (other?.username||'U').charAt(0).toUpperCase();
   document.getElementById('activeUserName').innerText = other?.username || 'Unknown';

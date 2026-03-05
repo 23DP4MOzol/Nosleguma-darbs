@@ -117,16 +117,16 @@
   </div>
 
   <!-- Advanced Filters (Hidden by default) -->
-  <div id="advancedFiltersContainer" class="advanced-filters" style="display: none; background: var(--card-bg); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); animation: slideDown 0.3s ease-out;">
+  <div id="advancedFiltersContainer" class="advanced-filters" style="display: none; animation: slideDown 0.3s ease-out;">
     <!-- Filter Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="filter-header">
       <div>
         <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--fg); margin-bottom: 0.25rem;">
           <span>🔎 </span><span data-i18n="advanced_filters">Advanced Filters</span>
         </h3>
         <p style="font-size: 0.875rem; color: var(--muted);" data-i18n="advanced_filters_subtitle">Refine your search to find exactly what you need</p>
       </div>
-      <div style="display: flex; gap: 0.75rem;">
+      <div class="filter-actions">
         <button id="applyFilters" style="background: var(--gradient-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition); display: flex; align-items: center; gap: 0.5rem;">
           <span>🔍</span>
           <span data-i18n="btn_apply_filters">Apply Filters</span>
@@ -139,7 +139,7 @@
     </div>
 
     <!-- Filters Grid -->
-    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+    <div class="filters-grid">
       <!-- Search Filter -->
       <div class="filter-group">
         <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
