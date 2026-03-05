@@ -1405,6 +1405,46 @@ html.light .btn-hero-secondary {
   border-left-color: var(--primary);
 }
 
+/* Delete button on chat contacts */
+.chat-list-item {
+  position: relative;
+  align-items: center;
+}
+
+.chat-delete-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none !important;
+  border: none !important;
+  color: var(--muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+  line-height: 1;
+  z-index: 2;
+}
+
+.chat-list-item:hover .chat-delete-btn {
+  opacity: 1;
+}
+
+.chat-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Ensure preview text doesn't overlap delete button */
+.chat-preview {
+  min-width: 0;
+  flex: 1;
+  padding-right: 1.5rem;
+}
+
 .chat-avatar {
   position: relative;
   flex-shrink: 0;
@@ -4384,6 +4424,11 @@ html[data-theme="dark"] .modal-close:hover {
 
   .chat-modern {
     position: relative;
+  }
+
+  /* Always show delete button on mobile (no hover) */
+  .chat-delete-btn {
+    opacity: 0.6;
   }
 }
 

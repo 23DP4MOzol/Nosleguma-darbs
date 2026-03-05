@@ -141,6 +141,13 @@ async function loadConversations() {
     renderConversations(data || []);
     knownConversationIds = new Set((data || []).map(d => d.id));
     await ensureGlobalMessageListener();
+    // Re-highlight active conversation in the sidebar
+    if (activeConversation) {
+      const items = chatList.querySelectorAll('.chat-list-item');
+      items.forEach(el => {
+        el.classList.toggle('active', el.dataset.convId === activeConversation.id);
+      });
+    }
   } catch (err) {
     console.error('Failed to load conversations', err);
     chatList.innerHTML = '<div style="padding:1rem;color:var(--muted)">Failed to load conversations.</div>';
@@ -159,16 +166,69 @@ function renderConversations(convs) {
     const lastText = conv.last_message || (conv.product?.name ? `Regarding: ${conv.product.name}` : 'New conversation');
     const item = document.createElement('div');
     item.className = 'chat-list-item';
+    item.dataset.convId = conv.id;
     item.innerHTML = `
       <div class="chat-avatar avatar-circle-small">${(other?.username||'U').charAt(0).toUpperCase()}</div>
       <div class="chat-preview">
-        <div class="chat-name">${other?.username || 'Unknown'}</div>
+        <div class="chat-name">${escapeHtml(other?.username || 'Unknown')}</div>
         <div class="chat-last-message">${escapeHtml(lastText)} <span class="chat-time">${lastMsgTime}</span></div>
       </div>
+      <button class="chat-delete-btn" title="Remove conversation" aria-label="Remove conversation">&times;</button>
     `;
-    item.addEventListener('click', () => openConversation(conv));
+    // Click on the contact to open conversation
+    item.addEventListener('click', (e) => {
+      // Don't open conversation if clicking delete button
+      if (e.target.closest('.chat-delete-btn')) return;
+      // Mark active
+      chatList.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      openConversation(conv);
+    });
+    // Delete button handler
+    const deleteBtn = item.querySelector('.chat-delete-btn');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const confirmed = confirm(`Remove conversation with ${other?.username || 'this user'}? This will delete all messages.`);
+      if (!confirmed) return;
+      await deleteConversation(conv.id);
+    });
     chatList.appendChild(item);
   });
+}
+
+// Delete a conversation and all its messages
+async function deleteConversation(convId) {
+  try {
+    // First delete all messages in this conversation
+    const { error: msgErr } = await supabase
+      .from('messages')
+      .delete()
+      .eq('conversation_id', convId);
+    if (msgErr) throw msgErr;
+
+    // Then delete the conversation itself
+    const { error: convErr } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', convId);
+    if (convErr) throw convErr;
+
+    // If this was the active conversation, clear the chat area
+    if (activeConversation && activeConversation.id === convId) {
+      activeConversation = null;
+      knownMessageIds.clear();
+      chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">Select a conversation to start chatting.</div>';
+      document.getElementById('activeUserAvatar').innerText = '';
+      document.getElementById('activeUserName').innerText = '';
+      document.getElementById('activeUserStatus').innerText = '';
+    }
+
+    // Reload conversation list
+    await loadConversations();
+  } catch (err) {
+    console.error('Failed to delete conversation', err);
+    await showInfoModal('Failed to remove conversation: ' + (err.message || err), 'Error');
+  }
 }
 
 async function openConversation(conv) {
@@ -364,7 +424,12 @@ async function handleQueryParams() {
       const conv = await getOrCreateConversation(productId, currentUser.id, recipientId);
       if (conv) {
         await loadConversations();
-        openConversation(conv);
+        // Highlight the correct item in the sidebar
+        const items = chatList.querySelectorAll('.chat-list-item');
+        items.forEach(el => {
+          el.classList.toggle('active', el.dataset.convId === conv.id);
+        });
+        await openConversation(conv);
         // Clear URL params after opening chat
         window.history.replaceState(null, '', window.location.pathname);
       }
@@ -402,7 +467,12 @@ if (newChatBtn && !newChatBtn._hasHandler) {
       const conv = await getOrCreateConversation(null, currentUser.id, recipientId);
       if (conv) {
         await loadConversations();
-        openConversation(conv);
+        // Highlight the correct item in the sidebar
+        const items = chatList.querySelectorAll('.chat-list-item');
+        items.forEach(el => {
+          el.classList.toggle('active', el.dataset.convId === conv.id);
+        });
+        await openConversation(conv);
       }
     } catch (err) {
       console.error('Failed to create/open chat', err);

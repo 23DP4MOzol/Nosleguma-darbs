@@ -1190,29 +1190,35 @@ export async function getOrCreateConversation(productId, currentUserId, otherUse
   try {
     const selectFields = '*, product:products(id,name), buyer:users!buyer_id(id,username), seller:users!seller_id(id,username)';
 
-    // Find existing conversation between these two users (either direction)
-    let query;
-    if (productId) {
-      query = supabase
-        .from('conversations')
-        .select(selectFields)
-        .eq('product_id', productId)
-        .or(`and(buyer_id.eq.${currentUserId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${currentUserId})`)
-        .limit(1)
-        .maybeSingle();
-    } else {
-      query = supabase
-        .from('conversations')
-        .select(selectFields)
-        .is('product_id', null)
-        .or(`and(buyer_id.eq.${currentUserId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${currentUserId})`)
-        .limit(1)
-        .maybeSingle();
-    }
+    // First: try to find ANY existing conversation between these two users (regardless of product).
+    // This avoids creating duplicate conversations per-product.
+    const { data: existing, error: fetchError } = await supabase
+      .from('conversations')
+      .select(selectFields)
+      .or(`and(buyer_id.eq.${currentUserId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${currentUserId})`)
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
 
-    const { data: existing, error: fetchError } = await query;
     if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-    if (existing) return existing;
+
+    if (existing) {
+      // If we have a product context and the existing conversation doesn't, update it
+      if (productId && !existing.product_id) {
+        await supabase
+          .from('conversations')
+          .update({ product_id: productId, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        // Re-fetch with updated product join
+        const { data: updated } = await supabase
+          .from('conversations')
+          .select(selectFields)
+          .eq('id', existing.id)
+          .single();
+        return updated || existing;
+      }
+      return existing;
+    }
 
     // Create new conversation
     const insertPayload = {
