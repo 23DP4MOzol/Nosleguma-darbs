@@ -90,6 +90,66 @@
   <div class="section-header">
     <div>
       <h2 class="section-title" data-i18n="popularProducts">Popular Products</h2>
+
+      <!-- SITE FOOTER -->
+      <footer class="site-footer">
+        <div class="footer-container">
+          <div class="footer-col">
+            <a href="index.html" class="footer-logo">VENDLY</a>
+            <p class="footer-desc">Buy and sell with confidence — local marketplace for unique items.</p>
+          </div>
+
+          <div class="footer-col">
+            <h4>Pages</h4>
+            <ul>
+              <li><a href="index.html">Home</a></li>
+              <li><a href="balance.html">Balance</a></li>
+              <li><a href="orders.html">Orders</a></li>
+              <li><a href="product.html">Product</a></li>
+              <li><a href="sell.html">Sell</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Community</h4>
+            <ul>
+              <li><a href="chat.html">Chat</a></li>
+              <li><a href="admin.html">Admin</a></li>
+              <li><a href="register.html">Register</a></li>
+              <li><a href="login.html">Login</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Support</h4>
+            <ul>
+              <li><a href="settings.html">Settings</a></li>
+              <li><a href="terms.html">Terms (EN)</a></li>
+              <li><a href="terms-lv.html">Noteikumi (LV)</a></li>
+              <li><a href="resend-verification.html">Resend verification</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <div class="footer-copy">© <span id="footerYear"></span> Vendly. All rights reserved.</div>
+          <div class="footer-social">
+            <a href="#" aria-label="Twitter">Twitter</a>
+            <a href="#" aria-label="Facebook">Facebook</a>
+            <a href="#" aria-label="Instagram">Instagram</a>
+          </div>
+        </div>
+        </footer>
+  
+        <script>
+          // set footer year
+          try { document.getElementById('footerYear').textContent = new Date().getFullYear(); } catch(e){}
+        </script>
+
+        <!-- Closing tags for body and html -->
+        </body>
+        </html>
+
       <p class="section-subtitle" data-i18n="topTrending">Top trending items on the marketplace</p>
     </div>
     <div class="filter-tabs">

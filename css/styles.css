@@ -618,6 +618,62 @@ html[data-theme="dark"] .balance-badge {
   transform: translateY(-2px);
 }
 
+/* ==========================
+   SITE FOOTER
+   ==========================
+*/
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--muted);
+  padding: 3rem 1rem 2rem;
+}
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+.footer-col h4 {
+  color: var(--fg);
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+.footer-logo {
+  display: inline-block;
+  font-weight: 900;
+  color: var(--fg);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+.footer-desc { color: var(--muted); font-size: 0.95rem; margin-top: 0.25rem; }
+.site-footer ul { list-style: none; padding: 0; margin: 0; }
+.site-footer ul li { margin: 0.35rem 0; }
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--primary); text-decoration: underline; }
+.footer-bottom { max-width: 1200px; margin: 1.75rem auto 0; display:flex; justify-content:space-between; gap:1rem; align-items:center; padding-top:1rem; border-top:1px solid var(--border); }
+.footer-copy { color: var(--muted); font-size:0.9rem; }
+.footer-social a { margin-left: 0.75rem; color: var(--muted); font-weight:600; text-decoration:none; }
+
+/* Dark-mode footer tweaks */
+html[data-theme="dark"] .site-footer,
+html.dark .site-footer {
+  background: var(--secondary);
+  color: var(--muted);
+}
+
+/* Ensure hero footer spacing on small screens */
+@media (max-width: 640px) {
+  .footer-bottom { flex-direction: column; align-items:flex-start; }
+}
+
+/* set current year script hook */
+.site-footer #footerYear { font-weight:700; color:var(--fg); }
+
 .btn-sell {
   display: flex;
   align-items: center;
@@ -833,29 +889,33 @@ html[data-theme="dark"] .balance-badge {
   height: 40px;
   background: rgba(255, 255, 255, 0.3);
 }
-
-/* Light-mode overrides so hero stats/buttons are readable on bright backgrounds */
-html[data-theme="light"] .stat-value,
-html.light .stat-value {
-  color: var(--fg);
-}
-
-html[data-theme="light"] .stat-label,
-html.light .stat-label {
+/* Light-mode overrides for non-hero areas so contrast is improved
+   but keep hero section styles (white text) intact on the gradient */
+html[data-theme="light"] .main-container .stat-label,
+html.light .main-container .stat-label {
   color: var(--muted);
 }
 
-html[data-theme="light"] .stat-divider,
-html.light .stat-divider {
+html[data-theme="light"] .main-container .stat-divider,
+html.light .main-container .stat-divider {
   background: var(--border);
 }
 
 html[data-theme="light"] .hero-badge,
 html.light .hero-badge {
-  color: var(--fg);
-  background: rgba(15, 23, 42, 0.06);
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
 }
 
+/* Keep hero's secondary button readable on the dark gradient */
+html[data-theme="light"] .hero-modern .btn-hero-secondary,
+html.light .hero-modern .btn-hero-secondary {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+}
+
+/* For other (non-hero) contexts, make secondary hero-like buttons high-contrast */
 html[data-theme="light"] .btn-hero-secondary,
 html.light .btn-hero-secondary {
   color: var(--fg);
