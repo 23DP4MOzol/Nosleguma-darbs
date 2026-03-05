@@ -196,6 +196,16 @@ export async function updateBalance(userId, newBalance) {
       .eq('id', userId);
     
     if (error) throw error;
+
+    // Sync local/session caches so UI (navbar) reflects new balance immediately
+    try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('vendly_balance_cache') || '{}');
+      cached.balance = newBalance;
+      if (!cached.userId) cached.userId = userId;
+      sessionStorage.setItem('vendly_balance_cache', JSON.stringify(cached));
+    } catch (e) {}
+
     return true;
   } catch (error) {
     console.error('Error updating balance:', error);
@@ -235,7 +245,7 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
       .insert({
         user_id: userId,
         amount: parseFloat(amount),
-        transaction_type: 'topup',
+        transaction_type: 'deposit',
         description,
         created_at: new Date().toISOString()
       });
@@ -467,13 +477,18 @@ export async function listProduct(productData, userId) {
     await updateBalance(userId, newBalance);
 
     // Record listing fee transaction for user
-    await supabase.from('user_transactions').insert({
+    const { error: txError } = await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -listingFee,
-      transaction_type: 'fee',
+      transaction_type: 'withdrawal',
       description: `Listing fee for ${productData.name}`,
       created_at: new Date().toISOString()
     });
+    if (txError) console.warn('Failed to record listing fee transaction:', txError);
+
+    // Sync local/session caches so UI reflects new balance
+    try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
+    try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ userId, balance: newBalance, role: 'user' })); } catch (e) {}
 
     // Credit listing fee to admin account
     const { data: adminUser } = await supabase
@@ -491,7 +506,7 @@ export async function listProduct(productData, userId) {
       await supabase.from('user_transactions').insert({
         user_id: adminUser.id,
         amount: listingFee,
-        transaction_type: 'topup',
+        transaction_type: 'deposit',
         description: `Listing fee from ${productData.name}`,
         reference_id: userId,
         created_at: new Date().toISOString()

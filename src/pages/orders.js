@@ -24,38 +24,142 @@ let computedShippingCost = 0;
 const t = (key) => (i18n && i18n.t ? i18n.t(key) : key);
 
 // ============================
-// Carriers (matches supabase.js)
+// Carriers — default fallback data (overwritten by DB if available)
 // ============================
-const CARRIERS = {
-  omniva:         { name: 'Omniva',          icon: '\uD83D\uDCEE', base: 3.50, est: '2-4' },
-  dpd:            { name: 'DPD',             icon: '\uD83D\uDE9A', base: 4.20, est: '1-3' },
-  latvijas_pasts: { name: 'Latvijas Pasts',  icon: '\u2709\uFE0F',  base: 3.80, est: '3-5' },
+const CARRIER_ICONS = {
+  omniva: '\uD83D\uDCEE', dpd: '\uD83D\uDE9A', latvijas_pasts: '\u2709\uFE0F', venipak: '\uD83D\uDCE6'
+};
+
+let CARRIERS = {
+  omniva:         { name: 'Omniva',          icon: '\uD83D\uDCEE', base: 3.49, est: '1-3' },
+  dpd:            { name: 'DPD',             icon: '\uD83D\uDE9A', base: 3.99, est: '1-3' },
+  latvijas_pasts: { name: 'Latvijas Pasts',  icon: '\u2709\uFE0F',  base: 2.99, est: '2-5' },
   venipak:        { name: 'Venipak',         icon: '\uD83D\uDCE6', base: 4.50, est: '1-2' }
 };
 
-// Sample parcel lockers per carrier
-const PARCEL_LOCKERS = {
+let PARCEL_LOCKERS = {};
+
+// DB-loaded shipping rates keyed by "carrier|service|country"
+let shippingRatesMap = {};
+
+// Load real shipping rates and parcel lockers from DB
+async function loadShippingData(destCountry) {
+  destCountry = destCountry || 'LV';
+  try {
+    // Load shipping rates
+    var ratesRes = await supabase.from('shipping_rates').select('*').eq('active', true);
+    if (!ratesRes.error && ratesRes.data && ratesRes.data.length > 0) {
+      shippingRatesMap = {};
+      var carrierMinPrices = {};
+      ratesRes.data.forEach(function(r) {
+        var key = r.carrier + '|' + r.service + '|' + r.from_country + '|' + r.to_country;
+        shippingRatesMap[key] = r;
+
+        // Track min price per carrier for display
+        var cKey = r.carrier + '|' + r.to_country;
+        if (!carrierMinPrices[cKey] || r.price_eur < carrierMinPrices[cKey].price_eur) {
+          carrierMinPrices[cKey] = r;
+        }
+      });
+
+      // Update CARRIERS with DB prices for the destination country
+      Object.keys(CARRIERS).forEach(function(carrier) {
+        var best = carrierMinPrices[carrier + '|' + destCountry] || carrierMinPrices[carrier + '|LV'];
+        if (best) {
+          CARRIERS[carrier].base = parseFloat(best.price_eur);
+          CARRIERS[carrier].est = best.estimated_days_min + '-' + best.estimated_days_max;
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Could not load shipping rates, using defaults:', e.message);
+  }
+
+  try {
+    // Load parcel lockers from DB
+    var lockRes = await supabase.from('parcel_lockers').select('*').eq('active', true).order('city');
+    if (!lockRes.error && lockRes.data && lockRes.data.length > 0) {
+      PARCEL_LOCKERS = {};
+      lockRes.data.forEach(function(l) {
+        if (!PARCEL_LOCKERS[l.carrier]) PARCEL_LOCKERS[l.carrier] = [];
+        PARCEL_LOCKERS[l.carrier].push({
+          id: l.locker_id,
+          name: l.name,
+          address: l.address + ', ' + l.city,
+          city: l.city,
+          country: l.country,
+          postal_code: l.postal_code
+        });
+      });
+    } else {
+      // Fallback lockers if DB table doesn't exist yet
+      PARCEL_LOCKERS = FALLBACK_LOCKERS;
+    }
+  } catch (e) {
+    console.warn('Could not load parcel lockers, using defaults:', e.message);
+    PARCEL_LOCKERS = FALLBACK_LOCKERS;
+  }
+}
+
+// Fallback parcel lockers (used if DB is not set up yet)
+var FALLBACK_LOCKERS = {
   omniva: [
-    { id: 'om1', name: 'Omniva Riga Alfa',       address: 'Brivibas gatve 372, Riga' },
-    { id: 'om2', name: 'Omniva Riga Domina',      address: 'Ieriku iela 3, Riga' },
-    { id: 'om3', name: 'Omniva Riga Spice',       address: 'Lielirbes iela 29, Riga' },
-    { id: 'om4', name: 'Omniva Jelgava Pilsetas', address: 'Lielaja iela 20, Jelgava' },
-    { id: 'om5', name: 'Omniva Liepaja Rimi',     address: 'Ziemelu iela 19, Liepaja' }
+    { id: 'om1', name: 'Omniva Rīga - Alfa',       address: 'Brīvības gatve 372, Rīga' },
+    { id: 'om2', name: 'Omniva Rīga - Domina',      address: 'Ieriķu iela 3, Rīga' },
+    { id: 'om3', name: 'Omniva Rīga - Spice',       address: 'Lielirbes iela 29, Rīga' },
+    { id: 'om4', name: 'Omniva Jelgava',             address: 'Pasta iela 47, Jelgava' },
+    { id: 'om5', name: 'Omniva Liepāja',             address: 'Graudu iela 33, Liepāja' },
+    { id: 'om6', name: 'Omniva Daugavpils',          address: 'Rīgas iela 22, Daugavpils' },
+    { id: 'om7', name: 'Omniva Jūrmala - Majori',    address: 'Jomas iela 42, Jūrmala' },
+    { id: 'om8', name: 'Omniva Ventspils',            address: 'Kuldīgas iela 1, Ventspils' },
+    { id: 'om9', name: 'Omniva Valmiera',             address: 'Rīgas iela 29, Valmiera' }
   ],
   dpd: [
-    { id: 'dp1', name: 'DPD Pickup Riga Akropole', address: 'Maskavas iela 257, Riga' },
-    { id: 'dp2', name: 'DPD Pickup Riga Origo',    address: 'Stacijas laukums 2, Riga' },
-    { id: 'dp3', name: 'DPD Pickup Daugavpils',    address: 'Viestura iela 22, Daugavpils' }
+    { id: 'dp1', name: 'DPD Pickup Rīga - Akropole', address: 'Maskavas iela 257, Rīga' },
+    { id: 'dp2', name: 'DPD Pickup Rīga - Domina',    address: 'Ieriķu iela 3, Rīga' },
+    { id: 'dp3', name: 'DPD Pickup Rīga - Spice',     address: 'Lielirbes iela 29, Rīga' },
+    { id: 'dp4', name: 'DPD Pickup Daugavpils',        address: 'Viestura iela 7, Daugavpils' },
+    { id: 'dp5', name: 'DPD Pickup Liepāja',           address: 'Kuršu iela 11, Liepāja' },
+    { id: 'dp6', name: 'DPD Pickup Jelgava',            address: 'Dobeles šoseja 7, Jelgava' }
   ],
   latvijas_pasts: [
-    { id: 'lp1', name: 'Pasta nodala Riga 50', address: 'Brivibas iela 32, Riga' },
-    { id: 'lp2', name: 'Pasta nodala Riga 67', address: 'Mukusalas iela 41, Riga' }
+    { id: 'lp1', name: 'Pasta nodaļa Rīga 50',  address: 'Brīvības iela 32, Rīga' },
+    { id: 'lp2', name: 'Pasta nodaļa Rīga 67',  address: 'Mukusalas iela 41, Rīga' }
   ],
   venipak: [
-    { id: 'vn1', name: 'Venipak Locker Riga Maxima', address: 'Vienibas gatve 113, Riga' },
-    { id: 'vn2', name: 'Venipak Locker Jurmala',     address: 'Raina iela 110, Jurmala' }
+    { id: 'vn1', name: 'Venipak Rīga - Maxima',  address: 'Vienības gatve 113, Rīga' },
+    { id: 'vn2', name: 'Venipak Jūrmala',          address: 'Raiņa iela 110, Jūrmala' }
   ]
 };
+
+// Get dynamic shipping cost based on carrier, service, and destination
+function getShippingCost(carrier, service, destCountry) {
+  destCountry = destCountry || 'LV';
+  service = service || (selectedAddressType === 'locker' ? 'parcel_locker' : 'courier');
+
+  // Try DB rate first
+  var key = carrier + '|' + service + '|LV|' + destCountry;
+  var rate = shippingRatesMap[key];
+  if (rate) return { price: parseFloat(rate.price_eur), est: rate.estimated_days_min + '-' + rate.estimated_days_max };
+
+  // Fallback: try any service for this carrier+country
+  for (var k in shippingRatesMap) {
+    if (k.startsWith(carrier + '|') && k.endsWith('|' + destCountry)) {
+      rate = shippingRatesMap[k];
+      return { price: parseFloat(rate.price_eur), est: rate.estimated_days_min + '-' + rate.estimated_days_max };
+    }
+  }
+
+  // Ultimate fallback
+  var c = CARRIERS[carrier];
+  return { price: c ? c.base : 5.00, est: c ? c.est : '2-5' };
+}
+
+// Get currently selected shipping destination country
+function getSelectedCountry() {
+  var el = document.getElementById('shippingCountry');
+  return el ? el.value : 'LV';
+}
 
 // ============================
 // Initialization
@@ -78,6 +182,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('ordersListView').style.display = 'block';
       await loadOrders();
       setupOrderListeners();
+    }
+
+    // Re-render dynamic content when language changes
+    var langSelect = document.getElementById('langSelect');
+    if (langSelect) {
+      langSelect.addEventListener('change', function() {
+        // Small delay to let i18n.setLang() finish translating static elements
+        setTimeout(function() { filterOrders(); }, 100);
+      });
     }
   } catch (error) {
     console.error('Error initializing orders page:', error);
@@ -115,6 +228,10 @@ async function initCheckout(productId) {
   }
 
   checkoutProduct = product;
+
+  // Load shipping data from DB (rates + parcel lockers)
+  await loadShippingData('LV');
+
   renderProductSummary(product);
   renderCarriers();
   renderLockers();
@@ -155,14 +272,16 @@ function renderProductSummary(product) {
 function renderCarriers() {
   const container = document.getElementById('carrierList');
   if (!container) return;
+  var destCountry = getSelectedCountry();
   let html = '';
   for (const [key, c] of Object.entries(CARRIERS)) {
+    var quote = getShippingCost(key, selectedAddressType === 'locker' ? 'parcel_locker' : 'courier', destCountry);
     html += '<div class="carrier-card ' + (key === selectedCarrier ? 'selected' : '') + '" data-carrier="' + key + '">' +
-      '<div class="carrier-logo">' + c.icon + '</div>' +
+      '<div class="carrier-logo">' + (c.icon || CARRIER_ICONS[key] || '\uD83D\uDCE6') + '</div>' +
       '<div class="carrier-info">' +
         '<strong>' + c.name + '</strong>' +
-        '<p class="carrier-price">\u20AC' + c.base.toFixed(2) + '</p>' +
-        '<p class="carrier-time">' + c.est + ' ' + t('co_days') + '</p>' +
+        '<p class="carrier-price">\u20AC' + quote.price.toFixed(2) + '</p>' +
+        '<p class="carrier-time">' + quote.est + ' ' + t('co_days') + '</p>' +
       '</div></div>';
   }
   container.innerHTML = html;
@@ -172,7 +291,8 @@ function renderCarriers() {
       container.querySelectorAll('.carrier-card').forEach(function(c) { c.classList.remove('selected'); });
       card.classList.add('selected');
       selectedCarrier = card.dataset.carrier;
-      computedShippingCost = CARRIERS[selectedCarrier].base;
+      var q = getShippingCost(selectedCarrier, selectedAddressType === 'locker' ? 'parcel_locker' : 'courier', getSelectedCountry());
+      computedShippingCost = q.price;
       renderLockers();
       updateSummary();
     });
@@ -203,7 +323,8 @@ function renderLockers() {
 function updateSummary() {
   const price = parseFloat(checkoutProduct ? checkoutProduct.price : 0);
   const isShipping = selectedDeliveryMethod === 'shipping';
-  const shipping = isShipping ? (CARRIERS[selectedCarrier] ? CARRIERS[selectedCarrier].base : 0) : 0;
+  var q = getShippingCost(selectedCarrier, selectedAddressType === 'locker' ? 'parcel_locker' : 'courier', getSelectedCountry());
+  const shipping = isShipping ? q.price : 0;
   computedShippingCost = shipping;
   const total = price + shipping;
 
@@ -225,12 +346,21 @@ function setupCheckoutListeners() {
   var tabAddress = document.getElementById('tabAddress');
   var tabLocker = document.getElementById('tabLocker');
   var placeBtn = document.getElementById('placeOrderBtn');
+  var countrySelect = document.getElementById('shippingCountry');
 
   if (tabMeetup) tabMeetup.addEventListener('click', function() { switchDelivery('meetup'); });
   if (tabShipping) tabShipping.addEventListener('click', function() { switchDelivery('shipping'); });
   if (tabAddress) tabAddress.addEventListener('click', function() { switchAddressType('address'); });
   if (tabLocker) tabLocker.addEventListener('click', function() { switchAddressType('locker'); });
   if (placeBtn) placeBtn.addEventListener('click', placeOrder);
+
+  // Re-calculate prices when destination country changes
+  if (countrySelect) {
+    countrySelect.addEventListener('change', function() {
+      renderCarriers();
+      updateSummary();
+    });
+  }
 }
 
 function switchDelivery(method) {
@@ -248,6 +378,9 @@ function switchAddressType(type) {
   document.getElementById('tabLocker').classList.toggle('active', type === 'locker');
   document.getElementById('addressFields').style.display = type === 'address' ? 'block' : 'none';
   document.getElementById('lockerFields').style.display = type === 'locker' ? 'block' : 'none';
+  // Recalculate: courier vs parcel_locker rates differ
+  renderCarriers();
+  updateSummary();
 }
 
 // ============================
@@ -295,6 +428,7 @@ async function placeOrder() {
     if (!recipientName) { toast(t('co_err_recipient_name'), 'error'); return; }
 
     orderData.shipping_carrier = selectedCarrier;
+    orderData.shipping_service = selectedAddressType === 'locker' ? 'parcel_locker' : 'courier';
     orderData.shipping_cost = computedShippingCost;
     orderData.total_amount = price + computedShippingCost;
     orderData.recipient_name = recipientName;
@@ -302,6 +436,7 @@ async function placeOrder() {
 
     if (selectedAddressType === 'locker') {
       if (!selectedLocker) { toast(t('co_err_select_locker'), 'error'); return; }
+      orderData.parcel_locker_id = selectedLocker.id;
       orderData.parcel_locker_address = selectedLocker.address;
       orderData.shipping_address = selectedLocker.address;
     } else {
@@ -350,17 +485,22 @@ async function placeOrder() {
       user_id: currentUser.id,
       amount: -totalAmount,
       transaction_type: 'escrow_hold',
-      description: 'Escrow hold: ' + product.name,
-      reference_id: product.id,
+      description: 'Escrow hold: ' + product.name + ' (' + (selectedDeliveryMethod === 'meetup' ? 'meetup' : 'shipping') + ')',
+      reference_id: order.id,
       created_at: new Date().toISOString()
     });
 
-    // 4. Update order status to escrow (meetup) or paid (shipping)
+    // 4. Update order status
+    //    Meetup: escrow (both parties must confirm)
+    //    Shipping: paid (seller processes & ships, buyer confirms delivery to release)
     var nextStatus = selectedDeliveryMethod === 'meetup' ? 'escrow' : 'paid';
+    var paymentStatus = selectedDeliveryMethod === 'meetup' ? 'escrowed' : 'paid';
     await supabase.from('orders').update({
       order_status: nextStatus,
       status: nextStatus,
-      payment_status: 'paid',
+      payment_status: paymentStatus,
+      escrow_amount: totalAmount,
+      escrow_released: false,
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', order.id);
@@ -500,8 +640,16 @@ function createOrderCard(order) {
     }
   }
 
-  html += '<div class="order-detail-row order-total"><span>' + t('co_total') + ':</span><strong>\u20AC' + total.toFixed(2) + '</strong></div>' +
-    '</div></div>';
+  html += '<div class="order-detail-row order-total"><span>' + t('co_total') + ':</span><strong>\u20AC' + total.toFixed(2) + '</strong></div>';
+
+  // Show escrow status if funds are held
+  if (order.escrow_amount && parseFloat(order.escrow_amount) > 0 && !order.escrow_released) {
+    html += '<div class="order-detail-row"><span>\uD83D\uDD12 Escrow:</span><strong>\u20AC' + parseFloat(order.escrow_amount).toFixed(2) + '</strong></div>';
+  } else if (order.escrow_released) {
+    html += '<div class="order-detail-row"><span>\u2705 Escrow:</span><strong>' + t('orders_escrow_released') + '</strong></div>';
+  }
+
+  html += '</div></div>';
 
   // Actions
   html += '<div class="order-actions">' +
@@ -509,6 +657,11 @@ function createOrderCard(order) {
 
   if (isBuyer && status === 'pending') {
     html += '<button class="btn btn-sell" onclick="payOrder(\'' + order.id + '\')">' + t('orders_pay_now') + '</button>';
+    html += '<button class="btn btn-danger" onclick="cancelOrder(\'' + order.id + '\')">' + t('btn_cancel') + '</button>';
+  }
+
+  // Allow buyer to cancel before shipping starts (paid/escrow not yet processing)
+  if (isBuyer && (status === 'paid' || status === 'escrow')) {
     html += '<button class="btn btn-danger" onclick="cancelOrder(\'' + order.id + '\')">' + t('btn_cancel') + '</button>';
   }
 
@@ -529,7 +682,7 @@ function createOrderCard(order) {
     html += '<button class="btn btn-sell" onclick="addTrackingNumber(\'' + order.id + '\')">' + t('orders_add_tracking') + '</button>';
   }
 
-  if (isBuyer && (status === 'shipped' || status === 'ready_for_pickup')) {
+  if (isBuyer && (status === 'shipped' || status === 'ready_for_pickup' || status === 'in_transit' || status === 'delivered')) {
     html += '<button class="btn btn-sell" onclick="confirmDelivery(\'' + order.id + '\')">' + t('orders_confirm_yes') + '</button>';
   }
 
@@ -803,6 +956,8 @@ if (confDelBtn) {
 
       await supabase.from('orders').update({
         status: 'completed', order_status: 'completed',
+        escrow_released: true,
+        escrow_released_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', window.currentConfirmOrderId);
@@ -859,6 +1014,8 @@ window.confirmMeetup = async function(orderId) {
         await releaseEscrowToSeller(Object.assign({}, order, refreshed));
         await supabase.from('orders').update({
           status: 'completed', order_status: 'completed',
+          escrow_released: true,
+          escrow_released_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }).eq('id', orderId);
@@ -878,22 +1035,29 @@ window.confirmMeetup = async function(orderId) {
 // Release escrow funds to seller
 async function releaseEscrowToSeller(order) {
   var sellerId = order.seller_id;
-  var totalAmount = parseFloat(order.total_amount || 0);
-  if (!sellerId || totalAmount <= 0) return;
+  // Prefer escrow_amount (exact held amount), fall back to total_amount
+  var releaseAmount = parseFloat(order.escrow_amount || order.total_amount || 0);
+  if (!sellerId || releaseAmount <= 0) return;
 
   var selRes = await supabase.from('users').select('balance').eq('id', sellerId).single();
   var sellerBalance = parseFloat(selRes.data ? selRes.data.balance : 0);
 
-  await supabase.from('users').update({ balance: sellerBalance + totalAmount }).eq('id', sellerId);
+  await supabase.from('users').update({ balance: sellerBalance + releaseAmount }).eq('id', sellerId);
 
   await supabase.from('user_transactions').insert({
     user_id: sellerId,
-    amount: totalAmount,
+    amount: releaseAmount,
     transaction_type: 'escrow_release',
     description: 'Sale completed: Order ' + (order.order_number || ''),
-    reference_id: order.product_id,
+    reference_id: order.id || order.product_id,
     created_at: new Date().toISOString()
   });
+
+  // Also update local caches
+  try {
+    localStorage.removeItem('vendly_balance');
+    sessionStorage.removeItem('vendly_balance');
+  } catch (e) { /* ignore */ }
 }
 
 // Cancel order

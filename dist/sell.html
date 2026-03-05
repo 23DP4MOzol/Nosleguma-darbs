@@ -6,9 +6,9 @@
   <title data-i18n="sell">Vendly - Sell Item</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/sell-D6d-pImW.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-EQVsCH43.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-DK5J3eBH.css">
+  <script type="module" crossorigin src="./assets/sell-CJXM4nGx.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-7xuxgUx4.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CfNv6O1G.css">
 </head>
 <body>
 
@@ -70,15 +70,15 @@
         <h3 style="margin-bottom: 0.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
         
         <!-- Listing Fee Info -->
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <div style="background: color-mix(in srgb, #f59e0b 15%, var(--card-bg)); border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
             <span style="font-size: 1.25rem;">💰</span>
-            <strong style="color: #92400e;">Listing Fee</strong>
+            <strong style="color: #f59e0b;">Listing Fee</strong>
           </div>
-          <p style="margin: 0; font-size: 0.875rem; color: #78350f;">
+          <p style="margin: 0; font-size: 0.875rem; color: var(--fg);">
             <span data-i18n="listing_fee_description">Listing fee: €0.50 - €1.00 (based on price)</span>
           </p>
-          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #92400e;">
+          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #f59e0b;">
             Current fee: €0.50
           </p>
         </div>
@@ -171,7 +171,7 @@
             </label>
           </div>
           <input type="url" id="productImageInput" class="form-input" data-i18n-placeholder="sell_enter_image_url" placeholder="https://example.com/image.jpg" required>
-          <input type="file" id="productImageFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none;" required>
+          <input type="file" id="productImageFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none;">
         </label>
 
         <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">

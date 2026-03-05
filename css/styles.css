@@ -3304,3 +3304,80 @@ html.dark .info-box {
     grid-template-columns: 1fr;
   }
 }
+
+/* =======================================================
+   GLOBAL MODAL STYLES
+   ======================================================= */
+
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  padding: 1rem;
+}
+
+.modal-content {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  padding: 2rem;
+  z-index: 10000;
+}
+
+.modal-content h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: var(--fg);
+}
+
+.modal-content p {
+  color: var(--fg);
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--fg);
+  transition: var(--transition);
+  z-index: 10001;
+}
+
+.modal-close:hover {
+  background: rgba(0, 0, 0, 0.15);
+  transform: rotate(90deg);
+}
+
+html[data-theme="dark"] .modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+}
+
+html[data-theme="dark"] .modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}

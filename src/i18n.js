@@ -1196,6 +1196,7 @@ export const i18n = {
       }
       self.lang = lang;
       localStorage.setItem('language', lang);
+      localStorage.setItem('lang', lang); // keep both keys in sync
   
       // Translate all elements with data-i18n
       try {
@@ -1256,8 +1257,8 @@ export const i18n = {
   
   // Auto-apply translations and preferences on page load
   window.addEventListener('DOMContentLoaded', () => {
-    // Load saved language preference
-    const savedLang = localStorage.getItem('language') || 'en';
+    // Load saved language preference (check both keys for compatibility)
+    const savedLang = localStorage.getItem('language') || localStorage.getItem('lang') || 'en';
     i18n.setLang(savedLang);
   
     // Update language selector

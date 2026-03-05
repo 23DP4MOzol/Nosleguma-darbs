@@ -782,14 +782,20 @@ async function showUserProfile(userId) {
       .limit(10);
 
     // Get seller reviews
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('rating, comment, created_at, buyer_id, users!buyer_id(username)')
-      .eq('seller_id', userId)
-      .order('created_at', { ascending: false });
+    let reviews = [];
+    try {
+      const { data: reviewData } = await supabase
+        .from('reviews')
+        .select('rating, comment, created_at, buyer_id, users!buyer_id(username)')
+        .eq('seller_id', userId)
+        .order('created_at', { ascending: false });
+      reviews = reviewData || [];
+    } catch (e) {
+      console.warn('Could not load reviews:', e);
+    }
 
     let averageRating = 0;
-    if (reviews && reviews.length > 0) {
+    if (reviews.length > 0) {
       averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
     }
 
@@ -797,14 +803,20 @@ async function showUserProfile(userId) {
     let canReview = false;
     let hasReviewed = false;
     if (currentUser && currentUser.id !== userId) {
-      const { data: existingReview } = await supabase
-        .from('reviews')
-        .select('id')
-        .eq('buyer_id', currentUser.id)
-        .eq('seller_id', userId)
-        .single();
-      hasReviewed = !!existingReview;
-      canReview = !hasReviewed;
+      try {
+        const { data: existingReview } = await supabase
+          .from('reviews')
+          .select('id')
+          .eq('buyer_id', currentUser.id)
+          .eq('seller_id', userId)
+          .maybeSingle();
+        hasReviewed = !!existingReview;
+        canReview = !hasReviewed;
+      } catch (e) {
+        console.warn('Could not check existing review:', e);
+        // If reviews table doesn't exist yet, allow review attempt (insert will fail with clear error)
+        canReview = true;
+      }
     }
 
     // Build profile HTML
@@ -863,7 +875,7 @@ async function showUserProfile(userId) {
         <div class="profile-section">
           <h3>Leave a Review</h3>
           <form id="reviewForm" class="profile-review-form">
-            <label>Rating</label>
+            <label>Rating *</label>
             <select id="reviewRating" required>
               <option value="">Select rating</option>
               <option value="5">⭐⭐⭐⭐⭐ 5 stars</option>
@@ -873,11 +885,11 @@ async function showUserProfile(userId) {
               <option value="1">⭐ 1 star</option>
             </select>
             <label>Comment</label>
-            <textarea id="reviewComment" rows="3" placeholder="Share your experience..."></textarea>
-            <button type="submit">Submit Review</button>
+            <textarea id="reviewComment" rows="3" placeholder="Share your experience with this seller..."></textarea>
+            <button type="submit" id="reviewSubmitBtn">Submit Review</button>
           </form>
         </div>
-      ` : hasReviewed ? '<p style="text-align:center; color:var(--muted); margin-top:1rem;">You have already reviewed this seller.</p>' : ''}
+      ` : hasReviewed ? '<p style="text-align:center; color:var(--muted); margin-top:1rem;">✅ You have already reviewed this seller.</p>' : ''}
     `;
 
     document.getElementById('profileModalContent').innerHTML = profileHtml;
@@ -905,6 +917,8 @@ async function showUserProfile(userId) {
             showToast('Please select a valid rating', 'error');
             return;
           }
+          const submitBtn = document.getElementById('reviewSubmitBtn');
+          if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
           try {
             const { error } = await supabase
               .from('reviews')
@@ -914,14 +928,24 @@ async function showUserProfile(userId) {
                 rating,
                 comment: comment || null
               });
-            if (error) throw error;
-            showToast('Review submitted successfully!', 'success');
+            if (error) {
+              // Handle unique constraint violation (already reviewed)
+              if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+                showToast('You have already reviewed this seller', 'error');
+              } else {
+                throw error;
+              }
+            } else {
+              showToast('Review submitted successfully!', 'success');
+            }
             // Refresh profile
             document.getElementById('userProfileModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
             showUserProfile(userId);
           } catch (error) {
             console.error('Error submitting review:', error);
-            showToast('Failed to submit review', 'error');
+            showToast('Failed to submit review: ' + (error.message || 'Unknown error'), 'error');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Review'; }
           }
         });
       }
