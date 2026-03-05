@@ -273,7 +273,7 @@ function attachProductEventListeners() {
       const productId = card.dataset.productId;
       // Only navigate if clicking on the card itself, not buttons
       if (!e.target.closest('button')) {
-        window.location.href = `product.html?id=${productId}`;
+        window.location.href = `index.html?product=${productId}`;
       }
     });
   });
@@ -351,8 +351,8 @@ async function toggleFavorite(productId) {
       btn.textContent = !isFavorited ? '❤️' : '🤍';
     }
 
-    // Update likes count display
-    updateProductLikesCount(productId);
+    // Update likes count immediately
+    await updateProductLikesCount(productId, !isFavorited);
 
   } catch (error) {
     console.error('Error toggling favorite:', error);
@@ -363,20 +363,21 @@ async function toggleFavorite(productId) {
 // Update product likes count in real-time
 async function updateProductLikesCount(productId) {
   try {
+    // Get current likes count from server
     const { count } = await supabase
       .from('favorites')
       .select('*', { count: 'exact', head: true })
       .eq('product_id', productId);
     
     if (count !== null) {
-      // Update the likes count in the product card
-      const card = document.querySelector(`[data-product-id="${productId}"]`);
-      if (card) {
+      // Update ALL product cards with this ID (in case displayed multiple times)
+      const cards = document.querySelectorAll(`[data-product-id="${productId}"]`);
+      cards.forEach(card => {
         const likesSpan = card.querySelector('[data-likes]');
         if (likesSpan) {
           likesSpan.textContent = `❤️ ${count}`;
         }
-      }
+      });
       
       // Update product in allProducts array
       const productIndex = allProducts.findIndex(p => p.id === productId);
@@ -562,36 +563,41 @@ function setupRealtimeListeners() {
   
   // Subscribe to changes on favorites table
   const subscription = supabase
-    .channel(`favorites-${currentUser.id}`)
+    .channel(`favorites-public`)
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'favorites'
       },
       (payload) => {
-        // Reload products to get updated likes counts
-        loadProducts();
+        // Update likes for affected product
+        const productId = payload.new.product_id;
+        if (productId) {
+          updateProductLikesCount(productId);
+        }
       }
     )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'favorites'
+// ============================
+async function initializePage() {
+        // Update likes for affected product
+        const productId = payload.old.product_id;
+        if (productId) {
+          updateProductLikesCount(productId);
+        }
+  
+  loadUser().then(() => {
     .subscribe();
 
   return subscription;
 }
-
-// ============================
-// Initialize Page (after auth check)
-// ============================
-async function initializePage() {
-  currentUser = await checkAuth();
-  if (!currentUser) return; // Redirect happened
-  
-  loadUser().then(() => {
-    loadProducts();
-    // Setup real-time listeners for favorites
-    setupRealtimeListeners();
-  });
 }
 
 // Run initialization
