@@ -11,130 +11,304 @@
 
 <!-- NAVBAR -->
 <nav class="navbar">
-    <div class="navbar-container">
-      <a href="index.html" class="navbar-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M17,18C15.89,18 15,18.89 15,20A2,2 0 0,0 17,22A2,2 0 0,0 19,20C19,18.89 18.1,18 17,18M1,2V4H3L6.6,11.59L5.24,14.04C5.09,14.32 5,14.65 5,15A2,2 0 0,0 7,17H19V15H7.42A0.25,0.25 0 0,1 7.17,14.75C7.17,14.7 7.18,14.66 7.2,14.63L8.1,13H15.55C16.3,13 16.96,12.58 17.3,11.97L20.88,5.5C20.95,5.34 21,5.17 21,5A1,1 0 0,0 20,4H5.21L4.27,2M7,18C5.89,18 5,18.89 5,20A2,2 0 0,0 7,22A2,2 0 0,0 9,20C9,18.89 8.1,18 7,18Z"/>
-        </svg>
-        VENDLY
-      </a>
-  
-      <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
-  
-      <div class="navbar-links">
-        <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
-        <a href="index.html" class="btn-nav" data-i18n="nav_view_items">View Items</a>
-        <button class="btn-sell" id="sellBtn"><span data-i18n="nav_sell_items">Sell Items</span></button>
-  
-        <div class="dropdown" id="pagesDropdown">
-          <button class="dropdown-btn">☰</button>
-          <div class="dropdown-menu">
-            <a href="settings.html" class="dropdown-item" data-i18n="nav_settings">Settings</a>
-            <a href="admin.html" class="dropdown-item" id="adminBtn" data-i18n="nav_admin">Admin</a>
-            <a href="chat.html" class="dropdown-item" data-i18n="nav_chat">Chat</a>
-            <a href="orders.html" class="dropdown-item" data-i18n="nav_orders">Orders</a>
+  <div class="navbar-container">
+    <a href="index.html" class="navbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M17,18C15.89,18 15,18.89 15,20A2,2 0 0,0 17,22A2,2 0 0,0 19,20C19,18.89 18.1,18 17,18M1,2V4H3L6.6,11.59L5.24,14.04C5.09,14.32 5,14.65 5,15A2,2 0 0,0 7,17H19V15H7.42A0.25,0.25 0 0,1 7.17,14.75C7.17,14.7 7.18,14.66 7.2,14.63L8.1,13H15.55C16.3,13 16.96,12.58 17.3,11.97L20.88,5.5C20.95,5.34 21,5.17 21,5A1,1 0 0,0 20,4H5.21L4.27,2M7,18C5.89,18 5,18.89 5,20A2,2 0 0,0 7,22A2,2 0 0,0 9,20C9,18.89 8.1,18 7,18Z"/>
+      </svg>
+      VENDLY
+    </a>
+    <button class="icon-btn hamburger-btn" id="hamburgerBtn">☰</button>
+    <div class="navbar-links">
+      <a href="balance.html" class="balance-badge" id="balanceBadge" style="display:none;"><span>€0.00</span></a>
+      <a href="index.html" class="btn-nav" data-i18n="nav_view_items">View Items</a>
+      <button class="btn-sell" id="sellBtn"><span data-i18n="nav_sell_items">Sell Items</span></button>
+      <div class="dropdown" id="pagesDropdown">
+        <button class="dropdown-btn">☰</button>
+        <div class="dropdown-menu">
+          <a href="settings.html" class="dropdown-item" data-i18n="nav_settings">Settings</a>
+          <a href="admin.html" class="dropdown-item" id="adminBtn" data-i18n="nav_admin">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="nav_chat">Chat</a>
+          <a href="orders.html" class="dropdown-item" data-i18n="nav_orders">Orders</a>
+        </div>
+      </div>
+      <select id="langSelect" class="category-select">
+        <option value="en">English</option>
+        <option value="lv">Latviešu</option>
+      </select>
+      <button class="icon-btn" id="themeToggle">🌙</button>
+      <button class="btn-login" id="loginBtn" data-i18n="nav_login">Login</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="nav_logout">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== CHECKOUT VIEW (shown when ?product=<id>) ==================== -->
+<main id="checkoutView" class="container" style="display:none;">
+  <div class="page-header">
+    <h1 data-i18n="co_title">🛒 Checkout</h1>
+    <p data-i18n="co_subtitle">Complete your order details below</p>
+  </div>
+
+  <div class="checkout-container">
+    <!-- Product Summary -->
+    <div class="checkout-section">
+      <h3 data-i18n="co_product_info">Product Information</h3>
+      <div class="checkout-product-summary" id="checkoutProductSummary">
+        <!-- filled dynamically -->
+      </div>
+    </div>
+
+    <!-- Delivery Method Selection -->
+    <div class="checkout-section">
+      <h3 data-i18n="co_delivery_method">Delivery Method</h3>
+      <div class="delivery-method-tabs">
+        <button class="delivery-tab active" data-method="meetup" id="tabMeetup">
+          🤝 <span data-i18n="co_meetup">Meetup</span>
+        </button>
+        <button class="delivery-tab" data-method="shipping" id="tabShipping">
+          📦 <span data-i18n="co_shipping">Shipping</span>
+        </button>
+      </div>
+
+      <!-- Meetup Options -->
+      <div id="meetupOptions" class="delivery-options">
+        <div class="form-group">
+          <label data-i18n="co_meetup_location">Meetup Location</label>
+          <input type="text" id="meetupLocation" class="form-input"
+                 data-i18n-placeholder="co_meetup_location_ph" placeholder="e.g., Starbucks, Brīvības iela 372, Rīga">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="co_meetup_date">Date</label>
+            <input type="date" id="meetupDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label data-i18n="co_meetup_time">Time</label>
+            <input type="time" id="meetupTime" class="form-input">
           </div>
         </div>
-  
-        <select id="langSelect" class="category-select">
-          <option value="en">English</option>
-          <option value="lv">Latviešu</option>
-        </select>
-  
-        <button class="icon-btn" id="themeToggle">🌙</button>
-        <button class="btn-login" id="loginBtn" data-i18n="nav_login">Login</button>
-        <button class="btn-logout" id="logoutBtn" style="display:none;" data-i18n="nav_logout">Logout</button>
+        <div class="info-box">
+          <strong data-i18n="co_escrow_info_title">🔒 Escrow Protection</strong>
+          <p data-i18n="co_escrow_meetup_text">Your payment will be held in escrow. Both you and the seller must confirm the meetup before funds are released.</p>
+        </div>
+      </div>
+
+      <!-- Shipping Options -->
+      <div id="shippingOptions" class="delivery-options" style="display:none;">
+        <div class="form-group">
+          <label data-i18n="co_select_carrier">Select Carrier</label>
+          <div class="shipping-carriers" id="carrierList">
+            <!-- filled dynamically -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="co_recipient_name">Recipient Name</label>
+          <input type="text" id="recipientName" class="form-input" data-i18n-placeholder="co_recipient_name_ph" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label data-i18n="co_recipient_phone">Phone Number</label>
+          <input type="tel" id="recipientPhone" class="form-input" data-i18n-placeholder="co_recipient_phone_ph" placeholder="+371 20000000">
+        </div>
+
+        <!-- Address or Parcel locker choice -->
+        <div class="delivery-method-tabs" style="margin-top:1rem;">
+          <button class="delivery-tab active" data-addr="address" id="tabAddress">
+            🏠 <span data-i18n="co_home_address">Home Address</span>
+          </button>
+          <button class="delivery-tab" data-addr="locker" id="tabLocker">
+            📮 <span data-i18n="co_parcel_locker">Parcel Locker</span>
+          </button>
+        </div>
+
+        <div id="addressFields">
+          <div class="form-group">
+            <label data-i18n="co_address">Street Address</label>
+            <input type="text" id="shippingStreet" class="form-input" data-i18n-placeholder="co_address_ph" placeholder="Street, house, apartment">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label data-i18n="co_city">City</label>
+              <input type="text" id="shippingCity" class="form-input" data-i18n-placeholder="co_city_ph" placeholder="Rīga">
+            </div>
+            <div class="form-group">
+              <label data-i18n="co_postal_code">Postal Code</label>
+              <input type="text" id="shippingPostal" class="form-input" data-i18n-placeholder="co_postal_ph" placeholder="LV-1001">
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="co_country">Country</label>
+            <select id="shippingCountry" class="form-input">
+              <option value="LV">Latvia</option>
+              <option value="LT">Lithuania</option>
+              <option value="EE">Estonia</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="lockerFields" style="display:none;">
+          <div class="form-group">
+            <label data-i18n="co_select_locker">Select Parcel Locker</label>
+            <div class="parcel-locker-list" id="lockerList">
+              <!-- filled dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <div class="shipping-cost" id="shippingCostDisplay" style="display:none;">
+          <strong data-i18n="co_shipping_cost">Shipping Cost:</strong>
+          <span id="shippingCostValue">€0.00</span>
+        </div>
+
+        <div class="info-box">
+          <strong data-i18n="co_escrow_info_title">🔒 Escrow Protection</strong>
+          <p data-i18n="co_escrow_shipping_text">Your payment is held safely until you confirm delivery of the item.</p>
+        </div>
       </div>
     </div>
-  </nav>
 
-  <!-- Main Content -->
-  <main class="container">
-    <div class="page-header">
-      <h1 data-i18n="orders_title">📦 My Orders</h1>
-      <p data-i18n="orders_subtitle">Track your purchases and sales</p>
-    </div>
-
-    <!-- Order Filters -->
-    <div class="order-filters">
-      <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="all" data-i18n="orders_filter_all">All Orders</button>
-        <button class="filter-tab" data-filter="buying" data-i18n="orders_filter_buying">Buying</button>
-        <button class="filter-tab" data-filter="selling" data-i18n="orders_filter_selling">Selling</button>
-      </div>
-      
-      <div class="filter-controls">
-        <select id="statusFilter" class="category-select">
-          <option value="all" data-i18n="orders_status_all">All Status</option>
-          <option value="pending" data-i18n="orders_status_pending">Pending Payment</option>
-          <option value="paid" data-i18n="orders_status_paid">Paid</option>
-          <option value="processing" data-i18n="orders_status_processing">Processing</option>
-          <option value="shipped" data-i18n="orders_status_shipped">Shipped</option>
-          <option value="delivered" data-i18n="orders_status_delivered">Delivered</option>
-          <option value="completed" data-i18n="orders_status_completed">Completed</option>
-          <option value="cancelled" data-i18n="orders_status_cancelled">Cancelled</option>
-        </select>
-        
-        <select id="deliveryFilter" class="category-select">
-          <option value="all" data-i18n="orders_delivery_all">All Delivery</option>
-          <option value="meetup" data-i18n="orders_delivery_meetup">Meetup</option>
-          <option value="shipping" data-i18n="orders_delivery_shipping">Shipping</option>
-        </select>
+    <!-- Notes -->
+    <div class="checkout-section">
+      <h3 data-i18n="co_notes_title">Notes</h3>
+      <div class="form-group">
+        <label data-i18n="co_buyer_notes">Message to Seller (optional)</label>
+        <textarea id="buyerNotes" class="form-input" rows="3"
+                  data-i18n-placeholder="co_notes_ph" placeholder="Any special instructions..."></textarea>
       </div>
     </div>
 
-    <!-- Orders List -->
-    <div id="ordersContainer" class="orders-container">
-      <div class="loading-spinner">Loading orders...</div>
+    <!-- Order Summary -->
+    <div class="checkout-section checkout-summary">
+      <h3 data-i18n="co_order_summary">Order Summary</h3>
+      <div class="summary-row">
+        <span data-i18n="co_item_price">Item Price</span>
+        <strong id="summaryItemPrice">€0.00</strong>
+      </div>
+      <div class="summary-row" id="summaryShippingRow" style="display:none;">
+        <span data-i18n="co_shipping_cost">Shipping Cost</span>
+        <strong id="summaryShippingCost">€0.00</strong>
+      </div>
+      <div class="summary-row summary-total">
+        <span data-i18n="co_total">Total</span>
+        <strong id="summaryTotal">€0.00</strong>
+      </div>
+      <div class="summary-row" style="border:none;">
+        <span data-i18n="co_your_balance">Your Balance</span>
+        <strong id="summaryBalance">€0.00</strong>
+      </div>
     </div>
 
-    <!-- Empty State -->
-    <div id="emptyState" class="empty-state" style="display:none;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22C15.89,22 15,21.1 15,20C15,18.89 15.89,18 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5C21,5.17 20.95,5.34 20.88,5.5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63L7.17,14.75A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22C5.89,22 5,21.1 5,20C5,18.89 5.89,18 7,18M16,11L18.78,6H6.14L8.5,11H16Z"/>
-      </svg>
-      <h3 data-i18n="orders_empty_title">No orders yet</h3>
-      <p data-i18n="orders_empty_text">Your orders will appear here once you make a purchase or sale.</p>
-      <a href="index.html" class="btn btn-sell" data-i18n="orders_empty_browse">Browse Products</a>
+    <!-- Actions -->
+    <div class="checkout-actions">
+      <a href="index.html" class="btn btn-secondary" data-i18n="co_back_to_shop">Back to Shop</a>
+      <button class="btn btn-sell" id="placeOrderBtn" data-i18n="co_place_order">Place Order & Pay</button>
     </div>
-  </main>
+  </div>
+</main>
 
-  <!-- Order Details Modal -->
-  <div id="orderDetailsModal" class="modal" style="display:none;">
-    <div class="modal-content modal-large">
-      <button class="modal-close" onclick="closeOrderModal()">&times;</button>
-      <div id="orderDetailsContent"></div>
+<!-- ==================== ORDERS LIST VIEW ==================== -->
+<main id="ordersListView" class="container">
+  <div class="page-header">
+    <h1 data-i18n="orders_title">📦 My Orders</h1>
+    <p data-i18n="orders_subtitle">Track your purchases and sales</p>
+  </div>
+
+  <!-- Order Filters -->
+  <div class="order-filters">
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all" data-i18n="orders_filter_all">All Orders</button>
+      <button class="filter-tab" data-filter="buying" data-i18n="orders_filter_buying">Buying</button>
+      <button class="filter-tab" data-filter="selling" data-i18n="orders_filter_selling">Selling</button>
+    </div>
+    <div class="filter-controls">
+      <select id="statusFilter" class="category-select">
+        <option value="all" data-i18n="orders_status_all">All Status</option>
+        <option value="pending" data-i18n="orders_status_pending">Pending Payment</option>
+        <option value="paid" data-i18n="orders_status_paid">Paid</option>
+        <option value="escrow" data-i18n="orders_status_escrow">In Escrow</option>
+        <option value="processing" data-i18n="orders_status_processing">Processing</option>
+        <option value="shipped" data-i18n="orders_status_shipped">Shipped</option>
+        <option value="ready_for_pickup" data-i18n="orders_status_ready_pickup">Ready for Pickup</option>
+        <option value="completed" data-i18n="orders_status_completed">Completed</option>
+        <option value="cancelled" data-i18n="orders_status_cancelled">Cancelled</option>
+      </select>
+      <select id="deliveryFilter" class="category-select">
+        <option value="all" data-i18n="orders_delivery_all">All Delivery</option>
+        <option value="meetup" data-i18n="orders_delivery_meetup">Meetup</option>
+        <option value="shipping" data-i18n="orders_delivery_shipping">Shipping</option>
+      </select>
     </div>
   </div>
 
-  <!-- Confirm Delivery Modal -->
-  <div id="confirmDeliveryModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeConfirmDeliveryModal()">&times;</button>
-      <h2 data-i18n="orders_confirm_delivery_title">Confirm Delivery</h2>
-      <p data-i18n="orders_confirm_delivery_text">Have you received this order?</p>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeConfirmDeliveryModal()" data-i18n="btn_cancel">Cancel</button>
-        <button class="btn btn-sell" id="confirmDeliveryBtn" data-i18n="orders_confirm_yes">Yes, Confirm Delivery</button>
-      </div>
-    </div>
+  <!-- Orders List -->
+  <div id="ordersContainer" class="orders-container">
+    <div class="loading-spinner" data-i18n="co_loading">Loading orders...</div>
   </div>
 
-  <!-- Cancel Order Modal -->
-  <div id="cancelOrderModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeCancelOrderModal()">&times;</button>
-      <h2 data-i18n="orders_cancel_title">Cancel Order</h2>
-      <p data-i18n="orders_cancel_text">Are you sure you want to cancel this order?</p>
-      <textarea id="cancelReason" placeholder="Reason for cancellation (optional)" rows="3" style="width:100%;margin:1rem 0;"></textarea>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeCancelOrderModal()" data-i18n="btn_cancel">Cancel</button>
-        <button class="btn btn-danger" id="confirmCancelBtn" data-i18n="orders_cancel_confirm">Yes, Cancel Order</button>
-      </div>
+  <!-- Empty State -->
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22C15.89,22 15,21.1 15,20C15,18.89 15.89,18 17,18M1,2H4.27L5.21,4H20A1,1 0 0,1 21,5C21,5.17 20.95,5.34 20.88,5.5L17.3,11.97C16.96,12.58 16.3,13 15.55,13H8.1L7.2,14.63L7.17,14.75A0.25,0.25 0 0,0 7.42,15H19V17H7C5.89,17 5,16.1 5,15C5,14.65 5.09,14.32 5.24,14.04L6.6,11.59L3,4H1V2M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22C5.89,22 5,21.1 5,20C5,18.89 5.89,18 7,18M16,11L18.78,6H6.14L8.5,11H16Z"/>
+    </svg>
+    <h3 data-i18n="orders_empty_title">No orders yet</h3>
+    <p data-i18n="orders_empty_text">Your orders will appear here once you make a purchase or sale.</p>
+    <a href="index.html" class="btn btn-sell" data-i18n="orders_empty_browse">Browse Products</a>
+  </div>
+</main>
+
+<!-- Order Details Modal -->
+<div id="orderDetailsModal" class="modal" style="display:none;">
+  <div class="modal-content modal-large">
+    <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+    <div id="orderDetailsContent"></div>
+  </div>
+</div>
+
+<!-- Confirm Delivery Modal -->
+<div id="confirmDeliveryModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeConfirmDeliveryModal()">&times;</button>
+    <h2 data-i18n="orders_confirm_delivery_title">Confirm Delivery</h2>
+    <p data-i18n="orders_confirm_delivery_text">Have you received this order?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeConfirmDeliveryModal()" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-sell" id="confirmDeliveryBtn" data-i18n="orders_confirm_yes">Yes, Confirm Delivery</button>
     </div>
   </div>
+</div>
 
-  <script type="module" src="./src/main.js"></script>
-  <script type="module" src="./src/pages/orders.js"></script>
+<!-- Cancel Order Modal -->
+<div id="cancelOrderModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeCancelOrderModal()">&times;</button>
+    <h2 data-i18n="orders_cancel_title">Cancel Order</h2>
+    <p data-i18n="orders_cancel_text">Are you sure you want to cancel this order?</p>
+    <textarea id="cancelReason" class="form-input" data-i18n-placeholder="co_cancel_reason_ph" placeholder="Reason for cancellation (optional)" rows="3" style="width:100%;margin:1rem 0;"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeCancelOrderModal()" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmCancelBtn" data-i18n="orders_cancel_confirm">Yes, Cancel Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tracking Number Modal -->
+<div id="trackingModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeTrackingModal()">&times;</button>
+    <h2 data-i18n="orders_tracking_title">Add Tracking Number</h2>
+    <div class="form-group">
+      <label data-i18n="orders_tracking_number">Tracking Number</label>
+      <input type="text" id="trackingNumberInput" class="form-input" data-i18n-placeholder="orders_tracking_ph" placeholder="Enter tracking number">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeTrackingModal()" data-i18n="btn_cancel">Cancel</button>
+      <button class="btn btn-sell" id="confirmTrackingBtn" data-i18n="orders_tracking_confirm">Ship Order</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+<script type="module" src="./src/pages/orders.js"></script>
 </body>
 </html>

@@ -1,14 +1,60 @@
-import { supabase, getCurrentUser } from '../supabase.js';
+﻿import { supabase, getCurrentUser } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { showToast } from '../main.js';
 
 // ============================
-// State Management
+// State
 // ============================
 let currentUser = null;
-let currentFilter = 'all'; // all, buying, selling
+let currentFilter = 'all';
 let currentStatusFilter = 'all';
 let currentDeliveryFilter = 'all';
 let allOrders = [];
+
+// Checkout state
+let checkoutProduct = null;
+let selectedDeliveryMethod = 'meetup';
+let selectedCarrier = 'omniva';
+let selectedAddressType = 'address';
+let selectedLocker = null;
+let computedShippingCost = 0;
+
+// Helper: translate with fallback
+const t = (key) => (i18n && i18n.t ? i18n.t(key) : key);
+
+// ============================
+// Carriers (matches supabase.js)
+// ============================
+const CARRIERS = {
+  omniva:         { name: 'Omniva',          icon: '\uD83D\uDCEE', base: 3.50, est: '2-4' },
+  dpd:            { name: 'DPD',             icon: '\uD83D\uDE9A', base: 4.20, est: '1-3' },
+  latvijas_pasts: { name: 'Latvijas Pasts',  icon: '\u2709\uFE0F',  base: 3.80, est: '3-5' },
+  venipak:        { name: 'Venipak',         icon: '\uD83D\uDCE6', base: 4.50, est: '1-2' }
+};
+
+// Sample parcel lockers per carrier
+const PARCEL_LOCKERS = {
+  omniva: [
+    { id: 'om1', name: 'Omniva Riga Alfa',       address: 'Brivibas gatve 372, Riga' },
+    { id: 'om2', name: 'Omniva Riga Domina',      address: 'Ieriku iela 3, Riga' },
+    { id: 'om3', name: 'Omniva Riga Spice',       address: 'Lielirbes iela 29, Riga' },
+    { id: 'om4', name: 'Omniva Jelgava Pilsetas', address: 'Lielaja iela 20, Jelgava' },
+    { id: 'om5', name: 'Omniva Liepaja Rimi',     address: 'Ziemelu iela 19, Liepaja' }
+  ],
+  dpd: [
+    { id: 'dp1', name: 'DPD Pickup Riga Akropole', address: 'Maskavas iela 257, Riga' },
+    { id: 'dp2', name: 'DPD Pickup Riga Origo',    address: 'Stacijas laukums 2, Riga' },
+    { id: 'dp3', name: 'DPD Pickup Daugavpils',    address: 'Viestura iela 22, Daugavpils' }
+  ],
+  latvijas_pasts: [
+    { id: 'lp1', name: 'Pasta nodala Riga 50', address: 'Brivibas iela 32, Riga' },
+    { id: 'lp2', name: 'Pasta nodala Riga 67', address: 'Mukusalas iela 41, Riga' }
+  ],
+  venipak: [
+    { id: 'vn1', name: 'Venipak Locker Riga Maxima', address: 'Vienibas gatve 113, Riga' },
+    { id: 'vn2', name: 'Venipak Locker Jurmala',     address: 'Raina iela 110, Jurmala' }
+  ]
+};
 
 // ============================
 // Initialization
@@ -21,178 +67,384 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    await loadOrders();
-    setupEventListeners();
-    // Handle optional query params (e.g., ?product=<id>) to open quick checkout
-    await handleQueryParams();
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product');
+
+    if (productId) {
+      await initCheckout(productId);
+    } else {
+      document.getElementById('checkoutView').style.display = 'none';
+      document.getElementById('ordersListView').style.display = 'block';
+      await loadOrders();
+      setupOrderListeners();
+    }
   } catch (error) {
     console.error('Error initializing orders page:', error);
+    toast(t('co_error_generic'), 'error');
   }
 });
 
-async function handleQueryParams() {
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('product');
-    if (!productId) return;
-
-    // Fetch product details
-    const { data: product, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', productId)
-      .maybeSingle();
-
-    if (error || !product) {
-      console.warn('Product not found for checkout:', productId);
-      return;
-    }
-
-    // Open the order details modal with a simple checkout form
-    const modal = document.getElementById('orderDetailsModal');
-    const content = document.getElementById('orderDetailsContent');
-    if (!modal || !content) return;
-
-    content.innerHTML = `
-      <h2>Checkout: ${product.name ? product.name.replace(/</g,'&lt;') : 'Product'}</h2>
-      <p>Price: €${parseFloat(product.price || 0).toFixed(2)}</p>
-      <label>Shipping address</label>
-      <textarea id="checkoutShipping" rows="3" style="width:100%;margin:0.5rem 0"></textarea>
-      <label>Delivery method</label>
-      <select id="checkoutDelivery" style="width:100%;margin:0.5rem 0">
-        <option value="meetup">Meetup</option>
-        <option value="shipping">Shipping</option>
-      </select>
-      <div style="display:flex;gap:8px;margin-top:1rem;">
-        <button class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
-        <button class="btn btn-sell" id="placeOrderBtn">Place Order</button>
-      </div>
-    `;
-
-    // Show modal
-    modal.style.display = 'flex';
-
-    // Wire up place order button
-    document.getElementById('placeOrderBtn').onclick = async () => {
-      const shipping = document.getElementById('checkoutShipping').value || '';
-      const delivery = document.getElementById('checkoutDelivery').value || 'meetup';
-      try {
-        const { data, error: insertError } = await supabase
-          .from('orders')
-          .insert({
-            product_id: product.id,
-            buyer_id: currentUser.id,
-            seller_id: product.seller_id || null,
-            shipping_address: shipping,
-            delivery_method: delivery,
-            order_status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-
-        // refresh orders list and close modal
-        await loadOrders();
-        modal.style.display = 'none';
-        if (window.showToast) window.showToast('Order created. Complete payment in Balance or Orders.', 'success'); else alert('Order created.');
-      } catch (err) {
-        console.error('Error creating order:', err);
-        if (window.showToast) window.showToast(err.message || 'Failed to create order', 'error'); else alert('Failed to create order');
-      }
-    };
-  } catch (err) {
-    console.error('handleQueryParams error:', err);
+function toast(msg, type = 'success') {
+  if (typeof showToast === 'function') {
+    showToast(msg, type);
+  } else if (window.showToast) {
+    window.showToast(msg, type);
+  } else {
+    alert(msg);
   }
 }
 
 // ============================
-// Event Listeners
+// CHECKOUT FLOW
 // ============================
-function setupEventListeners() {
-  // Filter tabs
-  document.querySelectorAll('.filter-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+async function initCheckout(productId) {
+  document.getElementById('checkoutView').style.display = 'block';
+  document.getElementById('ordersListView').style.display = 'none';
+
+  const { data: product, error } = await supabase
+    .from('products')
+    .select('*, seller:seller_id(id, username, email)')
+    .eq('id', productId)
+    .maybeSingle();
+
+  if (error || !product) {
+    toast(t('co_product_not_found'), 'error');
+    window.location.href = 'orders.html';
+    return;
+  }
+
+  checkoutProduct = product;
+  renderProductSummary(product);
+  renderCarriers();
+  renderLockers();
+  updateSummary();
+  setupCheckoutListeners();
+
+  // Load user balance
+  const { data: userData } = await supabase
+    .from('users')
+    .select('balance')
+    .eq('id', currentUser.id)
+    .single();
+  const balance = userData ? parseFloat(userData.balance || 0) : 0;
+  document.getElementById('summaryBalance').textContent = '\u20AC' + balance.toFixed(2);
+
+  // Set minimum meetup date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateInput = document.getElementById('meetupDate');
+  if (dateInput) dateInput.min = tomorrow.toISOString().split('T')[0];
+}
+
+function renderProductSummary(product) {
+  const img = product.images && product.images[0] ? product.images[0] : 'https://placehold.co/100x100/667eea/white?text=No+Image';
+  const price = parseFloat(product.price || 0);
+  const sellerName = product.seller ? (product.seller.username || product.seller.email) : t('co_unknown_seller');
+
+  document.getElementById('checkoutProductSummary').innerHTML =
+    '<img src="' + img + '" alt="' + esc(product.name) + '" class="checkout-product-image">' +
+    '<div class="checkout-product-info">' +
+      '<h4>' + esc(product.name) + '</h4>' +
+      '<p style="color:var(--muted);margin:0.25rem 0;">' + esc(product.category || '') + '</p>' +
+      '<p style="margin:0.25rem 0;">' + t('co_sold_by') + ': <strong>' + esc(sellerName) + '</strong></p>' +
+      '<p class="checkout-product-price">\u20AC' + price.toFixed(2) + '</p>' +
+    '</div>';
+}
+
+function renderCarriers() {
+  const container = document.getElementById('carrierList');
+  if (!container) return;
+  let html = '';
+  for (const [key, c] of Object.entries(CARRIERS)) {
+    html += '<div class="carrier-card ' + (key === selectedCarrier ? 'selected' : '') + '" data-carrier="' + key + '">' +
+      '<div class="carrier-logo">' + c.icon + '</div>' +
+      '<div class="carrier-info">' +
+        '<strong>' + c.name + '</strong>' +
+        '<p class="carrier-price">\u20AC' + c.base.toFixed(2) + '</p>' +
+        '<p class="carrier-time">' + c.est + ' ' + t('co_days') + '</p>' +
+      '</div></div>';
+  }
+  container.innerHTML = html;
+
+  container.querySelectorAll('.carrier-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      container.querySelectorAll('.carrier-card').forEach(function(c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      selectedCarrier = card.dataset.carrier;
+      computedShippingCost = CARRIERS[selectedCarrier].base;
+      renderLockers();
+      updateSummary();
+    });
+  });
+}
+
+function renderLockers() {
+  const container = document.getElementById('lockerList');
+  if (!container) return;
+  const lockers = PARCEL_LOCKERS[selectedCarrier] || [];
+  selectedLocker = null;
+  let html = '';
+  for (const l of lockers) {
+    html += '<div class="parcel-locker-card" data-locker-id="' + l.id + '" data-locker-address="' + esc(l.address) + '">' +
+      '<div class="locker-info"><strong>' + esc(l.name) + '</strong><p>' + esc(l.address) + '</p></div></div>';
+  }
+  container.innerHTML = html;
+
+  container.querySelectorAll('.parcel-locker-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      container.querySelectorAll('.parcel-locker-card').forEach(function(c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      selectedLocker = { id: card.dataset.lockerId, address: card.dataset.lockerAddress };
+    });
+  });
+}
+
+function updateSummary() {
+  const price = parseFloat(checkoutProduct ? checkoutProduct.price : 0);
+  const isShipping = selectedDeliveryMethod === 'shipping';
+  const shipping = isShipping ? (CARRIERS[selectedCarrier] ? CARRIERS[selectedCarrier].base : 0) : 0;
+  computedShippingCost = shipping;
+  const total = price + shipping;
+
+  document.getElementById('summaryItemPrice').textContent = '\u20AC' + price.toFixed(2);
+  document.getElementById('summaryShippingRow').style.display = isShipping ? 'flex' : 'none';
+  document.getElementById('summaryShippingCost').textContent = '\u20AC' + shipping.toFixed(2);
+  document.getElementById('summaryTotal').textContent = '\u20AC' + total.toFixed(2);
+
+  var shipCostEl = document.getElementById('shippingCostDisplay');
+  if (shipCostEl) {
+    shipCostEl.style.display = isShipping ? 'block' : 'none';
+    document.getElementById('shippingCostValue').textContent = '\u20AC' + shipping.toFixed(2);
+  }
+}
+
+function setupCheckoutListeners() {
+  var tabMeetup = document.getElementById('tabMeetup');
+  var tabShipping = document.getElementById('tabShipping');
+  var tabAddress = document.getElementById('tabAddress');
+  var tabLocker = document.getElementById('tabLocker');
+  var placeBtn = document.getElementById('placeOrderBtn');
+
+  if (tabMeetup) tabMeetup.addEventListener('click', function() { switchDelivery('meetup'); });
+  if (tabShipping) tabShipping.addEventListener('click', function() { switchDelivery('shipping'); });
+  if (tabAddress) tabAddress.addEventListener('click', function() { switchAddressType('address'); });
+  if (tabLocker) tabLocker.addEventListener('click', function() { switchAddressType('locker'); });
+  if (placeBtn) placeBtn.addEventListener('click', placeOrder);
+}
+
+function switchDelivery(method) {
+  selectedDeliveryMethod = method;
+  document.getElementById('tabMeetup').classList.toggle('active', method === 'meetup');
+  document.getElementById('tabShipping').classList.toggle('active', method === 'shipping');
+  document.getElementById('meetupOptions').style.display = method === 'meetup' ? 'block' : 'none';
+  document.getElementById('shippingOptions').style.display = method === 'shipping' ? 'block' : 'none';
+  updateSummary();
+}
+
+function switchAddressType(type) {
+  selectedAddressType = type;
+  document.getElementById('tabAddress').classList.toggle('active', type === 'address');
+  document.getElementById('tabLocker').classList.toggle('active', type === 'locker');
+  document.getElementById('addressFields').style.display = type === 'address' ? 'block' : 'none';
+  document.getElementById('lockerFields').style.display = type === 'locker' ? 'block' : 'none';
+}
+
+// ============================
+// PLACE ORDER
+// ============================
+async function placeOrder() {
+  var btn = document.getElementById('placeOrderBtn');
+  if (!checkoutProduct || !currentUser) return;
+
+  var product = checkoutProduct;
+  var price = parseFloat(product.price || 0);
+  var notes = (document.getElementById('buyerNotes') ? document.getElementById('buyerNotes').value.trim() : '') || '';
+
+  var orderData = {
+    product_id: product.id,
+    buyer_id: currentUser.id,
+    seller_id: product.seller_id || (product.seller ? product.seller.id : null),
+    delivery_method: selectedDeliveryMethod,
+    order_status: 'pending',
+    status: 'pending',
+    unit_price: price,
+    quantity: 1,
+    buyer_notes: notes,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  if (selectedDeliveryMethod === 'meetup') {
+    var location = document.getElementById('meetupLocation') ? document.getElementById('meetupLocation').value.trim() : '';
+    var dateVal = document.getElementById('meetupDate') ? document.getElementById('meetupDate').value : '';
+    var timeVal = document.getElementById('meetupTime') ? document.getElementById('meetupTime').value : '';
+
+    if (!location) { toast(t('co_err_meetup_location'), 'error'); return; }
+    if (!dateVal) { toast(t('co_err_meetup_date'), 'error'); return; }
+
+    var meetupDatetime = timeVal ? (dateVal + 'T' + timeVal + ':00') : (dateVal + 'T12:00:00');
+    orderData.meetup_location = location;
+    orderData.meetup_date = meetupDatetime;
+    orderData.shipping_cost = 0;
+    orderData.total_amount = price;
+  } else {
+    var recipientName = document.getElementById('recipientName') ? document.getElementById('recipientName').value.trim() : '';
+    var recipientPhone = document.getElementById('recipientPhone') ? document.getElementById('recipientPhone').value.trim() : '';
+
+    if (!recipientName) { toast(t('co_err_recipient_name'), 'error'); return; }
+
+    orderData.shipping_carrier = selectedCarrier;
+    orderData.shipping_cost = computedShippingCost;
+    orderData.total_amount = price + computedShippingCost;
+    orderData.recipient_name = recipientName;
+    orderData.recipient_phone = recipientPhone || '';
+
+    if (selectedAddressType === 'locker') {
+      if (!selectedLocker) { toast(t('co_err_select_locker'), 'error'); return; }
+      orderData.parcel_locker_address = selectedLocker.address;
+      orderData.shipping_address = selectedLocker.address;
+    } else {
+      var street = document.getElementById('shippingStreet') ? document.getElementById('shippingStreet').value.trim() : '';
+      var city = document.getElementById('shippingCity') ? document.getElementById('shippingCity').value.trim() : '';
+      var postal = document.getElementById('shippingPostal') ? document.getElementById('shippingPostal').value.trim() : '';
+      var country = document.getElementById('shippingCountry') ? document.getElementById('shippingCountry').value : 'LV';
+
+      if (!street || !city) { toast(t('co_err_address'), 'error'); return; }
+
+      orderData.shipping_address = street;
+      orderData.shipping_city = city;
+      orderData.shipping_postal_code = postal;
+      orderData.shipping_country = country;
+    }
+  }
+
+  // Check balance
+  var ubRes = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+  var balance = parseFloat(ubRes.data ? ubRes.data.balance : 0);
+  var totalAmount = parseFloat(orderData.total_amount);
+
+  if (balance < totalAmount) {
+    toast(t('co_err_insufficient_balance') + ' (\u20AC' + totalAmount.toFixed(2) + ')', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = t('co_processing');
+
+  try {
+    orderData.order_number = 'VND-' + Date.now().toString(36).toUpperCase();
+
+    // 1. Create order
+    var insertRes = await supabase.from('orders').insert(orderData).select().single();
+    if (insertRes.error) throw insertRes.error;
+    var order = insertRes.data;
+
+    // 2. Deduct buyer balance (escrow hold)
+    var newBalance = balance - totalAmount;
+    var balRes = await supabase.from('users').update({ balance: newBalance }).eq('id', currentUser.id);
+    if (balRes.error) throw balRes.error;
+
+    // 3. Record buyer transaction
+    await supabase.from('user_transactions').insert({
+      user_id: currentUser.id,
+      amount: -totalAmount,
+      transaction_type: 'escrow_hold',
+      description: 'Escrow hold: ' + product.name,
+      reference_id: product.id,
+      created_at: new Date().toISOString()
+    });
+
+    // 4. Update order status to escrow (meetup) or paid (shipping)
+    var nextStatus = selectedDeliveryMethod === 'meetup' ? 'escrow' : 'paid';
+    await supabase.from('orders').update({
+      order_status: nextStatus,
+      status: nextStatus,
+      payment_status: 'paid',
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', order.id);
+
+    // 5. Decrease product stock
+    if (product.stock !== undefined && product.stock !== null) {
+      await supabase.from('products').update({
+        stock: Math.max(0, (product.stock || 1) - 1),
+        updated_at: new Date().toISOString()
+      }).eq('id', product.id);
+    }
+
+    toast(t('co_order_created'), 'success');
+    setTimeout(function() { window.location.href = 'orders.html'; }, 1500);
+
+  } catch (err) {
+    console.error('Order creation error:', err);
+    toast(err.message || t('co_error_generic'), 'error');
+    btn.disabled = false;
+    btn.textContent = t('co_place_order');
+  }
+}
+
+// ============================
+// ORDERS LIST
+// ============================
+function setupOrderListeners() {
+  document.querySelectorAll('.filter-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
       currentFilter = tab.dataset.filter;
       filterOrders();
     });
   });
 
-  // Status filter
-  document.getElementById('statusFilter')?.addEventListener('change', (e) => {
-    currentStatusFilter = e.target.value;
-    filterOrders();
-  });
+  var sf = document.getElementById('statusFilter');
+  if (sf) sf.addEventListener('change', function(e) { currentStatusFilter = e.target.value; filterOrders(); });
 
-  // Delivery filter
-  document.getElementById('deliveryFilter')?.addEventListener('change', (e) => {
-    currentDeliveryFilter = e.target.value;
-    filterOrders();
-  });
+  var df = document.getElementById('deliveryFilter');
+  if (df) df.addEventListener('change', function(e) { currentDeliveryFilter = e.target.value; filterOrders(); });
 }
 
-// ============================
-// Load Orders
-// ============================
 async function loadOrders() {
   try {
-    const { data: orders, error } = await supabase
+    var res = await supabase
       .from('orders')
-      .select(`
-        *,
-        buyer:buyer_id(id, username, email),
-        seller:seller_id(id, username, email),
-        product:product_id(id, name, price, images)
-      `)
-      .or(`buyer_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`)
+      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, price, images, category)')
+      .or('buyer_id.eq.' + currentUser.id + ',seller_id.eq.' + currentUser.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-
-    allOrders = orders || [];
+    if (res.error) throw res.error;
+    allOrders = res.data || [];
     filterOrders();
   } catch (error) {
     console.error('Error loading orders:', error);
-    showError('Failed to load orders. Please refresh the page.');
+    toast(t('co_err_load_orders'), 'error');
   }
 }
 
-// ============================
-// Filter Orders
-// ============================
 function filterOrders() {
-  let filtered = [...allOrders];
+  var filtered = allOrders.slice();
 
-  // Filter by role (buying/selling)
   if (currentFilter === 'buying') {
-    filtered = filtered.filter(o => o.buyer_id === currentUser.id);
+    filtered = filtered.filter(function(o) { return o.buyer_id === currentUser.id; });
   } else if (currentFilter === 'selling') {
-    filtered = filtered.filter(o => o.seller_id === currentUser.id);
+    filtered = filtered.filter(function(o) { return o.seller_id === currentUser.id; });
   }
 
-  // Filter by status
   if (currentStatusFilter !== 'all') {
-    filtered = filtered.filter(o => o.status === currentStatusFilter);
+    filtered = filtered.filter(function(o) {
+      return (o.status === currentStatusFilter) || (o.order_status === currentStatusFilter);
+    });
   }
 
-  // Filter by delivery method
   if (currentDeliveryFilter !== 'all') {
-    filtered = filtered.filter(o => o.delivery_method === currentDeliveryFilter);
+    filtered = filtered.filter(function(o) { return o.delivery_method === currentDeliveryFilter; });
   }
 
   displayOrders(filtered);
 }
 
-// ============================
-// Display Orders
-// ============================
 function displayOrders(orders) {
-  const container = document.getElementById('ordersContainer');
-  const emptyState = document.getElementById('emptyState');
+  var container = document.getElementById('ordersContainer');
+  var emptyState = document.getElementById('emptyState');
 
   if (!orders || orders.length === 0) {
     container.innerHTML = '';
@@ -201,255 +453,206 @@ function displayOrders(orders) {
   }
 
   emptyState.style.display = 'none';
-  container.innerHTML = orders.map(order => createOrderCard(order)).join('');
+  container.innerHTML = orders.map(function(order) { return createOrderCard(order); }).join('');
 }
 
 function createOrderCard(order) {
-  const isBuyer = order.buyer_id === currentUser.id;
-  const otherUser = isBuyer ? order.seller : order.buyer;
-  const productImage = order.product?.images?.[0] || 'https://placehold.co/150x150/667eea/white?text=No+Image';
-  
-  const statusBadge = getStatusBadge(order.status);
-  const deliveryIcon = order.delivery_method === 'meetup' ? '🤝' : '📦';
-  
-  return `
-    <div class="order-card" data-order-id="${order.id}">
-      <div class="order-header">
-        <div class="order-number">
-          <strong>${order.order_number}</strong>
-          <span class="order-date">${formatDate(order.created_at)}</span>
-        </div>
-        ${statusBadge}
-      </div>
+  var isBuyer = order.buyer_id === currentUser.id;
+  var otherUser = isBuyer ? order.seller : order.buyer;
+  var productImage = (order.product && order.product.images && order.product.images[0]) ? order.product.images[0] : 'https://placehold.co/150x150/667eea/white?text=No+Image';
+  var status = order.status || order.order_status || 'pending';
+  var deliveryIcon = order.delivery_method === 'meetup' ? '\uD83E\uDD1D' : '\uD83D\uDCE6';
+  var total = parseFloat(order.total_amount || order.unit_price || 0);
+  var productName = order.product ? order.product.name : t('co_unknown_product');
+  var otherName = otherUser ? (otherUser.username || otherUser.email) : t('co_unknown');
 
-      <div class="order-body">
-        <div class="order-product">
-          <img src="${productImage}" alt="${order.product?.name || 'Product'}" class="order-product-image">
-          <div class="order-product-info">
-            <h3>${order.product?.name || 'Product'}</h3>
-            <p class="order-role">${isBuyer ? '🛒 Buying from' : '💰 Selling to'} ${otherUser?.username || otherUser?.email || 'Unknown'}</p>
-            <p class="order-quantity">Quantity: ${order.quantity}</p>
-          </div>
-        </div>
+  var html = '<div class="order-card" data-order-id="' + order.id + '">' +
+    '<div class="order-header">' +
+      '<div class="order-number"><strong>' + (order.order_number || '\u2014') + '</strong>' +
+      '<span class="order-date">' + formatDate(order.created_at) + '</span></div>' +
+      getStatusBadgeHTML(status) +
+    '</div>' +
+    '<div class="order-body">' +
+      '<div class="order-product">' +
+        '<img src="' + productImage + '" alt="' + esc(productName) + '" class="order-product-image">' +
+        '<div class="order-product-info">' +
+          '<h3>' + esc(productName) + '</h3>' +
+          '<p class="order-role">' + (isBuyer ? '\uD83D\uDED2 ' + t('orders_buying_from') : '\uD83D\uDCB0 ' + t('orders_selling_to')) + ' <strong>' + esc(otherName) + '</strong></p>' +
+          '<p class="order-quantity">' + t('orders_quantity') + ': ' + (order.quantity || 1) + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="order-details">' +
+        '<div class="order-detail-row"><span>' + deliveryIcon + ' ' + t('orders_delivery') + ':</span>' +
+        '<strong>' + (order.delivery_method === 'meetup' ? t('orders_delivery_meetup') : t('orders_delivery_shipping')) + '</strong></div>';
 
-        <div class="order-details">
-          <div class="order-detail-row">
-            <span>${deliveryIcon} Delivery:</span>
-            <strong>${order.delivery_method === 'meetup' ? 'Meetup' : 'Shipping'}</strong>
-          </div>
-          
-          ${order.delivery_method === 'shipping' ? `
-            <div class="order-detail-row">
-              <span>📮 Carrier:</span>
-              <strong>${getCarrierName(order.shipping_carrier)}</strong>
-            </div>
-            ${order.tracking_number ? `
-              <div class="order-detail-row">
-                <span>🔢 Tracking:</span>
-                <strong>${order.tracking_number}</strong>
-              </div>
-            ` : ''}
-          ` : ''}
-          
-          ${order.delivery_method === 'meetup' && order.meetup_location ? `
-            <div class="order-detail-row">
-              <span>📍 Location:</span>
-              <strong>${order.meetup_location}</strong>
-            </div>
-            ${order.meetup_date ? `
-              <div class="order-detail-row">
-                <span>📅 Date:</span>
-                <strong>${formatDateTime(order.meetup_date)}</strong>
-              </div>
-            ` : ''}
-          ` : ''}
-          
-          <div class="order-detail-row order-total">
-            <span>Total:</span>
-            <strong>€${parseFloat(order.total_amount).toFixed(2)}</strong>
-          </div>
-        </div>
-      </div>
+  if (order.delivery_method === 'shipping' && order.shipping_carrier) {
+    html += '<div class="order-detail-row"><span>\uD83D\uDCEE ' + t('orders_carrier') + ':</span><strong>' + getCarrierName(order.shipping_carrier) + '</strong></div>';
+    if (order.tracking_number) {
+      html += '<div class="order-detail-row"><span>\uD83D\uDD22 ' + t('orders_tracking') + ':</span><strong>' + order.tracking_number + '</strong></div>';
+    }
+  }
 
-      <div class="order-actions">
-        <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')">View Details</button>
-        
-        ${isBuyer && order.status === 'pending' ? `
-          <button class="btn btn-sell" onclick="payOrder('${order.id}')">Pay Now</button>
-          <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">Cancel</button>
-        ` : ''}
-        
-        ${order.status === 'escrow' ? `
-          <button class="btn btn-warning" style="pointer-events:none;">⏳ Funds in Escrow</button>
-          <button class="btn btn-sell" onclick="confirmDelivery('${order.id}')">Confirm Meetup</button>
-        ` : ''}
-        
-        ${!isBuyer && order.status === 'paid' ? `
-          <button class="btn btn-sell" onclick="markAsProcessing('${order.id}')">Start Processing</button>
-        ` : ''}
-        
-        ${!isBuyer && order.status === 'processing' && order.delivery_method === 'meetup' ? `
-          <button class="btn btn-sell" onclick="markReadyForPickup('${order.id}')">Ready for Pickup</button>
-        ` : ''}
-        
-        ${!isBuyer && order.status === 'processing' && order.delivery_method === 'shipping' ? `
-          <button class="btn btn-sell" onclick="addTrackingNumber('${order.id}')">Add Tracking & Ship</button>
-        ` : ''}
-        
-        ${isBuyer && (order.status === 'shipped' || order.status === 'ready_for_pickup') ? `
-          <button class="btn btn-sell" onclick="confirmDelivery('${order.id}')">Confirm Delivery</button>
-        ` : ''}
-        
-        ${order.tracking_number ? `
-          <button class="btn btn-secondary" onclick="trackShipment('${order.id}')">Track Shipment</button>
-        ` : ''}
-      </div>
-    </div>
-  `;
+  if (order.delivery_method === 'meetup' && order.meetup_location) {
+    html += '<div class="order-detail-row"><span>\uD83D\uDCCD ' + t('orders_location') + ':</span><strong>' + esc(order.meetup_location) + '</strong></div>';
+    if (order.meetup_date) {
+      html += '<div class="order-detail-row"><span>\uD83D\uDCC5 ' + t('orders_date') + ':</span><strong>' + formatDateTime(order.meetup_date) + '</strong></div>';
+    }
+  }
+
+  html += '<div class="order-detail-row order-total"><span>' + t('co_total') + ':</span><strong>\u20AC' + total.toFixed(2) + '</strong></div>' +
+    '</div></div>';
+
+  // Actions
+  html += '<div class="order-actions">' +
+    '<button class="btn btn-secondary" onclick="viewOrderDetails(\'' + order.id + '\')">' + t('orders_view_details') + '</button>';
+
+  if (isBuyer && status === 'pending') {
+    html += '<button class="btn btn-sell" onclick="payOrder(\'' + order.id + '\')">' + t('orders_pay_now') + '</button>';
+    html += '<button class="btn btn-danger" onclick="cancelOrder(\'' + order.id + '\')">' + t('btn_cancel') + '</button>';
+  }
+
+  if (status === 'escrow') {
+    html += '<button class="btn btn-warning" style="pointer-events:none;">\uD83D\uDD12 ' + t('orders_in_escrow') + '</button>';
+    html += '<button class="btn btn-sell" onclick="confirmMeetup(\'' + order.id + '\')">' + t('orders_confirm_meetup') + '</button>';
+  }
+
+  if (!isBuyer && status === 'paid') {
+    html += '<button class="btn btn-sell" onclick="markAsProcessing(\'' + order.id + '\')">' + t('orders_start_processing') + '</button>';
+  }
+
+  if (!isBuyer && status === 'processing' && order.delivery_method === 'meetup') {
+    html += '<button class="btn btn-sell" onclick="markReadyForPickup(\'' + order.id + '\')">' + t('orders_ready_pickup') + '</button>';
+  }
+
+  if (!isBuyer && status === 'processing' && order.delivery_method === 'shipping') {
+    html += '<button class="btn btn-sell" onclick="addTrackingNumber(\'' + order.id + '\')">' + t('orders_add_tracking') + '</button>';
+  }
+
+  if (isBuyer && (status === 'shipped' || status === 'ready_for_pickup')) {
+    html += '<button class="btn btn-sell" onclick="confirmDelivery(\'' + order.id + '\')">' + t('orders_confirm_yes') + '</button>';
+  }
+
+  if (order.tracking_number) {
+    html += '<button class="btn btn-secondary" onclick="trackShipment(\'' + order.id + '\')">' + t('orders_track_shipment') + '</button>';
+  }
+
+  html += '</div></div>';
+  return html;
 }
 
 // ============================
-// Order Actions
+// ORDER ACTIONS
 // ============================
 
+// View details
 window.viewOrderDetails = async function(orderId) {
   try {
-    const { data: order, error } = await supabase
+    var res = await supabase
       .from('orders')
-      .select(`
-        *,
-        buyer:buyer_id(id, username, email, avatar_url),
-        seller:seller_id(id, username, email, avatar_url),
-        product:product_id(id, name, description, price, images, category)
-      `)
+      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, description, price, images, category)')
       .eq('id', orderId)
       .single();
 
-    if (error) throw error;
-
-    // Load order history
-    const { data: history } = await supabase
-      .from('order_status_history')
-      .select('*, changed_by_user:changed_by(username, email)')
-      .eq('order_id', orderId)
-      .order('created_at', { ascending: false });
-
-    displayOrderDetails(order, history || []);
+    if (res.error) throw res.error;
+    displayOrderDetails(res.data);
   } catch (error) {
     console.error('Error loading order details:', error);
-    showError('Failed to load order details');
+    toast(t('co_err_load_details'), 'error');
   }
 };
 
-function displayOrderDetails(order, history) {
-  const isBuyer = order.buyer_id === currentUser.id;
-  const otherUser = isBuyer ? order.seller : order.buyer;
-  const productImage = order.product?.images?.[0] || 'https://placehold.co/400x400/667eea/white?text=No+Image';
+function displayOrderDetails(order) {
+  var isBuyer = order.buyer_id === currentUser.id;
+  var otherUser = isBuyer ? order.seller : order.buyer;
+  var productImage = (order.product && order.product.images && order.product.images[0]) ? order.product.images[0] : 'https://placehold.co/400x400/667eea/white?text=No+Image';
+  var status = order.status || order.order_status || 'pending';
+  var unitPrice = parseFloat(order.unit_price || (order.product ? order.product.price : 0) || 0);
+  var qty = order.quantity || 1;
+  var shippingCost = parseFloat(order.shipping_cost || 0);
+  var totalAmount = parseFloat(order.total_amount || (unitPrice * qty + shippingCost));
 
-  const content = `
-    <div class="order-details-modal">
-      <h2>📦 Order ${order.order_number}</h2>
-      
-      <div class="order-details-grid">
-        <!-- Product Info -->
-        <div class="order-details-section">
-          <h3>Product Information</h3>
-          <div class="order-product-detail">
-            <img src="${productImage}" alt="${order.product?.name}" class="order-detail-image">
-            <div>
-              <h4>${order.product?.name}</h4>
-              <p>${order.product?.description || ''}</p>
-              <p><strong>Category:</strong> ${order.product?.category || 'N/A'}</p>
-              <p><strong>Unit Price:</strong> €${parseFloat(order.unit_price).toFixed(2)}</p>
-              <p><strong>Quantity:</strong> ${order.quantity}</p>
-            </div>
-          </div>
-        </div>
+  var content = '<div class="order-details-modal">' +
+    '<h2>\uD83D\uDCE6 ' + t('orders_order') + ' ' + esc(order.order_number || '') + '</h2>' +
+    '<div class="order-details-grid">';
 
-        <!-- Order Status -->
-        <div class="order-details-section">
-          <h3>Order Status</h3>
-          <div class="status-timeline">
-            ${getStatusTimeline(order, history)}
-          </div>
-        </div>
+  // Product
+  content += '<div class="order-details-section"><h3>' + t('co_product_info') + '</h3>' +
+    '<div class="order-product-detail">' +
+    '<img src="' + productImage + '" alt="' + esc(order.product ? order.product.name : '') + '" class="order-detail-image">' +
+    '<div><h4>' + esc(order.product ? order.product.name : '') + '</h4>' +
+    '<p>' + esc(order.product ? (order.product.description || '') : '') + '</p>' +
+    '<p><strong>' + t('orders_category') + ':</strong> ' + esc(order.product ? (order.product.category || 'N/A') : 'N/A') + '</p>' +
+    '<p><strong>' + t('orders_unit_price') + ':</strong> \u20AC' + unitPrice.toFixed(2) + '</p>' +
+    '<p><strong>' + t('orders_quantity') + ':</strong> ' + qty + '</p>' +
+    '</div></div></div>';
 
-        <!-- Delivery Information -->
-        <div class="order-details-section">
-          <h3>Delivery Information</h3>
-          ${order.delivery_method === 'meetup' ? `
-            <p><strong>Method:</strong> 🤝 Meetup</p>
-            ${order.meetup_location ? `<p><strong>Location:</strong> ${order.meetup_location}</p>` : ''}
-            ${order.meetup_date ? `<p><strong>Date & Time:</strong> ${formatDateTime(order.meetup_date)}</p>` : ''}
-            <p><strong>Buyer Confirmed:</strong> ${order.meetup_confirmed_by_buyer ? '✅ Yes' : '❌ No'}</p>
-            <p><strong>Seller Confirmed:</strong> ${order.meetup_confirmed_by_seller ? '✅ Yes' : '❌ No'}</p>
-          ` : `
-            <p><strong>Method:</strong> 📦 Shipping</p>
-            <p><strong>Carrier:</strong> ${getCarrierName(order.shipping_carrier)}</p>
-            <p><strong>Service:</strong> ${order.shipping_service || 'N/A'}</p>
-            ${order.tracking_number ? `<p><strong>Tracking:</strong> ${order.tracking_number}</p>` : ''}
-            <p><strong>Shipping Cost:</strong> €${parseFloat(order.shipping_cost || 0).toFixed(2)}</p>
-            
-            <div class="shipping-address">
-              <h4>Shipping Address</h4>
-              <p>${order.recipient_name || ''}</p>
-              <p>${order.recipient_phone || ''}</p>
-              ${order.parcel_locker_address ? `
-                <p><strong>Parcel Locker:</strong></p>
-                <p>${order.parcel_locker_address}</p>
-              ` : `
-                <p>${order.shipping_address || ''}</p>
-                <p>${order.shipping_city || ''}, ${order.shipping_postal_code || ''}</p>
-                <p>${getCountryName(order.shipping_country)}</p>
-              `}
-            </div>
-          `}
-        </div>
+  // Status timeline
+  content += '<div class="order-details-section"><h3>' + t('orders_status') + '</h3>' +
+    '<div class="status-timeline">' + getStatusTimeline(order) + '</div></div>';
 
-        <!-- Payment Information -->
-        <div class="order-details-section">
-          <h3>Payment Information</h3>
-          <p><strong>Payment Method:</strong> ${order.payment_method || 'balance'}</p>
-          <p><strong>Payment Status:</strong> ${getStatusBadge(order.payment_status).outerHTML}</p>
-          ${order.paid_at ? `<p><strong>Paid At:</strong> ${formatDateTime(order.paid_at)}</p>` : ''}
-          <div class="order-pricing">
-            <p><strong>Subtotal:</strong> €${(parseFloat(order.unit_price) * order.quantity).toFixed(2)}</p>
-            <p><strong>Shipping:</strong> €${parseFloat(order.shipping_cost || 0).toFixed(2)}</p>
-            <p class="order-total-line"><strong>Total:</strong> €${parseFloat(order.total_amount).toFixed(2)}</p>
-          </div>
-        </div>
+  // Delivery
+  content += '<div class="order-details-section"><h3>' + t('co_delivery_method') + '</h3>';
+  if (order.delivery_method === 'meetup') {
+    content += '<p><strong>' + t('orders_method') + ':</strong> \uD83E\uDD1D ' + t('orders_delivery_meetup') + '</p>';
+    if (order.meetup_location) content += '<p><strong>' + t('orders_location') + ':</strong> ' + esc(order.meetup_location) + '</p>';
+    if (order.meetup_date) content += '<p><strong>' + t('orders_date') + ':</strong> ' + formatDateTime(order.meetup_date) + '</p>';
+    content += '<p><strong>' + t('orders_buyer_confirmed') + ':</strong> ' + (order.meetup_confirmed_by_buyer ? '\u2705' : '\u274C') + '</p>';
+    content += '<p><strong>' + t('orders_seller_confirmed') + ':</strong> ' + (order.meetup_confirmed_by_seller ? '\u2705' : '\u274C') + '</p>';
+  } else {
+    content += '<p><strong>' + t('orders_method') + ':</strong> \uD83D\uDCE6 ' + t('orders_delivery_shipping') + '</p>';
+    content += '<p><strong>' + t('orders_carrier') + ':</strong> ' + getCarrierName(order.shipping_carrier) + '</p>';
+    if (order.tracking_number) content += '<p><strong>' + t('orders_tracking') + ':</strong> ' + order.tracking_number + '</p>';
+    content += '<p><strong>' + t('co_shipping_cost') + ':</strong> \u20AC' + shippingCost.toFixed(2) + '</p>';
+    content += '<div class="shipping-address" style="margin-top:1rem;"><h4>' + t('orders_shipping_address') + '</h4>';
+    content += '<p>' + esc(order.recipient_name || '') + '</p>';
+    content += '<p>' + esc(order.recipient_phone || '') + '</p>';
+    if (order.parcel_locker_address) {
+      content += '<p><strong>' + t('co_parcel_locker') + ':</strong></p><p>' + esc(order.parcel_locker_address) + '</p>';
+    } else {
+      content += '<p>' + esc(order.shipping_address || '') + '</p>';
+      content += '<p>' + esc(order.shipping_city || '') + ', ' + esc(order.shipping_postal_code || '') + '</p>';
+      content += '<p>' + getCountryName(order.shipping_country) + '</p>';
+    }
+    content += '</div>';
+  }
+  content += '</div>';
 
-        <!-- User Information -->
-        <div class="order-details-section">
-          <h3>${isBuyer ? 'Seller' : 'Buyer'} Information</h3>
-          <div class="user-info">
-            ${otherUser?.avatar_url ? `<img src="${otherUser.avatar_url}" alt="Avatar" class="user-avatar">` : ''}
-            <div>
-              <p><strong>Username:</strong> ${otherUser?.username || 'N/A'}</p>
-              <p><strong>Email:</strong> ${otherUser?.email || 'N/A'}</p>
-              <a href="chat.html?user=${otherUser?.id}" class="btn btn-secondary">💬 Message</a>
-            </div>
-          </div>
-        </div>
+  // Payment
+  content += '<div class="order-details-section"><h3>' + t('orders_payment_info') + '</h3>' +
+    '<div class="order-pricing">' +
+    '<p><strong>' + t('orders_subtotal') + ':</strong> \u20AC' + (unitPrice * qty).toFixed(2) + '</p>' +
+    '<p><strong>' + t('co_shipping_cost') + ':</strong> \u20AC' + shippingCost.toFixed(2) + '</p>' +
+    '<p class="order-total-line"><strong>' + t('co_total') + ':</strong> \u20AC' + totalAmount.toFixed(2) + '</p>' +
+    '</div>';
+  if (order.paid_at) content += '<p><strong>' + t('orders_paid_at') + ':</strong> ' + formatDateTime(order.paid_at) + '</p>';
+  content += '</div>';
 
-        <!-- Notes -->
-        ${(order.buyer_notes || order.seller_notes) ? `
-          <div class="order-details-section">
-            <h3>Notes</h3>
-            ${order.buyer_notes ? `<p><strong>Buyer Notes:</strong> ${order.buyer_notes}</p>` : ''}
-            ${order.seller_notes ? `<p><strong>Seller Notes:</strong> ${order.seller_notes}</p>` : ''}
-          </div>
-        ` : ''}
-      </div>
+  // Other user info
+  content += '<div class="order-details-section"><h3>' + (isBuyer ? t('orders_seller_info') : t('orders_buyer_info')) + '</h3>' +
+    '<div class="user-info">';
+  if (otherUser && otherUser.avatar_url) content += '<img src="' + otherUser.avatar_url + '" alt="Avatar" class="user-avatar">';
+  content += '<div><p><strong>' + t('orders_username') + ':</strong> ' + esc(otherUser ? (otherUser.username || 'N/A') : 'N/A') + '</p>' +
+    '<p><strong>' + t('orders_email') + ':</strong> ' + esc(otherUser ? (otherUser.email || 'N/A') : 'N/A') + '</p>' +
+    '<a href="chat.html?user=' + (otherUser ? otherUser.id : '') + '" class="btn btn-secondary">\uD83D\uDCAC ' + t('orders_message') + '</a>' +
+    '</div></div></div>';
 
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeOrderModal()">Close</button>
-        ${order.tracking_number ? `
-          <button class="btn btn-sell" onclick="trackShipment('${order.id}')">Track Shipment</button>
-        ` : ''}
-      </div>
-    </div>
-  `;
+  // Notes
+  if (order.buyer_notes || order.seller_notes) {
+    content += '<div class="order-details-section"><h3>' + t('co_notes_title') + '</h3>';
+    if (order.buyer_notes) content += '<p><strong>' + t('orders_buyer_notes') + ':</strong> ' + esc(order.buyer_notes) + '</p>';
+    if (order.seller_notes) content += '<p><strong>' + t('orders_seller_notes') + ':</strong> ' + esc(order.seller_notes) + '</p>';
+    content += '</div>';
+  }
+
+  content += '</div>'; // close grid
+
+  // Modal actions
+  content += '<div class="modal-actions">' +
+    '<button class="btn btn-secondary" onclick="closeOrderModal()">' + t('orders_close') + '</button>';
+  if (order.tracking_number) {
+    content += '<button class="btn btn-sell" onclick="trackShipment(\'' + order.id + '\')">' + t('orders_track_shipment') + '</button>';
+  }
+  content += '</div></div>';
 
   document.getElementById('orderDetailsContent').innerHTML = content;
   document.getElementById('orderDetailsModal').style.display = 'flex';
@@ -460,116 +663,121 @@ window.closeOrderModal = function() {
 };
 
 // ============================
-// Payment Actions
+// PAY ORDER (for pending orders)
 // ============================
-
 window.payOrder = async function(orderId) {
-  if (!confirm('Process payment for this order?')) return;
+  if (!confirm(t('orders_confirm_payment'))) return;
 
   try {
-    const order = allOrders.find(o => o.id === orderId);
+    var order = allOrders.find(function(o) { return o.id === orderId; });
     if (!order) throw new Error('Order not found');
 
-    // Check buyer balance
-    const { data: userData } = await supabase
-      .from('users')
-      .select('balance')
-      .eq('id', currentUser.id)
-      .single();
+    var totalAmount = parseFloat(order.total_amount || 0);
+    var ubRes = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+    var balance = parseFloat(ubRes.data ? ubRes.data.balance : 0);
 
-    if (!userData || parseFloat(userData.balance) < parseFloat(order.total_amount)) {
-      showError(`Insufficient balance. You need €${parseFloat(order.total_amount).toFixed(2)}. Please add funds to your balance.`);
+    if (balance < totalAmount) {
+      toast(t('co_err_insufficient_balance') + ' \u2014 \u20AC' + totalAmount.toFixed(2), 'error');
       return;
     }
 
-    // Process payment
-    const { error: paymentError } = await supabase.rpc('process_order_payment', {
-      p_order_id: orderId,
-      p_buyer_id: currentUser.id
+    await supabase.from('users').update({ balance: balance - totalAmount }).eq('id', currentUser.id);
+
+    await supabase.from('user_transactions').insert({
+      user_id: currentUser.id,
+      amount: -totalAmount,
+      transaction_type: 'escrow_hold',
+      description: 'Payment: Order ' + (order.order_number || ''),
+      reference_id: order.product_id,
+      created_at: new Date().toISOString()
     });
 
-    if (paymentError) throw paymentError;
+    var nextStatus = order.delivery_method === 'meetup' ? 'escrow' : 'paid';
+    await supabase.from('orders').update({
+      status: nextStatus,
+      order_status: nextStatus,
+      payment_status: 'paid',
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', orderId);
 
-    showSuccess('Payment successful! Order confirmed.');
+    toast(t('orders_payment_success'), 'success');
     await loadOrders();
   } catch (error) {
-    console.error('Error processing payment:', error);
-    showError('Payment failed: ' + (error.message || 'Unknown error'));
+    console.error('Payment error:', error);
+    toast(error.message || t('orders_payment_failed'), 'error');
   }
 };
 
 // ============================
-// Seller Actions
+// SELLER ACTIONS
 // ============================
-
 window.markAsProcessing = async function(orderId) {
   try {
-    const { error } = await supabase
-      .from('orders')
-      .update({ 
-        status: 'processing',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId);
-
-    if (error) throw error;
-
-    showSuccess('Order marked as processing');
+    await supabase.from('orders').update({
+      status: 'processing', order_status: 'processing', updated_at: new Date().toISOString()
+    }).eq('id', orderId);
+    toast(t('orders_marked_processing'), 'success');
     await loadOrders();
   } catch (error) {
-    console.error('Error updating order:', error);
-    showError('Failed to update order status');
+    console.error('Error:', error);
+    toast(t('orders_update_failed'), 'error');
   }
 };
 
 window.markReadyForPickup = async function(orderId) {
   try {
-    const { error } = await supabase
-      .from('orders')
-      .update({ 
-        status: 'ready_for_pickup',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId);
-
-    if (error) throw error;
-
-    showSuccess('Order marked as ready for pickup');
+    await supabase.from('orders').update({
+      status: 'ready_for_pickup', order_status: 'ready_for_pickup', updated_at: new Date().toISOString()
+    }).eq('id', orderId);
+    toast(t('orders_marked_ready'), 'success');
     await loadOrders();
   } catch (error) {
-    console.error('Error updating order:', error);
-    showError('Failed to update order status');
+    console.error('Error:', error);
+    toast(t('orders_update_failed'), 'error');
   }
 };
 
-window.addTrackingNumber = async function(orderId) {
-  const trackingNumber = prompt('Enter tracking number:');
-  if (!trackingNumber) return;
+window.addTrackingNumber = function(orderId) {
+  window.currentTrackingOrderId = orderId;
+  document.getElementById('trackingModal').style.display = 'flex';
+};
 
-  try {
-    const { error } = await supabase
-      .from('orders')
-      .update({ 
-        status: 'shipped',
+window.closeTrackingModal = function() {
+  document.getElementById('trackingModal').style.display = 'none';
+  document.getElementById('trackingNumberInput').value = '';
+  window.currentTrackingOrderId = null;
+};
+
+var trackBtn = document.getElementById('confirmTrackingBtn');
+if (trackBtn) {
+  trackBtn.addEventListener('click', async function() {
+    var orderId = window.currentTrackingOrderId;
+    if (!orderId) return;
+
+    var trackingNumber = document.getElementById('trackingNumberInput') ? document.getElementById('trackingNumberInput').value.trim() : '';
+    if (!trackingNumber) { toast(t('orders_err_tracking_empty'), 'error'); return; }
+
+    try {
+      await supabase.from('orders').update({
+        status: 'shipped', order_status: 'shipped',
         tracking_number: trackingNumber,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId);
+      }).eq('id', orderId);
 
-    if (error) throw error;
-
-    showSuccess('Tracking number added and order marked as shipped');
-    await loadOrders();
-  } catch (error) {
-    console.error('Error updating order:', error);
-    showError('Failed to add tracking number');
-  }
-};
+      toast(t('orders_shipped_success'), 'success');
+      closeTrackingModal();
+      await loadOrders();
+    } catch (error) {
+      console.error('Error:', error);
+      toast(t('orders_update_failed'), 'error');
+    }
+  });
+}
 
 // ============================
-// Buyer Actions
+// BUYER ACTIONS
 // ============================
-
 window.confirmDelivery = function(orderId) {
   window.currentConfirmOrderId = orderId;
   document.getElementById('confirmDeliveryModal').style.display = 'flex';
@@ -580,51 +788,113 @@ window.closeConfirmDeliveryModal = function() {
   window.currentConfirmOrderId = null;
 };
 
-document.getElementById('confirmDeliveryBtn')?.addEventListener('click', async () => {
-  if (!window.currentConfirmOrderId) return;
+var confDelBtn = document.getElementById('confirmDeliveryBtn');
+if (confDelBtn) {
+  confDelBtn.addEventListener('click', async function() {
+    if (!window.currentConfirmOrderId) return;
 
+    try {
+      var order = allOrders.find(function(o) { return o.id === window.currentConfirmOrderId; });
+      if (!order) throw new Error('Order not found');
+
+      await releaseEscrowToSeller(order);
+
+      await supabase.from('orders').update({
+        status: 'completed', order_status: 'completed',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq('id', window.currentConfirmOrderId);
+
+      toast(t('orders_delivery_confirmed'), 'success');
+      closeConfirmDeliveryModal();
+      await loadOrders();
+    } catch (error) {
+      console.error('Error confirming delivery:', error);
+      toast(t('orders_confirm_failed'), 'error');
+    }
+  });
+}
+
+// Confirm meetup (escrow: both buyer + seller must confirm)
+window.confirmMeetup = async function(orderId) {
   try {
-    const order = allOrders.find(o => o.id === window.currentConfirmOrderId);
-    
-    // Check if this is a meetup order with escrow
-    if (order && order.delivery_method === 'meetup' && order.status === 'escrow') {
-      // Use escrow release function
-      const { data, error } = await supabase.rpc('release_escrow', {
-        p_order_id: window.currentConfirmOrderId,
+    var order = allOrders.find(function(o) { return o.id === orderId; });
+    if (!order) throw new Error('Order not found');
+
+    var isBuyer = order.buyer_id === currentUser.id;
+
+    // Try RPC first
+    try {
+      var rpcRes = await supabase.rpc('release_escrow', {
+        p_order_id: orderId,
         p_confirmed_by: currentUser.id
       });
+      if (rpcRes.error) throw rpcRes.error;
 
-      if (error) throw error;
-
-      if (data.completed) {
-        showSuccess('✅ Both parties confirmed! Escrow released and payment sent to seller.');
+      if (rpcRes.data && rpcRes.data.completed) {
+        toast(t('orders_escrow_released'), 'success');
       } else {
-        showSuccess('✅ Confirmation recorded. Waiting for other party to confirm meetup.');
+        toast(t('orders_meetup_waiting'), 'success');
       }
-    } else {
-      // Regular shipping delivery confirmation
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'completed',
+    } catch (rpcErr) {
+      // Fallback: manual confirmation
+      var updateData = {};
+      if (isBuyer) {
+        updateData.meetup_confirmed_by_buyer = true;
+      } else {
+        updateData.meetup_confirmed_by_seller = true;
+      }
+      updateData.updated_at = new Date().toISOString();
+
+      await supabase.from('orders').update(updateData).eq('id', orderId);
+
+      var refreshRes = await supabase.from('orders')
+        .select('meetup_confirmed_by_buyer, meetup_confirmed_by_seller, seller_id, total_amount, product_id, order_number, buyer_id')
+        .eq('id', orderId).single();
+
+      var refreshed = refreshRes.data;
+      if (refreshed && refreshed.meetup_confirmed_by_buyer && refreshed.meetup_confirmed_by_seller) {
+        await releaseEscrowToSeller(Object.assign({}, order, refreshed));
+        await supabase.from('orders').update({
+          status: 'completed', order_status: 'completed',
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
-        .eq('id', window.currentConfirmOrderId);
-
-      if (error) throw error;
-
-      showSuccess('Delivery confirmed! Order completed.');
+        }).eq('id', orderId);
+        toast(t('orders_escrow_released'), 'success');
+      } else {
+        toast(t('orders_meetup_waiting'), 'success');
+      }
     }
 
-    closeConfirmDeliveryModal();
     await loadOrders();
   } catch (error) {
-    console.error('Error confirming delivery:', error);
-    showError('Failed to confirm delivery');
+    console.error('Error confirming meetup:', error);
+    toast(t('orders_confirm_failed'), 'error');
   }
-});
+};
 
+// Release escrow funds to seller
+async function releaseEscrowToSeller(order) {
+  var sellerId = order.seller_id;
+  var totalAmount = parseFloat(order.total_amount || 0);
+  if (!sellerId || totalAmount <= 0) return;
+
+  var selRes = await supabase.from('users').select('balance').eq('id', sellerId).single();
+  var sellerBalance = parseFloat(selRes.data ? selRes.data.balance : 0);
+
+  await supabase.from('users').update({ balance: sellerBalance + totalAmount }).eq('id', sellerId);
+
+  await supabase.from('user_transactions').insert({
+    user_id: sellerId,
+    amount: totalAmount,
+    transaction_type: 'escrow_release',
+    description: 'Sale completed: Order ' + (order.order_number || ''),
+    reference_id: order.product_id,
+    created_at: new Date().toISOString()
+  });
+}
+
+// Cancel order
 window.cancelOrder = function(orderId) {
   window.currentCancelOrderId = orderId;
   document.getElementById('cancelOrderModal').style.display = 'flex';
@@ -632,182 +902,183 @@ window.cancelOrder = function(orderId) {
 
 window.closeCancelOrderModal = function() {
   document.getElementById('cancelOrderModal').style.display = 'none';
-  document.getElementById('cancelReason').value = '';
+  if (document.getElementById('cancelReason')) document.getElementById('cancelReason').value = '';
   window.currentCancelOrderId = null;
 };
 
-document.getElementById('confirmCancelBtn')?.addEventListener('click', async () => {
-  if (!window.currentCancelOrderId) return;
+var cancelBtn = document.getElementById('confirmCancelBtn');
+if (cancelBtn) {
+  cancelBtn.addEventListener('click', async function() {
+    if (!window.currentCancelOrderId) return;
 
-  try {
-    const reason = document.getElementById('cancelReason').value;
-    
-    const { error } = await supabase
-      .from('orders')
-      .update({ 
-        status: 'cancelled',
-        buyer_notes: reason || 'Cancelled by buyer',
+    try {
+      var order = allOrders.find(function(o) { return o.id === window.currentCancelOrderId; });
+      var reason = document.getElementById('cancelReason') ? document.getElementById('cancelReason').value : '';
+
+      var status = order ? (order.status || order.order_status) : '';
+      if (order && (status === 'paid' || status === 'escrow')) {
+        var totalAmount = parseFloat(order.total_amount || 0);
+        if (totalAmount > 0) {
+          // Refund buyer
+          var buyerRes = await supabase.from('users').select('balance').eq('id', order.buyer_id).single();
+          var buyerBalance = parseFloat(buyerRes.data ? buyerRes.data.balance : 0);
+
+          await supabase.from('users').update({ balance: buyerBalance + totalAmount }).eq('id', order.buyer_id);
+
+          await supabase.from('user_transactions').insert({
+            user_id: order.buyer_id,
+            amount: totalAmount,
+            transaction_type: 'refund',
+            description: 'Refund: Order ' + (order.order_number || '') + ' cancelled',
+            reference_id: order.product_id,
+            created_at: new Date().toISOString()
+          });
+
+          // Restore stock
+          if (order.product_id) {
+            var prodRes = await supabase.from('products').select('stock').eq('id', order.product_id).single();
+            if (prodRes.data) {
+              await supabase.from('products').update({
+                stock: (prodRes.data.stock || 0) + (order.quantity || 1)
+              }).eq('id', order.product_id);
+            }
+          }
+        }
+      }
+
+      await supabase.from('orders').update({
+        status: 'cancelled', order_status: 'cancelled',
+        buyer_notes: reason || t('orders_cancelled_by_buyer'),
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      })
-      .eq('id', window.currentCancelOrderId)
-      .eq('buyer_id', currentUser.id);
+      }).eq('id', window.currentCancelOrderId);
 
-    if (error) throw error;
-
-    showSuccess('Order cancelled successfully');
-    closeCancelOrderModal();
-    await loadOrders();
-  } catch (error) {
-    console.error('Error cancelling order:', error);
-    showError('Failed to cancel order');
-  }
-});
+      toast(t('orders_cancelled_success'), 'success');
+      closeCancelOrderModal();
+      await loadOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast(t('orders_cancel_failed'), 'error');
+    }
+  });
+}
 
 // ============================
-// Tracking
+// TRACKING
 // ============================
-
 window.trackShipment = function(orderId) {
-  const order = allOrders.find(o => o.id === orderId);
+  var order = allOrders.find(function(o) { return o.id === orderId; });
   if (!order || !order.tracking_number) {
-    showError('No tracking number available');
+    toast(t('orders_no_tracking'), 'error');
     return;
   }
 
-  const trackingUrl = getTrackingUrl(order.shipping_carrier, order.tracking_number);
-  if (trackingUrl) {
-    window.open(trackingUrl, '_blank');
+  var urls = {
+    'omniva': 'https://www.omniva.lv/private/track_and_trace?barcode=' + order.tracking_number,
+    'dpd': 'https://www.dpd.com/lv/en/tracking/?query=' + order.tracking_number,
+    'latvijas_pasts': 'https://www.pasts.lv/lv/palidziba/sut-ijumu-mekle-ana/?number=' + order.tracking_number,
+    'venipak': 'https://www.venipak.com/tracking/?shipmentNumber=' + order.tracking_number
+  };
+
+  var url = urls[order.shipping_carrier];
+  if (url) {
+    window.open(url, '_blank');
   } else {
-    alert(`Tracking Number: ${order.tracking_number}\n\nPlease visit the carrier's website to track your shipment.`);
+    toast(t('orders_tracking') + ': ' + order.tracking_number, 'success');
   }
 };
 
-function getTrackingUrl(carrier, trackingNumber) {
-  const urls = {
-    'omniva': `https://www.omniva.lv/private/track_and_trace?barcode=${trackingNumber}`,
-    'dpd': `https://www.dpd.com/lv/en/tracking/?query=${trackingNumber}`,
-    'latvijas_pasts': `https://www.pasts.lv/lv/palidziba/sut-ijumu-mekle-ana/?number=${trackingNumber}`
+// ============================
+// STATUS HELPERS
+// ============================
+function getStatusBadgeHTML(status) {
+  var map = {
+    'pending':          { cls: 'badge-warning', key: 'orders_status_pending' },
+    'paid':             { cls: 'badge-success', key: 'orders_status_paid' },
+    'escrow':           { cls: 'badge-info',    key: 'orders_status_escrow' },
+    'processing':       { cls: 'badge-info',    key: 'orders_status_processing' },
+    'ready_for_pickup': { cls: 'badge-info',    key: 'orders_status_ready_pickup' },
+    'shipped':          { cls: 'badge-primary', key: 'orders_status_shipped' },
+    'in_transit':       { cls: 'badge-primary', key: 'orders_status_shipped' },
+    'delivered':        { cls: 'badge-success', key: 'orders_status_delivered' },
+    'completed':        { cls: 'badge-success', key: 'orders_status_completed' },
+    'cancelled':        { cls: 'badge-danger',  key: 'orders_status_cancelled' },
+    'refunded':         { cls: 'badge-warning', key: 'orders_status_refunded' },
+    'disputed':         { cls: 'badge-danger',  key: 'orders_status_disputed' }
   };
-  return urls[carrier] || null;
+  var info = map[status] || { cls: '', key: status };
+  return '<span class="badge ' + info.cls + '">' + t(info.key) + '</span>';
 }
 
-// ============================
-// Helper Functions
-// ============================
+function getStatusTimeline(order) {
+  var isMeetup = order.delivery_method === 'meetup';
+  var status = order.status || order.order_status || 'pending';
 
-function getStatusBadge(status) {
-  const badges = {
-    'pending': '<span class="badge badge-warning">Pending Payment</span>',
-    'paid': '<span class="badge badge-success">Paid</span>',
-    'escrow': '<span class="badge badge-info">Escrow (Awaiting Confirmation)</span>',
-    'processing': '<span class="badge badge-info">Processing</span>',
-    'ready_for_pickup': '<span class="badge badge-info">Ready for Pickup</span>',
-    'shipped': '<span class="badge badge-primary">Shipped</span>',
-    'in_transit': '<span class="badge badge-primary">In Transit</span>',
-    'delivered': '<span class="badge badge-success">Delivered</span>',
-    'completed': '<span class="badge badge-success">Completed</span>',
-    'cancelled': '<span class="badge badge-danger">Cancelled</span>',
-    'refunded': '<span class="badge badge-warning">Refunded</span>',
-    'disputed': '<span class="badge badge-danger">Disputed</span>'
-  };
-  
-  const badgeHTML = badges[status] || `<span class="badge">${status}</span>`;
-  const temp = document.createElement('div');
-  temp.innerHTML = badgeHTML;
-  return temp.firstChild;
-}
-
-function getStatusTimeline(order, history) {
-  // Different timeline for meetup vs shipping
-  const isMeetup = order.delivery_method === 'meetup';
-  
-  const meetupStatuses = [
-    { key: 'pending', label: 'Order Placed', icon: '📝' },
-    { key: 'escrow', label: 'Payment in Escrow', icon: '🔒' },
-    { key: 'ready_for_pickup', label: 'Ready for Meetup', icon: '🤝' },
-    { key: 'completed', label: 'Meetup Confirmed', icon: '✅' }
-  ];
-  
-  const shippingStatuses = [
-    { key: 'pending', label: 'Order Placed', icon: '📝' },
-    { key: 'paid', label: 'Payment Confirmed', icon: '💰' },
-    { key: 'processing', label: 'Processing', icon: '⚙️' },
-    { key: 'shipped', label: 'Shipped', icon: '📦' },
-    { key: 'completed', label: 'Completed', icon: '✅' }
+  var meetupSteps = [
+    { key: 'pending',          label: t('orders_tl_order_placed'), icon: '\uD83D\uDCDD' },
+    { key: 'escrow',           label: t('orders_tl_escrow'),       icon: '\uD83D\uDD12' },
+    { key: 'ready_for_pickup', label: t('orders_tl_ready_meetup'), icon: '\uD83E\uDD1D' },
+    { key: 'completed',        label: t('orders_tl_completed'),    icon: '\u2705' }
   ];
 
-  const allStatuses = isMeetup ? meetupStatuses : shippingStatuses;
+  var shippingSteps = [
+    { key: 'pending',    label: t('orders_tl_order_placed'), icon: '\uD83D\uDCDD' },
+    { key: 'paid',       label: t('orders_tl_payment'),      icon: '\uD83D\uDCB0' },
+    { key: 'processing', label: t('orders_tl_processing'),   icon: '\u2699\uFE0F' },
+    { key: 'shipped',    label: t('orders_tl_shipped'),      icon: '\uD83D\uDCE6' },
+    { key: 'completed',  label: t('orders_tl_completed'),    icon: '\u2705' }
+  ];
 
-  const statusHistory = {};
-  history.forEach(h => {
-    if (!statusHistory[h.new_status]) {
-      statusHistory[h.new_status] = h.created_at;
+  var steps = isMeetup ? meetupSteps : shippingSteps;
+  var statusOrder = steps.map(function(s) { return s.key; });
+  var currentIdx = statusOrder.indexOf(status);
+
+  return steps.map(function(s, i) {
+    var isDone = currentIdx >= i;
+    var isCurrent = status === s.key;
+    var extra = '';
+
+    if (s.key === 'escrow' && isCurrent) {
+      extra = '<small style="color:var(--warning);">' +
+        (order.meetup_confirmed_by_buyer ? '\u2713 ' + t('orders_buyer_confirmed_short') : '\u25CB ' + t('orders_buyer_pending')) +
+        ' | ' +
+        (order.meetup_confirmed_by_seller ? '\u2713 ' + t('orders_seller_confirmed_short') : '\u25CB ' + t('orders_seller_pending')) +
+        '</small>';
     }
-  });
 
-  return allStatuses.map(s => {
-    const isActive = statusHistory[s.key];
-    const isCurrent = order.status === s.key;
-    
-    return `
-      <div class="timeline-item ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}">
-        <div class="timeline-icon">${s.icon}</div>
-        <div class="timeline-content">
-          <strong>${s.label}</strong>
-          ${isActive ? `<small>${formatDateTime(statusHistory[s.key])}</small>` : ''}
-          ${s.key === 'escrow' && isCurrent ? `
-            <small style="color: var(--warning);">
-              ${order.meetup_confirmed_by_buyer ? '✓ Buyer confirmed' : '○ Buyer pending'}
-              ${order.meetup_confirmed_by_seller ? '✓ Seller confirmed' : '○ Seller pending'}
-            </small>
-          ` : ''}
-        </div>
-      </div>
-    `;
+    return '<div class="timeline-item ' + (isDone ? 'active' : '') + ' ' + (isCurrent ? 'current' : '') + '">' +
+      '<div class="timeline-icon">' + s.icon + '</div>' +
+      '<div class="timeline-content"><strong>' + s.label + '</strong>' + extra + '</div></div>';
   }).join('');
 }
 
+// ============================
+// UTILITY HELPERS
+// ============================
 function getCarrierName(carrier) {
-  const names = {
-    'omniva': 'Omniva',
-    'dpd': 'DPD',
-    'latvijas_pasts': 'Latvijas Pasts'
-  };
-  return names[carrier] || carrier || 'N/A';
+  return (CARRIERS[carrier] ? CARRIERS[carrier].name : carrier) || 'N/A';
 }
 
 function getCountryName(code) {
-  const names = {
-    'LV': 'Latvia',
-    'LT': 'Lithuania',
-    'EE': 'Estonia'
-  };
+  var names = { 'LV': 'Latvia', 'LT': 'Lithuania', 'EE': 'Estonia' };
   return names[code] || code || '';
 }
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function formatDateTime(dateString) {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleString('en-GB', { 
-    day: '2-digit', 
-    month: 'short', 
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(dateString).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 }
 
-function showSuccess(message) {
-  alert('✅ ' + message);
-}
-
-function showError(message) {
-  alert('❌ ' + message);
+function esc(str) {
+  if (!str) return '';
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
 }
