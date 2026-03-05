@@ -585,19 +585,30 @@ function setupRealtimeListeners() {
         event: 'DELETE',
         schema: 'public',
         table: 'favorites'
-// ============================
-async function initializePage() {
+      },
+      (payload) => {
         // Update likes for affected product
         const productId = payload.old.product_id;
         if (productId) {
           updateProductLikesCount(productId);
         }
-  
-  loadUser().then(() => {
+      }
+    )
     .subscribe();
 
   return subscription;
 }
+
+// ============================
+// Initialize Page (after auth check)
+// ============================
+async function initializePage() {
+  currentUser = await checkAuth();
+  if (!currentUser) return; // Redirect happened
+
+  await loadUser();
+  await loadProducts();
+  setupRealtimeListeners();
 }
 
 // Run initialization
