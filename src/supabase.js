@@ -328,15 +328,21 @@ export async function purchaseProduct(productId, userId) {
     await updateBalance(userId, newBalance);
 
     // Update product (decrease stock, mark as sold)
+    const newStock = product.stock - 1;
+    const updateData = {
+      stock: newStock,
+      is_reserved: false,
+      reserved_by: null,
+      reserved_at: null,
+      updated_at: new Date().toISOString()
+    };
+    // Set sold_at timestamp when stock reaches 0
+    if (newStock === 0) {
+      updateData.sold_at = new Date().toISOString();
+    }
     const { error: productError } = await supabase
       .from('products')
-      .update({
-        stock: product.stock - 1,
-        is_reserved: false,
-        reserved_by: null,
-        reserved_at: null,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', productId);
 
     if (productError) throw productError;

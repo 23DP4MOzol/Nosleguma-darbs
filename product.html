@@ -57,6 +57,28 @@
 <main class="main-container">
 
   <!-- Header with Sell Button -->
+  <!-- Revenue Stats Banner -->
+  <div id="revenueStats" style="display:none; background: var(--card-bg); border-radius: var(--radius-lg); padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.5rem;">
+      <div style="text-align:center;">
+        <div style="font-size: 2rem; font-weight: 800; color: var(--success);" id="totalRevenue">€0.00</div>
+        <div style="font-size: 0.875rem; color: var(--muted);">Total Revenue</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size: 2rem; font-weight: 800; color: var(--primary);" id="totalSold">0</div>
+        <div style="font-size: 0.875rem; color: var(--muted);">Products Sold</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size: 2rem; font-weight: 800; color: var(--accent);" id="totalActive">0</div>
+        <div style="font-size: 0.875rem; color: var(--muted);">Active Listings</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size: 2rem; font-weight: 800; color: var(--error);" id="totalLikes">0</div>
+        <div style="font-size: 0.875rem; color: var(--muted);">Total Likes</div>
+      </div>
+    </div>
+  </div>
+
   <div class="section-header" style="justify-content: space-between; align-items: center;">
     <div>
       <h2 class="section-title" data-i18n="myProducts">My Products</h2>

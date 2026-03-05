@@ -1014,6 +1014,7 @@ async function initializeIndexPage() {
   // Product rendering and filtering
   let allProducts = [];
   let currentCategory = 'all';
+  let userFavoritesSet = new Set(); // Track user's liked products
   let currentFilters = {
     search: '',
     minPrice: '',
@@ -1027,6 +1028,72 @@ async function initializeIndexPage() {
     date: '',
     sortBy: 'newest'
   };
+
+  // Load user's favorites for heart icon state
+  async function loadUserFavorites() {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData?.user) return;
+      const { data: favs } = await supabase
+        .from('favorites')
+        .select('product_id')
+        .eq('user_id', authData.user.id);
+      userFavoritesSet = new Set((favs || []).map(f => f.product_id));
+    } catch (e) {
+      userFavoritesSet = new Set();
+    }
+  }
+
+  // Toggle favorite for a product
+  async function toggleFavoriteIndex(productId) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData?.user) {
+        showToast('Please log in to like products', 'error');
+        return;
+      }
+      const userId = authData.user.id;
+      const isFav = userFavoritesSet.has(productId);
+      if (isFav) {
+        await supabase.from('favorites').delete().eq('user_id', userId).eq('product_id', productId);
+        userFavoritesSet.delete(productId);
+      } else {
+        await supabase.from('favorites').insert({ user_id: userId, product_id: productId, created_at: new Date().toISOString() });
+        userFavoritesSet.add(productId);
+      }
+      // Update button UI
+      const btn = document.querySelector(`.product-like-btn[data-id="${productId}"]`);
+      if (btn) {
+        btn.classList.toggle('liked', !isFav);
+        btn.textContent = !isFav ? '\u2764\ufe0f' : '\ud83e\udd0d';
+      }
+      // Update likes count in product data
+      const prod = allProducts.find(p => String(p.id) === String(productId));
+      if (prod) {
+        prod.likes_count = (prod.likes_count || 0) + (isFav ? -1 : 1);
+      }
+    } catch (e) {
+      console.error('Error toggling favorite:', e);
+      showToast('Failed to update favorite', 'error');
+    }
+  }
+
+  // Record a product view (per user, counted once)
+  async function recordProductView(productId) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData?.user) return;
+      await supabase.from('product_views').upsert(
+        { user_id: authData.user.id, product_id: productId, created_at: new Date().toISOString() },
+        { onConflict: 'user_id,product_id' }
+      );
+      // Update local count
+      const prod = allProducts.find(p => String(p.id) === String(productId));
+      if (prod) prod.views_count = (prod.views_count || 0) + 1;
+    } catch (e) {
+      // Silently fail - view tracking is optional
+    }
+  }
 
   async function loadProducts() {
     try {
@@ -1046,8 +1113,22 @@ async function initializeIndexPage() {
         throw error;
       }
       allProducts = Array.isArray(data) ? data : [];
+      await loadUserFavorites();
       applyFiltersAndRender();
       updateStats();
+
+      // Check if URL has ?product= param to auto-open a product modal
+      const urlParams = new URLSearchParams(window.location.search);
+      const productParam = urlParams.get('product');
+      if (productParam) {
+        const targetProduct = allProducts.find(p => String(p.id) === String(productParam));
+        if (targetProduct) {
+          recordProductView(targetProduct.id);
+          showProductModal(targetProduct);
+        }
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     } catch (error) {
       console.error('Error loading products:', error);
       // Only show toast for non-401 errors
@@ -1186,9 +1267,16 @@ async function initializeIndexPage() {
         break;
       case 'popular':
         filteredProducts.sort((a, b) => {
-          const viewsA = parseInt(a.views || 0);
-          const viewsB = parseInt(b.views || 0);
+          const viewsA = parseInt(a.views_count || 0);
+          const viewsB = parseInt(b.views_count || 0);
           return viewsB - viewsA;
+        });
+        break;
+      case 'most_liked':
+        filteredProducts.sort((a, b) => {
+          const likesA = parseInt(a.likes_count || 0);
+          const likesB = parseInt(b.likes_count || 0);
+          return likesB - likesA;
         });
         break;
       case 'newest':
@@ -1244,27 +1332,39 @@ async function initializeIndexPage() {
       const nameText = escapeHtml(product.name || 'Unnamed Product');
       const locationText = escapeHtml(product.location || '');
       const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
+      const likesCount = parseInt(product.likes_count || 0);
+      const viewsCount = parseInt(product.views_count || 0);
+      const isLiked = userFavoritesSet.has(product.id);
+
+      // Check if product was sold in the last 5 minutes
+      const isSoldRecently = product.sold_at && (Date.now() - new Date(product.sold_at).getTime()) < 5 * 60 * 1000;
+      const isSold = stock === 0 && product.sold_at;
 
       const conditionEmoji = {
-        'new': '✨',
-        'like_new': '🔄',
-        'good': '👍',
-        'fair': '😐',
-        'poor': '⚠️'
+        'new': '\u2728',
+        'like_new': '\ud83d\udd04',
+        'good': '\ud83d\udc4d',
+        'fair': '\ud83d\ude10',
+        'poor': '\u26a0\ufe0f'
       };
       
       // Check if user can manage this product
       const canManage = currentUser && (userRole === 'admin' || product.seller_id === currentUser.id);
 
+      // Skip sold products unless sold in last 5 minutes
+      if (isSold && !isSoldRecently && !canManage) return;
+
       const card = document.createElement('div');
       card.className = 'product-card-modern';
       card.style.cursor = 'pointer';
       card.setAttribute('data-product-id', product.id);
+      if (isSoldRecently) card.style.opacity = '0.7';
       
-      // Add click handler to open modal
+      // Add click handler to open modal and record view
       card.addEventListener('click', (e) => {
-        // Don't open modal if clicking action buttons
-        if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve')) {
+        // Don't open modal if clicking action buttons or like button
+        if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve') && !e.target.closest('.product-like-btn')) {
+          recordProductView(product.id);
           showProductModal(product);
         }
       });
@@ -1272,10 +1372,11 @@ async function initializeIndexPage() {
       card.innerHTML = `
         <div class="product-image-container">
           <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://placehold.co/300x200/667eea/white?text=No+Image'">
-          <button class="product-like-btn" data-id="${escapeHtml(product.id)}" aria-label="Like">❤️</button>
-          ${product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
+          <button class="product-like-btn ${isLiked ? 'liked' : ''}" data-id="${escapeHtml(product.id)}" aria-label="Like">${isLiked ? '\u2764\ufe0f' : '\ud83e\udd0d'}</button>
+          ${isSoldRecently ? `<span class="product-badge-new" style="background: #ef4444;">SOLD</span>` : ''}
+          ${!isSoldRecently && product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
           <div class="product-overlay">
-            <button class="btn-quick-view" data-id="${escapeHtml(product.id)}" data-i18n="quickView">👁 Quick View</button>
+            <button class="btn-quick-view" data-id="${escapeHtml(product.id)}" data-i18n="quickView">\ud83d\udc41 Quick View</button>
           </div>
         </div>
         <div class="product-info">
@@ -1286,34 +1387,37 @@ async function initializeIndexPage() {
           <h3 class="product-name">${nameText}</h3>
           <div class="product-seller" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
             <div class="seller-avatar" style="width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:12px; color:white; font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); showUserProfile('${product.seller_id}')">
-              👤
+              \ud83d\udc64
             </div>
             <span class="seller-name" style="font-size:0.875rem; color:var(--muted); cursor:pointer;" onclick="event.stopPropagation(); showUserProfile('${product.seller_id}')">
               ${escapeHtml(product.users?.username || 'Unknown')}
             </span>
           </div>
-          <div class="product-meta">
-            ${locationText ? `<span style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">📍 ${locationText}</span>` : ''}
-            <span class="product-views">📦 ${escapeHtml(stock)} in stock</span>
+          <div class="product-meta" style="display:flex; gap:1rem; align-items:center;">
+            <span style="font-size:0.8rem; color:var(--muted);">\u2764\ufe0f ${likesCount}</span>
+            <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udc41 ${viewsCount}</span>
+            ${locationText ? `<span style="font-size:0.8rem; color:var(--muted);">\ud83d\udccd ${locationText}</span>` : ''}
+            <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
           <div class="product-footer">
             <div class="product-price">
               ${product.original_price && product.original_price > product.price ?
-                `<span class="price-original">€${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
-              <span class="price-currency">€</span>
+                `<span class="price-original">\u20ac${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
+              <span class="price-currency">\u20ac</span>
               <span class="price-amount">${price}</span>
             </div>
             <div class="product-actions">
-              <button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">🛒 Buy Now</button>
+              ${isSoldRecently ? `<span style="color:#ef4444; font-weight:700; font-size:0.875rem;">SOLD</span>` : 
+                `<button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">\ud83d\uded2 Buy Now</button>`}
             </div>
           </div>
           ${canManage ? `
             <div class="product-management-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
               <button class="btn-edit-product" data-product-id="${escapeHtml(product.id)}" style="flex: 1; padding: 0.5rem; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 500; transition: background 0.2s;">
-                ✏️ Edit
+                \u270f\ufe0f Edit
               </button>
               <button class="btn-delete-product" data-product-id="${escapeHtml(product.id)}" style="flex: 1; padding: 0.5rem; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 500; transition: background 0.2s;">
-                🗑️ Delete
+                \ud83d\uddd1\ufe0f Delete
               </button>
             </div>
           ` : ''}
@@ -1353,6 +1457,18 @@ async function initializeIndexPage() {
   }
 
   function addProductEventListeners() {
+    // Like buttons
+    document.querySelectorAll('.product-like-btn').forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true));
+    });
+    document.querySelectorAll('.product-like-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const productId = e.currentTarget.dataset.id;
+        await toggleFavoriteIndex(productId);
+      });
+    });
+
     // Buy Now buttons
     document.querySelectorAll('.btn-buy-now:not([disabled])').forEach(btn => {
       btn.replaceWith(btn.cloneNode(true)); // remove duplicate listeners by cloning
@@ -1506,14 +1622,7 @@ async function initializeIndexPage() {
       } catch (e) { /* reviews table may not exist yet */ }
     }
     
-    // Get real product stats from favorites
-    let productLikes = 0;
-    try {
-      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);
-      productLikes = count || 0;
-    } catch (e) { /* favorites may not exist */ }
-    const productSaves = productLikes;
-    const productViews = 0; // No view tracking table yet
+    // Get real product stats from favorites\n    let productLikes = parseInt(product.likes_count || 0);\n    try {\n      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);\n      productLikes = count || productLikes;\n    } catch (e) { /* favorites may not exist */ }\n    const productViews = parseInt(product.views_count || 0);
     
     const conditionEmoji = {
       'new': '✨',
@@ -1558,21 +1667,7 @@ async function initializeIndexPage() {
             <p>${escapeHtml(product.description) || 'No description provided.'}</p>
           </div>
           
-          <!-- Product Stats -->
-          <div class="modal-stats">
-            <div class="modal-stat">
-              <div class="modal-stat-value">❤️ ${productLikes}</div>
-              <div class="modal-stat-label">Likes</div>
-            </div>
-            <div class="modal-stat">
-              <div class="modal-stat-value">🔖 ${productSaves}</div>
-              <div class="modal-stat-label">Saved</div>
-            </div>
-            <div class="modal-stat">
-              <div class="modal-stat-value">👁 ${productViews}</div>
-              <div class="modal-stat-label">Views</div>
-            </div>
-          </div>
+          <!-- Product Stats -->\n          <div class=\"modal-stats\">\n            <div class=\"modal-stat\">\n              <div class=\"modal-stat-value\">\u2764\ufe0f ${productLikes}</div>\n              <div class=\"modal-stat-label\">Likes</div>\n            </div>\n            <div class=\"modal-stat\">\n              <div class=\"modal-stat-value\">\ud83d\udc41 ${productViews}</div>\n              <div class=\"modal-stat-label\">Views</div>\n            </div>\n          </div>
         </div>
       </div>
       
@@ -1649,8 +1744,13 @@ async function initializeIndexPage() {
 
     const likeBtn = document.getElementById('likeProductBtn');
     if (likeBtn) {
-      likeBtn.onclick = () => {
-        showToast('Product liked!', 'success');
+      const isCurrentlyLiked = userFavoritesSet.has(product.id);
+      likeBtn.textContent = isCurrentlyLiked ? '💔 Unlike' : '❤️ Like Product';
+      likeBtn.onclick = async () => {
+        await toggleFavoriteIndex(product.id);
+        const nowLiked = userFavoritesSet.has(product.id);
+        likeBtn.textContent = nowLiked ? '💔 Unlike' : '❤️ Like Product';
+        showToast(nowLiked ? 'Product liked!' : 'Product unliked', 'success');
       };
     }
 

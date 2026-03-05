@@ -111,7 +111,7 @@ async function loadProducts() {
         products = [];
       }
     } else {
-      // Load user's own products or all products based on filter
+      // Load user's own products based on filter
       let query = supabase
         .from('products')
         .select(`
@@ -150,9 +150,44 @@ async function loadProducts() {
       }
     }
 
+    // Update revenue stats
+    updateRevenueStats();
+
   } catch (error) {
     console.error('Error loading products:', error);
     document.getElementById('productGrid').innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--error);">Error loading products.</div>';
+  }
+}
+
+// Update revenue stats banner
+async function updateRevenueStats() {
+  if (!currentUser) return;
+  try {
+    // Get all user's products
+    const { data: allUserProducts } = await supabase
+      .from('products')
+      .select('id, price, stock, likes_count, sold_at')
+      .eq('seller_id', currentUser.id);
+
+    if (!allUserProducts) return;
+
+    const sold = allUserProducts.filter(p => p.stock === 0 && p.sold_at);
+    const active = allUserProducts.filter(p => p.stock > 0);
+    const totalRevenue = sold.reduce((sum, p) => sum + parseFloat(p.price || 0), 0);
+    const totalLikes = allUserProducts.reduce((sum, p) => sum + parseInt(p.likes_count || 0), 0);
+
+    const statsEl = document.getElementById('revenueStats');
+    if (statsEl) statsEl.style.display = 'block';
+    const revenueEl = document.getElementById('totalRevenue');
+    if (revenueEl) revenueEl.textContent = `€${totalRevenue.toFixed(2)}`;
+    const soldEl = document.getElementById('totalSold');
+    if (soldEl) soldEl.textContent = sold.length;
+    const activeEl = document.getElementById('totalActive');
+    if (activeEl) activeEl.textContent = active.length;
+    const likesEl = document.getElementById('totalLikes');
+    if (likesEl) likesEl.textContent = totalLikes;
+  } catch (e) {
+    console.warn('Could not load revenue stats:', e);
   }
 }
 
@@ -170,13 +205,20 @@ function displayProducts(products) {
   grid.style.display = 'grid';
   emptyState.style.display = 'none';
 
-  grid.innerHTML = products.map(product => `
-    <div class="product-card-modern" data-product-id="${product.id}">
+  grid.innerHTML = products.map(product => {
+    const likesCount = parseInt(product.likes_count || 0);
+    const viewsCount = parseInt(product.views_count || 0);
+    const isSold = product.stock === 0;
+    const soldDate = product.sold_at ? new Date(product.sold_at).toLocaleDateString() : '';
+
+    return `
+    <div class="product-card-modern" data-product-id="${product.id}" ${isSold ? 'style="opacity:0.75;"' : ''}>
       <div class="product-image-container">
         <img src="${product.image_url || 'https://placehold.co/400x300/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
         <button class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}">
-          ${userFavorites.has(product.id) ? '❤️' : '🤍'}
+          ${userFavorites.has(product.id) ? '\u2764\ufe0f' : '\ud83e\udd0d'}
         </button>
+        ${isSold ? '<span class="product-badge-new" style="background:#ef4444;">SOLD</span>' : ''}
         <div class="product-overlay">
           <button class="btn-quick-view" data-product-id="${product.id}">Quick View</button>
         </div>
@@ -191,30 +233,33 @@ function displayProducts(products) {
           </span>
         </div>
         <h3 class="product-name">${product.name}</h3>
-        <div class="product-meta">
-          <span class="product-rating">⭐ ${product.condition || 'N/A'}</span>
-          <span class="product-views">📦 ${product.stock || 0}</span>
+        <div class="product-meta" style="display:flex; gap:1rem; align-items:center; margin-bottom:0.25rem;">
+          <span style="font-size:0.8rem; color:var(--muted);">\u2764\ufe0f ${likesCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udc41 ${viewsCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${product.stock || 0}</span>
         </div>
+        ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">Sold on ${soldDate}</div>` : ''}
         <p class="product-description">${product.description || 'No description available.'}</p>
         <div class="product-footer">
           <div class="product-price">
             ${product.original_price && product.original_price > product.price ?
-              `<span class="price-original">€${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
-            <span class="price-currency">€</span>
+              \`<span class="price-original">\u20ac\${parseFloat(product.original_price).toFixed(2)}</span>\` : ''}
+            <span class="price-currency">\u20ac</span>
             <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
           </div>
           <div class="product-actions">
             ${product.seller_id === currentUser?.id ?
-              `<button class="btn-edit" data-product-id="${product.id}">✏️</button>
-               <button class="btn-delete" data-product-id="${product.id}">🗑️</button>` :
-              `<button class="btn-add-cart" data-product-id="${product.id}">🛒</button>
-               <button class="btn-buy-now" data-product-id="${product.id}">Buy Now</button>`
+              \`<button class="btn-edit" data-product-id="\${product.id}">\u270f\ufe0f</button>
+               <button class="btn-delete" data-product-id="\${product.id}">\ud83d\uddd1\ufe0f</button>\` :
+              (isSold ? '<span style="color:#ef4444; font-weight:600; font-size:0.8rem;">SOLD</span>' :
+              \`<button class="btn-add-cart" data-product-id="\${product.id}">\ud83d\uded2</button>
+               <button class="btn-buy-now" data-product-id="\${product.id}">Buy Now</button>\`)
             }
           </div>
         </div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 
   // Add event listeners
   attachProductEventListeners();

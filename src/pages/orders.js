@@ -787,12 +787,17 @@ async function placeOrder() {
       updated_at: new Date().toISOString()
     }).eq('id', order.id);
 
-    // 5. Decrease product stock
+    // 5. Decrease product stock and set sold_at if fully sold
     if (product.stock !== undefined && product.stock !== null) {
-      await supabase.from('products').update({
-        stock: Math.max(0, (product.stock || 1) - 1),
+      var newStock = Math.max(0, (product.stock || 1) - 1);
+      var stockUpdate = {
+        stock: newStock,
         updated_at: new Date().toISOString()
-      }).eq('id', product.id);
+      };
+      if (newStock === 0) {
+        stockUpdate.sold_at = new Date().toISOString();
+      }
+      await supabase.from('products').update(stockUpdate).eq('id', product.id);
     }
 
     toast(t('co_order_created'), 'success');
@@ -1382,12 +1387,13 @@ if (cancelBtn) {
             created_at: new Date().toISOString()
           });
 
-          // Restore stock
+          // Restore stock and clear sold_at
           if (order.product_id) {
             var prodRes = await supabase.from('products').select('stock').eq('id', order.product_id).single();
             if (prodRes.data) {
               await supabase.from('products').update({
-                stock: (prodRes.data.stock || 0) + (order.quantity || 1)
+                stock: (prodRes.data.stock || 0) + (order.quantity || 1),
+                sold_at: null
               }).eq('id', order.product_id);
             }
           }
