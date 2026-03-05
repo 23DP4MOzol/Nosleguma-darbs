@@ -267,10 +267,10 @@ const addFundsBtn = document.getElementById('addFundsBtn');
 if (addFundsBtn) {
   addFundsBtn.addEventListener('click', async () => {
     const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) return alert(i18n.t('enter_valid_amount'));
+    if (isNaN(amount) || amount <= 0) { await showInfoModal(i18n.t('enter_valid_amount'), 'Error'); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert(i18n.t('loginFirst'));
+    if (!user) { await showInfoModal(i18n.t('loginFirst'), 'Error'); return; }
 
     try {
       // Import addBalance function from supabase.js
@@ -278,10 +278,10 @@ if (addFundsBtn) {
       await addBalance(user.id, amount, 'Balance top-up');
       await loadUser();
       document.getElementById('fundAmount').value = '';
-      alert(i18n.t('deposit_success'));
+      await showInfoModal(i18n.t('deposit_success'), 'Success');
     } catch (err) {
       console.error('Error adding funds:', err);
-      alert('Failed to add funds: ' + (err.message || err));
+      await showInfoModal('Failed to add funds: ' + (err.message || err), 'Error');
     }
   });
 }
@@ -290,10 +290,10 @@ if (addFundsBtn) {
 if (withdrawBtn) {
   withdrawBtn.addEventListener('click', async () => {
     const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) return alert(i18n.t('enter_valid_amount'));
+    if (isNaN(amount) || amount <= 0) { await showInfoModal(i18n.t('enter_valid_amount'), 'Error'); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert(i18n.t('loginFirst'));
+    if (!user) { await showInfoModal(i18n.t('loginFirst'), 'Error'); return; }
 
     try {
       // Import getBalance and updateBalance from supabase.js
@@ -301,7 +301,7 @@ if (withdrawBtn) {
       const currentBalance = await getBalance(user.id);
       
       if (currentBalance < amount) {
-        alert('Insufficient balance for withdrawal');
+        await showInfoModal('Insufficient balance for withdrawal', 'Error');
         return;
       }
       
@@ -319,10 +319,10 @@ if (withdrawBtn) {
       
       await loadUser();
       document.getElementById('fundAmount').value = '';
-      alert(i18n.t('withdrawal_success'));
+      await showInfoModal(i18n.t('withdrawal_success'), 'Success');
     } catch (error) {
       console.error('Error withdrawing funds:', error);
-      alert('Failed to withdraw: ' + (error.message || error));
+      await showInfoModal('Failed to withdraw: ' + (error.message || error), 'Error');
     }
   });
 }

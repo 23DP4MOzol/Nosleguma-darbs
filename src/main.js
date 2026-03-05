@@ -569,7 +569,7 @@ function initializeAuth() {
           
           // Show success message
           if (session.user.email_confirmed_at) {
-            alert('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.');
+            showInfoModal('Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.', 'Email Verified');
             // Redirect to home or stay on current page
             const currentPath = window.location.pathname;
             if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
@@ -592,7 +592,7 @@ function initializeAuth() {
           console.log('✅ Session recovered successfully:', session.user.email);
           await updateNavbarAuth();
           window.history.replaceState(null, '', window.location.pathname);
-          alert('Email Verified Successfully!');
+          showInfoModal('Email Verified Successfully!', 'Email Verified');
           
           // Redirect if on login/register page
           const currentPath = window.location.pathname;

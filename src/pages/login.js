@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { showInfoModal } from '../ui/modal.js';
 
 console.log('login.js module loaded');
 
@@ -42,8 +43,8 @@ console.log('login.js module loaded');
     startResendCooldown();
     
     // Show the message after a short delay
-    setTimeout(() => {
-      alert('📧 Email Verification Required\n\nPlease verify your email address to log in.\n\nEnter your email and click "Resend Verification Email" if you need a new verification link.');
+    setTimeout(async () => {
+      await showInfoModal('Please verify your email address to log in.\n\nEnter your email and click "Resend Verification Email" if you need a new verification link.', 'Email Verification Required');
     }, 500);
     return;
   }
@@ -60,24 +61,24 @@ console.log('login.js module loaded');
     const message = messages[reason] || 'You must be logged in to access this page.';
     
     // Show the message after a short delay to let the page load
-    setTimeout(() => {
-      alert('🔐 ' + message);
+    setTimeout(async () => {
+      await showInfoModal(message, 'Login Required');
     }, 100);
   }
 })();
 
 // Helper function to show error with details
-function showLoginError(message, error) {
+async function showLoginError(message, error) {
   const errorMessage = error?.message || error || 'Unknown error';
   console.error('Login Error:', errorMessage);
   
   // Check for common Supabase errors
   if (errorMessage.includes('Invalid API key')) {
-    alert('❌ Invalid API Key\n\nYour Supabase credentials are incorrect.\n\nPlease check your .env file has the correct:\n- VITE_SUPABASE_URL\n- VITE_SUPABASE_ANON_KEY\n\nSee .env.example for the correct format.');
+    await showInfoModal('Your Supabase credentials are incorrect.\n\nPlease check your .env file has the correct:\n- VITE_SUPABASE_URL\n- VITE_SUPABASE_ANON_KEY\n\nSee .env.example for the correct format.', 'Invalid API Key');
   } else if (errorMessage.includes('auth')) {
-    alert('🔐 Authentication Error: ' + errorMessage);
+    await showInfoModal('Authentication Error: ' + errorMessage, 'Error');
   } else {
-    alert(message + ': ' + errorMessage);
+    await showInfoModal(message + ': ' + errorMessage, 'Error');
   }
 }
 
@@ -145,13 +146,13 @@ document.getElementById('resendVerificationBtn')?.addEventListener('click', asyn
   const email = document.getElementById('verificationEmailInput').value.trim();
   
   if (!email) {
-    alert('Please enter your email address.');
+    await showInfoModal('Please enter your email address.', 'Info');
     document.getElementById('verificationEmailInput').focus();
     return;
   }
   
   if (resendCooldown > 0) {
-    alert(`Please wait ${resendCooldown} seconds before requesting another verification email.`);
+    await showInfoModal(`Please wait ${resendCooldown} seconds before requesting another verification email.`, 'Info');
     return;
   }
   
@@ -167,13 +168,13 @@ document.getElementById('resendVerificationBtn')?.addEventListener('click', asyn
     });
     
     if (error) {
-      alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+      await showInfoModal('Error resending verification email.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
     } else {
-      alert('✅ Verification Email Sent!\n\nPlease check your email inbox and click the verification link.\n\nIf you don\'t see the email, check your spam folder.\n\nYou can request another email in 60 seconds.');
+      await showInfoModal('Please check your email inbox and click the verification link.\n\nIf you don\'t see the email, check your spam folder.\n\nYou can request another email in 60 seconds.', 'Verification Email Sent');
       startResendCooldown();
     }
   } catch (error) {
-    alert('❌ Error Resending Verification Email\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+    await showInfoModal('Error resending verification email.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Resend Verification Email';
@@ -226,7 +227,7 @@ document.getElementById('forgotPasswordForm')?.addEventListener('submit', async 
   const email = document.getElementById('resetEmailInput').value.trim();
   
   if (!email) {
-    alert('Please enter your email address.');
+    await showInfoModal('Please enter your email address.', 'Info');
     return;
   }
   
@@ -236,15 +237,15 @@ document.getElementById('forgotPasswordForm')?.addEventListener('submit', async 
     });
     
     if (error) {
-      alert('❌ Error Sending Reset Link\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+      await showInfoModal('Error sending reset link.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
     } else {
-      alert('✅ Reset Link Sent!\n\nCheck your email inbox for the password reset link.\n\nIf you don\'t see the email, check your spam folder.\n\nThe link will expire in 24 hours.');
+      await showInfoModal('Check your email inbox for the password reset link.\n\nIf you don\'t see the email, check your spam folder.\n\nThe link will expire in 24 hours.', 'Reset Link Sent');
       // Switch back to login form
       document.getElementById('loginForm').style.display = 'flex';
       document.getElementById('forgotPasswordForm').style.display = 'none';
     }
   } catch (error) {
-    alert('❌ Error Sending Reset Link\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+    await showInfoModal('Error sending reset link.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
   }
 });
 
@@ -282,7 +283,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   if (!email || !password) {
     console.log('❌ Missing email or password');
     loginHandled = false;
-    alert('Please fill in all fields');
+    await showInfoModal('Please fill in all fields.', 'Info');
     return;
   }
 
@@ -310,7 +311,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
       }
-      showLoginError('Login failed', error);
+      await showLoginError('Login failed', error);
       return;
     }
     
@@ -347,7 +348,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Login';
     }
-    showLoginError('Login failed', err);
+    await showLoginError('Login failed', err);
   }
 });
 
@@ -385,19 +386,19 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         
         // Show success and redirect to login
         document.body.removeChild(loadingMsg);
-        alert('✅ Password Reset Link Valid!\n\nYour password reset link is valid.\n\nPlease enter your new password below.\n\nAfter changing your password, you will need to log in again.');
+        await showInfoModal('Your password reset link is valid.\n\nPlease enter your new password below.\n\nAfter changing your password, you will need to log in again.', 'Password Reset Link Valid');
         window.location.href = 'settings.html?tab=password';
         return;
       }
       
       document.body.removeChild(loadingMsg);
-      alert('⚠️ Password Reset Issue\n\nUnable to process the password reset link.\n\nPlease try again or request a new reset link.');
+      await showInfoModal('Unable to process the password reset link.\n\nPlease try again or request a new reset link.', 'Password Reset Issue');
       window.location.href = 'login.html';
       
     } catch (error) {
       console.error('Error processing password reset:', error);
       document.body.removeChild(loadingMsg);
-      alert('⚠️ Password Reset Error\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+      await showInfoModal('Password reset error.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Password Reset Error');
       window.location.href = 'login.html';
     }
     return;
@@ -432,7 +433,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (session.user.email_confirmed_at) {
           // Email is verified - redirect to index (home page)
           document.body.removeChild(loadingMsg);
-          alert('✅ Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!');
+          await showInfoModal('Your email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!', 'Email Verified Successfully');
           window.location.href = 'index.html';
           return;
         }
@@ -447,9 +448,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         
         // Check if it's a network error
         if (exchangeError.message.includes('network') || exchangeError.message.includes('fetch')) {
-          alert('⚠️ Verification in Progress\n\nThe verification link was received, but there was a network issue processing it.\n\nPlease try logging in with your email and password.');
+          await showInfoModal('The verification link was received, but there was a network issue processing it.\n\nPlease try logging in with your email and password.', 'Verification in Progress');
         } else {
-          alert('⚠️ Verification Issue\n\n' + (exchangeError.message || 'Unable to verify email.') + '\n\nPlease try logging in or request a new verification email.');
+          await showInfoModal((exchangeError.message || 'Unable to verify email.') + '\n\nPlease try logging in or request a new verification email.', 'Verification Issue');
         }
         window.location.href = 'login.html?reason=verify_required';
         return;
@@ -457,11 +458,11 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       
       if (data.user && data.user.email_confirmed_at) {
         document.body.removeChild(loadingMsg);
-        alert('✅ Email Verified Successfully!\n\nYour email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!');
+        await showInfoModal('Your email address has been confirmed. You are now logged in.\n\nWelcome to Vendly!', 'Email Verified Successfully');
         window.location.href = 'index.html';
       } else {
         document.body.removeChild(loadingMsg);
-        alert('⚠️ Verification Pending\n\nYour verification link is being processed.\n\nIf your email is not confirmed yet, please wait a moment and refresh the page.');
+        await showInfoModal('Your verification link is being processed.\n\nIf your email is not confirmed yet, please wait a moment and refresh the page.', 'Verification Pending');
         window.location.href = 'login.html?reason=verify_required';
       }
       
@@ -469,7 +470,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       console.error('Error processing auth callback:', error);
       document.body.removeChild(loadingMsg);
       
-      alert('⚠️ Verification Error\n\nThere was an error processing your verification link.\n\nError: ' + (error.message || 'Unknown error'));
+      await showInfoModal('There was an error processing your verification link.\n\nError: ' + (error.message || 'Unknown error'), 'Verification Error');
       window.location.href = 'login.html?reason=verify_required';
     }
   }

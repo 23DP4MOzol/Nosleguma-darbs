@@ -1,5 +1,6 @@
 import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { showInfoModal } from '../ui/modal.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -266,7 +267,7 @@ function attachProductEventListeners() {
 // Toggle favorite status
 async function toggleFavorite(productId) {
   if (!currentUser) {
-    alert('Please log in to add favorites');
+    await showInfoModal('Please log in to add favorites', 'Authentication Required');
     return;
   }
 
@@ -292,7 +293,7 @@ async function toggleFavorite(productId) {
 
   } catch (error) {
     console.error('Error toggling favorite:', error);
-    alert('Favorites functionality is not available yet. Please contact support.');
+    await showInfoModal('Favorites functionality is not available yet. Please contact support.', 'Error');
   }
 }
 
@@ -387,9 +388,9 @@ function showProductModal(productId) {
 function handleProductAction(productId, action) {
   // For now, just show alerts
   if (action === 'buy') {
-    alert('Purchase functionality would be implemented here');
+    showInfoModal('Purchase functionality would be implemented here', 'Info');
   } else {
-    alert('Add to cart functionality would be implemented here');
+    showInfoModal('Add to cart functionality would be implemented here', 'Info');
   }
 }
 

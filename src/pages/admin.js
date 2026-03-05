@@ -1,5 +1,6 @@
 import { supabase, getCurrentUser } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
 
 // ============================
 // State Management
@@ -76,7 +77,7 @@ async function checkAdminAuth() {
   }
 
   // Final deny
-  alert('Access denied. Admin privileges required.');
+  await showInfoModal('Access denied. Admin privileges required.', 'Access Denied');
   window.location.href = 'index.html';
   return false;
 }
@@ -292,7 +293,7 @@ window.viewUserDetails = async function(userId) {
     
   } catch (error) {
     console.error('Error loading user details:', error);
-    alert('Error: ' + error.message);
+    await showInfoModal('Error: ' + error.message, 'Error');
   }
 }
 
@@ -500,12 +501,12 @@ window.switchUserTab = function(tabId) {
 };
 
 window.editUser = async function(userId, currentBalance) {
-  const newBalance = prompt(`Enter new balance for user (current: €${parseFloat(currentBalance || 0).toFixed(2)}):`, parseFloat(currentBalance || 0).toFixed(2));
+  const newBalance = await showPromptModal(`Enter new balance for user (current: €${parseFloat(currentBalance || 0).toFixed(2)}):`, { title: 'Edit Balance', defaultValue: parseFloat(currentBalance || 0).toFixed(2) });
   if (newBalance === null) return;
   
   const balanceNum = parseFloat(newBalance);
   if (isNaN(balanceNum)) {
-    alert('Invalid balance amount');
+    await showInfoModal('Invalid balance amount', 'Error');
     return;
   }
   
@@ -516,11 +517,11 @@ window.editUser = async function(userId, currentBalance) {
       .eq('id', userId);
     
     if (error) throw error;
-    alert(`✅ Balance updated to €${balanceNum.toFixed(2)}`);
+    await showInfoModal(`Balance updated to €${balanceNum.toFixed(2)}`, 'Success');
     viewUserDetails(userId); // Refresh modal
   } catch (err) {
     console.error('Error updating balance:', err);
-    alert('Error updating balance: ' + err.message);
+    await showInfoModal('Error updating balance: ' + err.message, 'Error');
   }
 };
 
@@ -588,18 +589,18 @@ window.deleteUser = async function(userId) {
     if (delUserErr) throw delUserErr;
     console.log('✅ Deleted user from database');
     
-    alert('✅ User deleted successfully (including all their products, orders, and transactions)');
+    await showInfoModal('User deleted successfully (including all their products, orders, and transactions)', 'Success');
     document.getElementById('userDetailModal').style.display = 'none';
     await loadUsers();
     
   } catch (error) {
     console.error('Error deleting user:', error);
-    alert('❌ Error deleting user: ' + error.message);
+    await showInfoModal('Error deleting user: ' + error.message, 'Error');
   }
 };
 
 window.editUser = async function(userId, currentBalance) {
-  const newBalance = prompt('Enter new balance for user:', currentBalance);
+  const newBalance = await showPromptModal('Enter new balance for user:', { title: 'Edit Balance', defaultValue: String(currentBalance) });
   if (newBalance === null) return;
   
   try {
@@ -610,10 +611,10 @@ window.editUser = async function(userId, currentBalance) {
     
     if (error) throw error;
     
-    alert('Balance updated successfully');
+    await showInfoModal('Balance updated successfully', 'Success');
     await loadUsers();
   } catch (error) {
-    alert('Error updating balance: ' + error.message);
+    await showInfoModal('Error updating balance: ' + error.message, 'Error');
   }
 };
 
@@ -669,7 +670,7 @@ window.deleteProduct = async function(productId) {
   
   const { error } = await supabase.from('products').delete().eq('id', productId);
   if (error) {
-    alert('Error: ' + error.message);
+    await showInfoModal('Error: ' + error.message, 'Error');
     return;
   }
   
@@ -704,7 +705,7 @@ async function loadTransactions() {
     
     if (error) {
       console.error('❌ Error loading transactions:', error);
-      alert('Error loading transactions: ' + error.message);
+      await showInfoModal('Error loading transactions: ' + error.message, 'Error');
       return;
     }
     
@@ -734,7 +735,7 @@ async function loadTransactions() {
     displayTransactions(filteredData, stats);
   } catch (err) {
     console.error('❌ Transaction loading error:', err);
-    alert('Error: ' + err.message);
+    await showInfoModal('Error: ' + err.message, 'Error');
   }
 }
 
@@ -873,14 +874,14 @@ window.clearTransactionHistory = async function() {
       }
     }
     
-    alert(`✅ ${i18n.t('admin_history_cleared')}\n${deletedCount} ${i18n.t('admin_transactions_deleted')}`);
+    await showInfoModal(`${i18n.t('admin_history_cleared')}\n${deletedCount} ${i18n.t('admin_transactions_deleted')}`, 'Success');
     loadTransactions();
   } catch (error) {
-    alert('Error clearing transaction history: ' + error.message);
+    await showInfoModal('Error clearing transaction history: ' + error.message, 'Error');
   }
 };
 
-export function exportTransactions() {
+export async function exportTransactions() {
   const type = document.getElementById('tx-type')?.value || 'all';
   const amountFilter = document.getElementById('tx-amount')?.value || 'all';
   const dateFrom = document.getElementById('tx-date-from')?.value;
@@ -891,7 +892,7 @@ export function exportTransactions() {
   const rows = tbody.querySelectorAll('tr');
   
   if (rows.length === 0 || (rows.length === 1 && rows[0].textContent.includes('No transactions'))) {
-    alert('No transactions to export. Apply filters and load transactions first.');
+    await showInfoModal('No transactions to export. Apply filters and load transactions first.', 'Info');
     return;
   }
   
@@ -1031,7 +1032,7 @@ window.viewConversation = async function(conversationId) {
       .order('created_at', { ascending: true });
     
     if (!messages?.length) {
-      alert('No messages in this conversation');
+      await showInfoModal('No messages in this conversation', 'Info');
       return;
     }
     
@@ -1042,9 +1043,9 @@ window.viewConversation = async function(conversationId) {
       </div>
     `).join('');
     
-    alert(`Conversation Messages:\n\n${chatHtml}`);
+    await showInfoModal(`Conversation Messages:\n\n${chatHtml}`, 'Messages');
   } catch (error) {
-    alert('Error loading messages: ' + error.message);
+    await showInfoModal('Error loading messages: ' + error.message, 'Error');
   }
 };
 
@@ -1100,8 +1101,8 @@ function displayTickets(tickets) {
   `;
 }
 
-window.viewTicket = function(ticketId) {
-  alert('Ticket detail view coming soon');
+window.viewTicket = async function(ticketId) {
+  await showInfoModal('Ticket detail view coming soon', 'Info');
 };
 
 window.resolveTicket = async function(ticketId) {
@@ -1115,7 +1116,7 @@ window.resolveTicket = async function(ticketId) {
     
     await loadSupportTickets();
   } catch (error) {
-    alert('Error resolving ticket: ' + error.message);
+    await showInfoModal('Error resolving ticket: ' + error.message, 'Error');
   }
 };
 
@@ -1235,7 +1236,7 @@ async function initialize() {
   document.getElementById('product-search')?.addEventListener('input', debounce(loadProducts, 300));
   
   // Event delegation for action buttons
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     
@@ -1253,10 +1254,10 @@ async function initialize() {
       case 'resolve-ticket': resolveTicket(id); break;
       case 'refresh-stats': 
         loadDashboard(); 
-        alert('Stats refreshed!');
+        await showInfoModal('Stats refreshed!', 'Info');
         break;
       case 'clear-data': 
-        alert('Data cleanup feature coming soon');
+        await showInfoModal('Data cleanup feature coming soon', 'Info');
         break;
     }
   });
@@ -1267,64 +1268,6 @@ async function initialize() {
 // ============================
 // MANUAL ADMIN ACTIONS
 // ============================
-
-// Modal helpers (HTML modal used for confirmations/prompts)
-function showConfirmModal({ title = 'Confirm', message = '', placeholder = '', showInput = false, okText = 'Confirm', cancelText = 'Cancel' } = {}) {
-  return new Promise((resolve) => {
-    const modal = document.getElementById('confirmModal');
-    const overlay = document.getElementById('confirmModalOverlay');
-    const closeBtn = document.getElementById('confirmModalClose');
-    const titleEl = document.getElementById('confirmTitle');
-    const msgEl = document.getElementById('confirmMessage');
-    const inputEl = document.getElementById('confirmInput');
-    const okBtn = document.getElementById('confirmOkBtn');
-    const cancelBtn = document.getElementById('confirmCancelBtn');
-
-    titleEl.innerText = title;
-    msgEl.innerHTML = message;
-    okBtn.innerText = okText;
-    cancelBtn.innerText = cancelText;
-
-    if (showInput) {
-      inputEl.style.display = 'block';
-      inputEl.placeholder = placeholder || '';
-      inputEl.value = '';
-      setTimeout(() => inputEl.focus(), 100);
-    } else {
-      inputEl.style.display = 'none';
-    }
-
-    function cleanup() {
-      modal.style.display = 'none';
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
-      closeBtn.removeEventListener('click', onCancel);
-      overlay.removeEventListener('click', onCancel);
-    }
-
-    function onOk() {
-      const value = showInput ? inputEl.value : true;
-      cleanup();
-      resolve(value);
-    }
-
-    function onCancel() {
-      cleanup();
-      resolve(false);
-    }
-
-    okBtn.addEventListener('click', onOk);
-    cancelBtn.addEventListener('click', onCancel);
-    closeBtn.addEventListener('click', onCancel);
-    overlay.addEventListener('click', onCancel);
-
-    modal.style.display = 'flex';
-  });
-}
-
-function showInfoModal(message, title = 'Info') {
-  return showConfirmModal({ title, message, showInput: false, okText: 'OK', cancelText: 'Close' });
-}
 
 window.adjustUserBalance = async function() {
   try {
@@ -1337,25 +1280,26 @@ window.adjustUserBalance = async function() {
     
     if (usersErr) throw usersErr;
     
-    const userId = prompt(`${i18n.t('admin_select_user')}:\n\n${users.map(u => `${u.email} (€${u.balance})`).join('\n')}\n\nEnter email:`);
+    const userId = await showPromptModal(`${i18n.t('admin_select_user')}:\n\n${users.map(u => `${u.email} (€${u.balance})`).join('\n')}\n\nEnter email:`, { title: 'Select User' });
     if (!userId) return;
     
     const selectedUser = users.find(u => u.email === userId);
     if (!selectedUser) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Error');
       return;
     }
     
-    const action = prompt(`Select action for ${selectedUser.email}:\n1. Add\n2. Subtract\n3. Set\n\nEnter 1, 2, or 3:`);
+    const action = await showPromptModal(`Select action for ${selectedUser.email}:\n1. Add\n2. Subtract\n3. Set\n\nEnter 1, 2, or 3:`, { title: 'Balance Action' });
     if (!action) return;
     
-    const amount = parseFloat(prompt(`${i18n.t('admin_amount')}:`));
+    const amountStr = await showPromptModal(`${i18n.t('admin_amount')}:`, { title: 'Amount' });
+    const amount = parseFloat(amountStr);
     if (isNaN(amount)) {
-      alert('Invalid amount');
+      await showInfoModal('Invalid amount', 'Error');
       return;
     }
     
-    const reason = prompt(`${i18n.t('admin_reason')}:`);
+    const reason = await showPromptModal(`${i18n.t('admin_reason')}:`, { title: 'Reason' });
     if (!reason) return;
     
     let newBalance;
@@ -1389,14 +1333,14 @@ window.adjustUserBalance = async function() {
     
     if (txErr) console.warn('Transaction log error:', txErr);
     
-    alert(`✅ ${i18n.t('admin_user_balance_updated')}\n${selectedUser.email}: €${Math.max(0, newBalance)}`);
+    await showInfoModal(`${i18n.t('admin_user_balance_updated')}\n${selectedUser.email}: €${Math.max(0, newBalance)}`, 'Success');
     console.log(`✅ Balance adjusted for ${selectedUser.email}: €${selectedUser.balance} → €${Math.max(0, newBalance)}`);
     
     await loadTransactions();
     await loadDashboard();
   } catch (err) {
     console.error('❌ Balance adjustment error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(`${i18n.t('admin_error')}: ${err.message}`, 'Error');
   }
 };
 
@@ -1410,29 +1354,30 @@ window.createManualTransaction = async function() {
     
     if (usersErr) throw usersErr;
     
-    const email = prompt(`${i18n.t('admin_select_user')}:\n\n${users.map(u => u.email).join('\n')}\n\nEnter email:`);
+    const email = await showPromptModal(`${i18n.t('admin_select_user')}:\n\n${users.map(u => u.email).join('\n')}\n\nEnter email:`, { title: 'Select User' });
     if (!email) return;
     
     const user = users.find(u => u.email === email);
     if (!user) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Error');
       return;
     }
     
     const types = ['deposit', 'withdraw', 'topup', 'refund', 'fee', 'adjustment'];
-    const type = prompt(`Select transaction type:\n${types.map((t, i) => `${i+1}. ${t}`).join('\n')}\n\nEnter 1-6:`);
+    const type = await showPromptModal(`Select transaction type:\n${types.map((t, i) => `${i+1}. ${t}`).join('\n')}\n\nEnter 1-6:`, { title: 'Transaction Type' });
     if (!type) return;
     
     const typeIdx = parseInt(type) - 1;
     if (typeIdx < 0 || typeIdx >= types.length) return;
     
-    const amount = parseFloat(prompt(`${i18n.t('admin_amount')}:`));
+    const amountStr = await showPromptModal(`${i18n.t('admin_amount')}:`, { title: 'Amount' });
+    const amount = parseFloat(amountStr);
     if (isNaN(amount)) {
-      alert('Invalid amount');
+      await showInfoModal('Invalid amount', 'Error');
       return;
     }
     
-    const description = prompt(`${i18n.t('admin_reason')}:`);
+    const description = await showPromptModal(`${i18n.t('admin_reason')}:`, { title: 'Description' });
     if (!description) return;
     
     const confirmed = await showConfirmModal({ title: 'Create Transaction', message: `${i18n.t('admin_confirm_create_tx')}\n${email}: ${types[typeIdx]} €${amount}\n${description}`, okText: 'Create', cancelText: 'Cancel' });
@@ -1451,13 +1396,13 @@ window.createManualTransaction = async function() {
     
     if (txErr) throw txErr;
     
-    alert(`✅ ${i18n.t('admin_transaction_created')}\n${email} - ${types[typeIdx]} €${amount}`);
+    await showInfoModal(`${i18n.t('admin_transaction_created')}\n${email} - ${types[typeIdx]} €${amount}`, 'Success');
     console.log(`✅ Transaction created: ${email} - ${types[typeIdx]} €${amount}`);
     
     await loadTransactions();
   } catch (err) {
     console.error('❌ Transaction creation error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(`${i18n.t('admin_error')}: ${err.message}`, 'Error');
   }
 };
 
@@ -1487,14 +1432,14 @@ window.resetAllStatistics = async function() {
       }
     }
     
-    alert(`✅ ${i18n.t('admin_stats_reset')}\nDeleted ${deletedCount} transactions`);
+    await showInfoModal(i18n.t('admin_stats_reset') + '\nDeleted ' + deletedCount + ' transactions', 'Success');
     console.log(`✅ All statistics reset - deleted ${deletedCount} transactions`);
     
     await loadTransactions();
     await loadDashboard();
   } catch (err) {
     console.error('❌ Reset error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1508,12 +1453,12 @@ window.resetUserStatistics = async function() {
     
     if (usersErr) throw usersErr;
     
-    const email = prompt(`Select user to reset:\n\n${users.map(u => u.email).join('\n')}`);
+    const email = await showPromptModal(`Select user to reset:\n\n${users.map(u => u.email).join('\n')}`);
     if (!email) return;
     
     const user = users.find(u => u.email === email);
     if (!user) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Info');
       return;
     }
     
@@ -1540,25 +1485,25 @@ window.resetUserStatistics = async function() {
       }
     }
     
-    alert(`✅ User statistics reset for ${email}\nDeleted ${deletedCount} transactions`);
+    await showInfoModal('User statistics reset for ' + email + '\nDeleted ' + deletedCount + ' transactions', 'Success');
     console.log(`✅ Reset statistics for ${email} - deleted ${deletedCount} transactions`);
     
     await loadTransactions();
   } catch (err) {
     console.error('❌ User reset error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
 window.bulkAdjustBalances = async function() {
   try {
-    const amount = parseFloat(prompt('Enter amount to add/subtract from all users (use negative for subtract):'));
+    const amountStr = await showPromptModal('Enter amount to add/subtract from all users (use negative for subtract):', { title: 'Amount' }); const amount = parseFloat(amountStr);
     if (isNaN(amount)) {
-      alert('Invalid amount');
+      await showInfoModal('Invalid amount', 'Info');
       return;
     }
     
-    const reason = prompt('Reason for bulk adjustment:');
+    const reason = await showPromptModal('Reason for bulk adjustment:', { title: 'Reason' });
     if (!reason) return;
     
     const confirmed = await showConfirmModal({ title: 'Bulk Adjust Balances', message: `Add €${amount} to ALL users?\nReason: ${reason}`, okText: 'Apply', cancelText: 'Cancel' });
@@ -1593,14 +1538,14 @@ window.bulkAdjustBalances = async function() {
         });
     }
     
-    alert(`✅ Updated ${updated} user balances\nAmount: €${amount}\nReason: ${reason}`);
+    await showInfoModal('Updated ' + updated + ' user balances\nAmount: €' + amount + '\nReason: ' + reason, 'Success');
     console.log(`✅ Bulk adjustment completed: ${updated} users`);
     
     await loadTransactions();
     await loadDashboard();
   } catch (err) {
     console.error('❌ Bulk adjustment error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1614,12 +1559,12 @@ window.recalculateUserBalance = async function() {
     
     if (usersErr) throw usersErr;
     
-    const email = prompt(`Calculate balance from transactions:\n\n${users.map(u => u.email).join('\n')}`);
+    const email = await showPromptModal(`Calculate balance from transactions:\n\n${users.map(u => u.email).join('\n')}`);
     if (!email) return;
     
     const user = users.find(u => u.email === email);
     if (!user) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Info');
       return;
     }
     
@@ -1643,13 +1588,13 @@ window.recalculateUserBalance = async function() {
     
     if (updateErr) throw updateErr;
     
-    alert(`✅ Balance recalculated for ${email}\nNew balance: €${Math.max(0, calculatedBalance).toFixed(2)}`);
+    await showInfoModal('Balance recalculated for ' + email + '\nNew balance: €' + Math.max(0, calculatedBalance).toFixed(2), 'Success');
     console.log(`✅ Recalculated ${email} balance: €${Math.max(0, calculatedBalance).toFixed(2)}`);
     
     await loadDashboard();
   } catch (err) {
     console.error('❌ Recalculation error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1664,16 +1609,16 @@ window.deleteAdminUser = async function() {
     if (adminsErr) throw adminsErr;
     
     if (admins.length === 0) {
-      alert('No admin users found');
+      await showInfoModal('No admin users found', 'Info');
       return;
     }
     
-    const email = prompt(`${i18n.t('admin_select_user')}:\n\n${admins.map(a => a.email).join('\n')}`);
+    const email = await showPromptModal(`${i18n.t('admin_select_user')}:\n\n${admins.map(a => a.email).join('\n')}`);
     if (!email) return;
     
     const admin = admins.find(a => a.email === email);
     if (!admin) {
-      alert('Admin not found');
+      await showInfoModal('Admin not found', 'Info');
       return;
     }
     
@@ -1690,14 +1635,14 @@ window.deleteAdminUser = async function() {
     
     if (delErr) throw delErr;
     
-    alert(`✅ ${i18n.t('admin_admin_deleted')}\n${email}`);
+    await showInfoModal(i18n.t('admin_admin_deleted') + '\n' + email, 'Success');
     console.log(`✅ Admin user deleted: ${email}`);
     
     await loadUsers();
     await loadDashboard();
   } catch (err) {
     console.error('❌ Delete admin error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1712,12 +1657,12 @@ window.promoteUserToAdmin = async function() {
     
     if (usersErr) throw usersErr;
     
-    const email = prompt(`Select user to promote:\n\n${users.map(u => u.email).join('\n')}`);
+    const email = await showPromptModal(`Select user to promote:\n\n${users.map(u => u.email).join('\n')}`);
     if (!email) return;
     
     const user = users.find(u => u.email === email);
     if (!user) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Info');
       return;
     }
     
@@ -1731,13 +1676,13 @@ window.promoteUserToAdmin = async function() {
     
     if (error) throw error;
     
-    alert(`✅ ${i18n.t('admin_promote_success')}\n${email}`);
+    await showInfoModal(i18n.t('admin_promote_success') + '\n' + email, 'Success');
     console.log(`✅ User promoted to admin: ${email}`);
     
     await loadUsers();
   } catch (err) {
     console.error('❌ Promote error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1751,12 +1696,12 @@ window.demoteAdminUser = async function() {
     
     if (adminsErr) throw adminsErr;
     
-    const email = prompt(`Select admin to demote:\n\n${admins.map(a => a.email).join('\n')}`);
+    const email = await showPromptModal(`Select admin to demote:\n\n${admins.map(a => a.email).join('\n')}`);
     if (!email) return;
     
     const admin = admins.find(a => a.email === email);
     if (!admin) {
-      alert('Admin not found');
+      await showInfoModal('Admin not found', 'Info');
       return;
     }
     
@@ -1770,13 +1715,13 @@ window.demoteAdminUser = async function() {
     
     if (error) throw error;
     
-    alert(`✅ ${i18n.t('admin_demote_success')}\n${email}`);
+    await showInfoModal(i18n.t('admin_demote_success') + '\n' + email, 'Success');
     console.log(`✅ Admin demoted to user: ${email}`);
     
     await loadUsers();
   } catch (err) {
     console.error('❌ Demote error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1792,7 +1737,7 @@ window.promoteUserById = async function(userId) {
     await loadUsers();
   } catch (err) {
     console.error('❌ Promote by id error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1808,7 +1753,7 @@ window.demoteUserById = async function(userId) {
     await loadUsers();
   } catch (err) {
     console.error('❌ Demote by id error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1857,14 +1802,14 @@ window.resetDashboardStats = async function() {
       }
     }
     
-    alert(`✅ ${i18n.t('admin_dashboard_reset')}\nDeleted ${txDeletedCount} transactions, ${ordDeletedCount} orders`);
+    await showInfoModal(i18n.t('admin_dashboard_reset') + '\nDeleted ' + txDeletedCount + ' transactions, ' + ordDeletedCount + ' orders', 'Success');
     console.log(`✅ Dashboard statistics reset - ${txDeletedCount} transactions, ${ordDeletedCount} orders`);
     
     await loadDashboard();
     await loadTransactions();
   } catch (err) {
     console.error('❌ Reset dashboard error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1904,14 +1849,14 @@ window.resetTotalRevenue = async function() {
       }
     }
     
-    alert(`✅ ${i18n.t('admin_revenue_reset')}\nDeleted ${deletedCount} transactions`);
+    await showInfoModal(i18n.t('admin_revenue_reset') + '\nDeleted ' + deletedCount + ' transactions', 'Success');
     console.log(`✅ Total revenue reset - deleted ${deletedCount} transactions`);
     
     await loadDashboard();
     await loadTransactions();
   } catch (err) {
     console.error('❌ Reset revenue error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1967,7 +1912,7 @@ window.deleteAllProductsAndData = async function() {
       }
     }
     
-    alert('🔥 ALL DATA DELETED - System reset to admin-only');
+    await showInfoModal('🔥 ALL DATA DELETED - System reset to admin-only', 'Info');
     console.log('🔥 Complete data wipe completed');
     
     await loadDashboard();
@@ -1975,7 +1920,7 @@ window.deleteAllProductsAndData = async function() {
     await loadProducts();
   } catch (err) {
     console.error('❌ Data deletion error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -1989,12 +1934,12 @@ window.deleteSpecificUser = async function() {
     
     if (usersErr) throw usersErr;
     
-    const email = prompt(`${i18n.t('admin_select_user')}:\n\n${users.map(u => `${u.email} (${u.role})`).join('\n')}`);
+    const email = await showPromptModal(`${i18n.t('admin_select_user')}:\n\n${users.map(u => `${u.email} (${u.role})`).join('\n')}`);
     if (!email) return;
     
     const user = users.find(u => u.email === email);
     if (!user) {
-      alert('User not found');
+      await showInfoModal('User not found', 'Info');
       return;
     }
     
@@ -2016,14 +1961,14 @@ window.deleteSpecificUser = async function() {
     
     if (error) throw error;
     
-    alert(`✅ ${i18n.t('admin_delete_success')}\n${email}`);
+    await showInfoModal(i18n.t('admin_delete_success') + '\n' + email, 'Success');
     console.log(`✅ User deleted: ${email}`);
     
     await loadUsers();
     await loadDashboard();
   } catch (err) {
     console.error('❌ User deletion error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 
@@ -2057,11 +2002,11 @@ Status: ✅ All systems operational
 Last Check: ${new Date().toLocaleString()}
     `;
     
-    alert(health);
+    await showInfoModal(health, 'System Health');
     console.log(health);
   } catch (err) {
     console.error('❌ Health check error:', err);
-    alert(`${i18n.t('admin_error')}: ${err.message}`);
+    await showInfoModal(i18n.t('admin_error') + ': ' + err.message, 'Error');
   }
 };
 

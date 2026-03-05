@@ -1,6 +1,7 @@
 import { supabase, getCurrentUser, logoutUser, uploadAvatar } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
+import { showInfoModal } from '../ui/modal.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -267,12 +268,12 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       }
     }
 
-    alert('Profile saved successfully!');
+    await showInfoModal('Profile saved successfully!', 'Success');
     loadUserProfile();
 
   } catch (error) {
     console.error('Error saving profile:', error);
-    alert('Error saving profile: ' + error.message);
+    await showInfoModal('Error saving profile: ' + error.message, 'Error');
   }
 });
 
@@ -371,7 +372,7 @@ document.getElementById('previewProfileBtn')?.addEventListener('click', async ()
     document.body.style.overflow = 'hidden';
   } catch (error) {
     console.error('Error loading profile preview:', error);
-    alert('Failed to load profile preview');
+    await showInfoModal('Failed to load profile preview', 'Error');
   }
 });
 
@@ -437,17 +438,17 @@ document.getElementById('savePasswordBtn')?.addEventListener('click', async () =
   
   // Validation
   if (!newPassword || !confirmPassword) {
-    alert('Please fill in both password fields.');
+    await showInfoModal('Please fill in both password fields.', 'Validation Error');
     return;
   }
   
   if (newPassword.length < 6) {
-    alert('Password must be at least 6 characters long.');
+    await showInfoModal('Password must be at least 6 characters long.', 'Validation Error');
     return;
   }
   
   if (newPassword !== confirmPassword) {
-    alert('Passwords do not match. Please try again.');
+    await showInfoModal('Passwords do not match. Please try again.', 'Validation Error');
     return;
   }
   
@@ -458,9 +459,9 @@ document.getElementById('savePasswordBtn')?.addEventListener('click', async () =
     });
     
     if (error) {
-      alert('❌ Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+      await showInfoModal('Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
     } else {
-      alert('✅ Password Changed Successfully!\n\nYour password has been updated.\n\nFor security reasons, please log in again.');
+      await showInfoModal('Password Changed Successfully!\n\nYour password has been updated.\n\nFor security reasons, please log in again.', 'Success');
       
       // Clear inputs
       document.getElementById('newPasswordInput').value = '';
@@ -475,7 +476,7 @@ document.getElementById('savePasswordBtn')?.addEventListener('click', async () =
       window.location.href = 'login.html?reason=password_changed';
     }
   } catch (error) {
-    alert('❌ Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.');
+    await showInfoModal('Error Changing Password\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
   }
 });
 
@@ -492,7 +493,7 @@ document.getElementById('savePasswordBtn')?.addEventListener('click', async () =
       document.getElementById('showChangePasswordBtn')?.click();
     }, 500);
     
-    alert('🔐 Password Reset\n\nPlease enter your new password below.\n\nAfter saving, you will need to log in again.');
+    showInfoModal('Password Reset\n\nPlease enter your new password below.\n\nAfter saving, you will need to log in again.', 'Password Reset');
   }
 })();
 

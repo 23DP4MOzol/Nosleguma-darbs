@@ -2,6 +2,7 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
+import { showInfoModal } from '../ui/modal.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const { data } = await supabase.auth.getUser();
       const user = data ? data.user : null;
       if (!user) {
-        alert('Please log in first');
+        await showInfoModal('Please log in first', 'Authentication Required');
         return;
       }
 
@@ -217,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const result = await listProduct(productData, user.id);
 
       if (result) {
-        alert('✅ Product listed successfully!');
+        await showInfoModal('Product listed successfully!', 'Success');
         form.reset();
         updatePreview();
         // Redirect to home page
@@ -225,7 +226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (error) {
       console.error('Error listing product:', error);
-      alert('❌ Error listing product: ' + error.message);
+      await showInfoModal('Error listing product: ' + error.message, 'Error');
     } finally {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;

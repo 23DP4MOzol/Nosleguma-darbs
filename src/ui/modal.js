@@ -98,3 +98,52 @@ export function showConfirmModal({ title = 'Confirm', message = '', placeholder 
 export function showInfoModal(message = '', title = 'Info') {
   return showConfirmModal({ title, message, showInput: false, okText: 'OK', cancelText: 'Close' });
 }
+
+export function showPromptModal(message = '', { title = 'Input', placeholder = '', defaultValue = '', okText = 'OK', cancelText = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    ensureInjected();
+    const modal = document.getElementById('globalConfirmModal');
+    const overlay = document.getElementById('globalConfirmOverlay');
+    const closeBtn = document.getElementById('globalConfirmClose');
+    const titleEl = document.getElementById('globalConfirmTitle');
+    const msgEl = document.getElementById('globalConfirmMessage');
+    const inputEl = document.getElementById('globalConfirmInput');
+    const okBtn = document.getElementById('globalConfirmOk');
+    const cancelBtn = document.getElementById('globalConfirmCancel');
+
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+    okBtn.innerText = okText;
+    cancelBtn.innerText = cancelText;
+    inputEl.style.display = 'block';
+    inputEl.placeholder = placeholder || '';
+    inputEl.value = defaultValue || '';
+    setTimeout(() => inputEl.focus(), 50);
+
+    function cleanup() {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onCancel);
+    }
+
+    function onOk() {
+      const value = inputEl.value;
+      cleanup();
+      resolve(value);
+    }
+
+    function onCancel() {
+      cleanup();
+      resolve(null);
+    }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onCancel);
+
+    modal.style.display = 'flex';
+  });
+}

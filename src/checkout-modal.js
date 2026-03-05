@@ -1,5 +1,6 @@
 // Checkout Modal with Delivery Options and Logistics Integration
 import { supabase, getCurrentUser } from './supabase.js';
+import { showInfoModal } from './ui/modal.js';
 
 // ============================
 // Global State
@@ -410,14 +411,14 @@ window.proceedToPayment = async function() {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
-      alert('Please log in to continue');
+      await showInfoModal('Please log in to continue', 'Authentication Required');
       return;
     }
 
     // Validate inputs
     const quantity = parseInt(document.getElementById('checkoutQuantity').value);
     if (quantity < 1 || quantity > currentCheckoutProduct.stock) {
-      alert('Invalid quantity');
+      await showInfoModal('Invalid quantity', 'Validation Error');
       return;
     }
 
@@ -428,7 +429,7 @@ window.proceedToPayment = async function() {
       const date = document.getElementById('meetupDate').value;
       
       if (!location) {
-        alert('Please specify a meeting location');
+        await showInfoModal('Please specify a meeting location', 'Validation Error');
         return;
       }
       
@@ -440,7 +441,7 @@ window.proceedToPayment = async function() {
     } else {
       // Shipping
       if (!selectedShippingCarrier) {
-        alert('Please select a shipping carrier');
+        await showInfoModal('Please select a shipping carrier', 'Validation Error');
         return;
       }
 
@@ -452,7 +453,7 @@ window.proceedToPayment = async function() {
 
       if (selectedShippingService === 'parcel_locker') {
         if (!selectedParcelLocker) {
-          alert('Please select a parcel locker');
+          await showInfoModal('Please select a parcel locker', 'Validation Error');
           return;
         }
         deliveryDetails.parcel_locker_id = selectedParcelLocker.locker_id;
@@ -468,7 +469,7 @@ window.proceedToPayment = async function() {
         const postal = document.getElementById('shippingPostalCode').value;
 
         if (!name || !phone || !address || !city || !postal) {
-          alert('Please fill in all shipping address fields');
+          await showInfoModal('Please fill in all shipping address fields', 'Validation Error');
           return;
         }
 
@@ -496,7 +497,7 @@ window.proceedToPayment = async function() {
     if (error) throw error;
 
     if (data.success) {
-      alert('✅ Order created successfully! Redirecting to payment...');
+      await showInfoModal('Order created successfully! Redirecting to payment...', 'Success');
       closeCheckoutModal();
       // Redirect to orders page to complete payment
       window.location.href = `orders.html`;
@@ -505,7 +506,7 @@ window.proceedToPayment = async function() {
     }
   } catch (error) {
     console.error('Error creating order:', error);
-    alert('❌ Failed to create order: ' + (error.message || 'Unknown error'));
+    await showInfoModal('Failed to create order: ' + (error.message || 'Unknown error'), 'Error');
     document.getElementById('checkoutPayBtn').disabled = false;
     document.getElementById('checkoutPayBtn').textContent = 'Proceed to Payment';
   }

@@ -1,6 +1,7 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
+import { showInfoModal } from '../ui/modal.js';
 
 // ============================
 // Terms Content (English)
@@ -321,12 +322,12 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
   // Validation
   if (password !== confirmPassword) {
-    alert(i18n.t('passwords_not_match') || 'Passwords do not match');
+    await showInfoModal(i18n.t('passwords_not_match') || 'Passwords do not match', 'Error');
     return;
   }
 
   if (password.length < 6) {
-    alert(i18n.t('password_too_short') || 'Password must be at least 6 characters');
+    await showInfoModal(i18n.t('password_too_short') || 'Password must be at least 6 characters', 'Error');
     return;
   }
 
@@ -357,7 +358,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       .single();
     
     if (existingUser) {
-      alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+      await showInfoModal('This email address is already registered in our system.\n\nIf you already have an account, please log in instead.', 'Email Already Registered');
       return;
     }
 
@@ -383,7 +384,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       if (result.error.message.includes('already registered') || 
           result.error.message.includes('User already exists') ||
           result.error.message.includes('email')) {
-        alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+        await showInfoModal('This email address is already registered in our system.\n\nIf you already have an account, please log in instead.', 'Email Already Registered');
         return;
       }
       throw result.error;
@@ -407,10 +408,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     if (insertError) {
       // Show warning but don't block registration - auth user was created
       console.error('Error inserting user record:', insertError);
-      alert('⚠️ Account Created with Warning\n\nYour account was created in our authentication system, but there was a minor issue saving your profile data.\n\nPlease contact support if this persists.\n\nYou can still log in and use most features.');
+      await showInfoModal('Your account was created in our authentication system, but there was a minor issue saving your profile data.\n\nPlease contact support if this persists.\n\nYou can still log in and use most features.', 'Warning');
     } else {
       // Success - user fully registered
-      alert('Registration Successful!\n\nPlease check your email inbox for the verification link.\n\nIMPORTANT: You must verify your email address before you can log in.\n\nCheck your spam folder if you dont see the email.');
+      await showInfoModal('Please check your email inbox for the verification link.\n\nIMPORTANT: You must verify your email address before you can log in.\n\nCheck your spam folder if you dont see the email.', 'Success');
     }
     
     // Instead of redirecting to login, redirect to login with verify_required reason
@@ -426,13 +427,13 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     if (errorMessage.includes('already registered') || 
         errorMessage.includes('User already exists') ||
         errorMessage.includes('email') && errorMessage.includes('already')) {
-      alert('⚠️ Email Already Registered\n\nThis email address is already registered in our system.\n\nIf you already have an account, please log in instead.');
+      await showInfoModal('This email address is already registered in our system.\n\nIf you already have an account, please log in instead.', 'Email Already Registered');
     } else if (errorMessage.includes('Password')) {
-      alert('⚠️ Password Error\n\n' + errorMessage + '\n\nPlease choose a different password.');
+      await showInfoModal(errorMessage + '\n\nPlease choose a different password.', 'Password Error');
     } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-      alert('⚠️ Network Error\n\nUnable to connect to the server.\n\nPlease check your internet connection and try again.');
+      await showInfoModal('Unable to connect to the server.\n\nPlease check your internet connection and try again.', 'Network Error');
     } else {
-      alert('Registration Error\n\n' + errorMessage + '\n\nPlease try again or contact support if the problem persists.');
+      await showInfoModal(errorMessage + '\n\nPlease try again or contact support if the problem persists.', 'Registration Error');
     }
   }
 });

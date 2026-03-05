@@ -1,5 +1,6 @@
 import { supabase, getOrCreateConversation } from '../supabase.js';
 import { i18n } from '../i18n.js';
+import { showInfoModal, showPromptModal } from '../ui/modal.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -264,7 +265,7 @@ sendBtn.addEventListener('click', async () => {
     try { await loadConversations(); } catch (e) { /* ignore */ }
   } catch (err) {
     console.error('Failed to send message via RPC', err);
-    alert('Failed to send message: ' + (err.message || err));
+    await showInfoModal('Failed to send message: ' + (err.message || err), 'Error');
   }
 });
 
@@ -358,10 +359,10 @@ async function handleQueryParams() {
 const newChatBtn = document.querySelector('.chat-list-header .btn-icon-small');
 if (newChatBtn && !newChatBtn._hasHandler) {
   newChatBtn.addEventListener('click', async () => {
-    if (!currentUser) return alert('Please log in first');
+    if (!currentUser) { await showInfoModal('Please log in first', 'Authentication Required'); return; }
     
     // Ask for username instead of email
-    const username = prompt('Enter recipient username to start chat:');
+    const username = await showPromptModal('Enter recipient username to start chat:', { title: 'New Chat', placeholder: 'Username' });
     if (!username) return;
     
     try {
@@ -373,7 +374,7 @@ if (newChatBtn && !newChatBtn._hasHandler) {
         .maybeSingle();
       
       if (error) throw error;
-      if (!userRow) return alert('User "' + username + '" not found. Please check the username and try again.');
+      if (!userRow) { await showInfoModal('User "' + username + '" not found. Please check the username and try again.', 'User Not Found'); return; }
       
       const recipientId = userRow.id;
       const conv = await getOrCreateConversation(null, currentUser.id, recipientId);
@@ -383,7 +384,7 @@ if (newChatBtn && !newChatBtn._hasHandler) {
       }
     } catch (err) {
       console.error('Failed to create/open chat', err);
-      alert('Failed to start chat: ' + (err.message || err));
+      await showInfoModal('Failed to start chat: ' + (err.message || err), 'Error');
     }
   });
   newChatBtn._hasHandler = true;

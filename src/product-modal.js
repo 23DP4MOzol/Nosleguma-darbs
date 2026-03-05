@@ -1,5 +1,6 @@
 // Product Modal Functionality
 import { supabase } from './supabase.js';
+import { showInfoModal } from './ui/modal.js';
 
 export async function showProductModal(product) {
   const modal = document.getElementById('productModal');
@@ -176,12 +177,12 @@ window.openChatWithSeller = function(sellerId, productId) {
 
 window.toggleSaveProduct = function(productId) {
   // TODO: Implement save functionality
-  alert('Product saved! (Feature coming soon)');
+  showInfoModal('Product saved! (Feature coming soon)', 'Saved');
 };
 
 window.toggleLikeProduct = function(productId) {
   // TODO: Implement like functionality  
-  alert('Product liked! (Feature coming soon)');
+  showInfoModal('Product liked! (Feature coming soon)', 'Liked');
 };
 
 // Import checkout modal
@@ -197,7 +198,7 @@ window.handlePurchase = async function(productId) {
     .single();
   
   if (error || !product) {
-    alert('Product not found');
+    await showInfoModal('Product not found', 'Error');
     return;
   }
   

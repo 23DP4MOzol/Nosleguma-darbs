@@ -1,6 +1,7 @@
 ﻿import { supabase, getCurrentUser } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showToast } from '../main.js';
+import { showInfoModal, showConfirmModal } from '../ui/modal.js';
 
 // ============================
 // State
@@ -90,7 +91,7 @@ function toast(msg, type = 'success') {
   } else if (window.showToast) {
     window.showToast(msg, type);
   } else {
-    alert(msg);
+    showInfoModal(msg, type === 'error' ? 'Error' : 'Info');
   }
 }
 
@@ -666,7 +667,8 @@ window.closeOrderModal = function() {
 // PAY ORDER (for pending orders)
 // ============================
 window.payOrder = async function(orderId) {
-  if (!confirm(t('orders_confirm_payment'))) return;
+  const confirmed = await showConfirmModal({ title: t('orders_confirm_payment'), message: t('orders_confirm_payment'), okText: 'OK', cancelText: 'Cancel' });
+  if (!confirmed) return;
 
   try {
     var order = allOrders.find(function(o) { return o.id === orderId; });
