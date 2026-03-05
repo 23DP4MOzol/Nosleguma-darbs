@@ -2659,6 +2659,279 @@ html[data-theme="dark"] .profile-review-form textarea {
   border-color: #2563eb;
 }
 
+/* =======================================================
+   DARK MODE - BUTTON & BADGE COLOR PRESERVATION
+   These overrides prevent the universal dark-mode button
+   rule (html.dark button) from stripping coloured backgrounds.
+   ======================================================= */
+
+html[data-theme="dark"] .btn-primary,
+html.dark .btn-primary {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .btn-primary:hover,
+html.dark .btn-primary:hover {
+  background: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+}
+
+html[data-theme="dark"] .btn-secondary,
+html.dark .btn-secondary {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .btn-secondary:hover,
+html.dark .btn-secondary:hover {
+  background: var(--border) !important;
+  border-color: var(--fg) !important;
+}
+
+html[data-theme="dark"] .btn-success,
+html.dark .btn-success {
+  background: #10b981 !important;
+  color: white !important;
+  border-color: #10b981 !important;
+}
+
+html[data-theme="dark"] .btn-success:hover,
+html.dark .btn-success:hover {
+  background: #059669 !important;
+  border-color: #059669 !important;
+}
+
+html[data-theme="dark"] .btn-danger,
+html.dark .btn-danger {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+html[data-theme="dark"] .btn-danger:hover,
+html.dark .btn-danger:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+html[data-theme="dark"] .btn-warning,
+html.dark .btn-warning {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #f59e0b !important;
+}
+
+html[data-theme="dark"] .btn-warning:hover,
+html.dark .btn-warning:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+html[data-theme="dark"] .btn-info,
+html.dark .btn-info {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+html[data-theme="dark"] .btn-info:hover,
+html.dark .btn-info:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+html[data-theme="dark"] .btn-sm,
+html.dark .btn-sm {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .btn-sm:hover,
+html.dark .btn-sm:hover {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+/* Tab buttons should stay transparent in dark mode */
+html[data-theme="dark"] .tab-btn,
+html.dark .tab-btn {
+  background: transparent !important;
+  color: var(--muted) !important;
+  border-color: transparent !important;
+  border-bottom: 3px solid transparent;
+}
+
+html[data-theme="dark"] .tab-btn:hover,
+html.dark .tab-btn:hover {
+  color: var(--fg) !important;
+}
+
+html[data-theme="dark"] .tab-btn.active,
+html.dark .tab-btn.active {
+  color: var(--primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+/* Filter tabs dark mode */
+html[data-theme="dark"] .filter-tab,
+html.dark .filter-tab {
+  background: transparent !important;
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .filter-tab.active,
+html.dark .filter-tab.active {
+  color: var(--primary) !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .filter-tab:hover,
+html.dark .filter-tab:hover {
+  color: var(--fg) !important;
+}
+
+/* Sell button dark mode */
+html[data-theme="dark"] .btn-sell,
+html.dark .btn-sell {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+/* Logout button dark mode */
+html[data-theme="dark"] .btn-logout,
+html.dark .btn-logout {
+  background: transparent !important;
+  color: var(--error) !important;
+  border-color: var(--error) !important;
+}
+
+html[data-theme="dark"] .btn-logout:hover,
+html.dark .btn-logout:hover {
+  background: var(--error) !important;
+  color: white !important;
+}
+
+/* Send button dark mode */
+html[data-theme="dark"] .btn-send,
+html.dark .btn-send {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* Buy/Cart buttons dark mode */
+html[data-theme="dark"] .btn-buy-now,
+html.dark .btn-buy-now {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .btn-add-cart,
+html.dark .btn-add-cart {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+/* Hero buttons dark mode */
+html[data-theme="dark"] .btn-hero-primary,
+html.dark .btn-hero-primary {
+  background: white !important;
+  color: var(--primary-dark) !important;
+}
+
+html[data-theme="dark"] .btn-hero-secondary,
+html.dark .btn-hero-secondary {
+  background: transparent !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Quick view button dark mode */
+html[data-theme="dark"] .btn-quick-view,
+html.dark .btn-quick-view {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: white !important;
+}
+
+/* Badge dark mode - preserve text colors against backgrounds */
+html[data-theme="dark"] .badge-admin,
+html.dark .badge-admin {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="dark"] .badge-user,
+html.dark .badge-user {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .badge-seller,
+html.dark .badge-seller {
+  background: #451a03 !important;
+  color: #fcd34d !important;
+}
+
+html[data-theme="dark"] .badge-purchase,
+html.dark .badge-purchase {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .badge-sale,
+html.dark .badge-sale {
+  background: #451a03 !important;
+  color: #fdba74 !important;
+}
+
+html[data-theme="dark"] .badge-topup,
+html.dark .badge-topup {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .badge-fee,
+html.dark .badge-fee {
+  background: #450a0a !important;
+  color: #fca5a5 !important;
+}
+
+html[data-theme="dark"] .badge-completed,
+html.dark .badge-completed {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .badge-pending,
+html.dark .badge-pending {
+  background: #451a03 !important;
+  color: #fcd34d !important;
+}
+
+html[data-theme="dark"] .badge-cancelled,
+html.dark .badge-cancelled {
+  background: #450a0a !important;
+  color: #fca5a5 !important;
+}
+
+html[data-theme="dark"] .badge-active,
+html.dark .badge-active {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .badge-inactive,
+html.dark .badge-inactive {
+  background: #1f2937 !important;
+  color: #9ca3af !important;
+}
+
 
 /* =======================================================
    ORDERS PAGE STYLES

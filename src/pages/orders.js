@@ -1074,7 +1074,7 @@ function displayOrderDetails(order) {
   if (otherUser && otherUser.avatar_url) content += '<img src="' + otherUser.avatar_url + '" alt="Avatar" class="user-avatar">';
   content += '<div><p><strong>' + t('orders_username') + ':</strong> ' + esc(otherUser ? (otherUser.username || 'N/A') : 'N/A') + '</p>' +
     '<p><strong>' + t('orders_email') + ':</strong> ' + esc(otherUser ? (otherUser.email || 'N/A') : 'N/A') + '</p>' +
-    '<a href="chat.html?user=' + (otherUser ? otherUser.id : '') + '" class="btn btn-secondary">\uD83D\uDCAC ' + t('orders_message') + '</a>' +
+    '<a href="chat.html?seller=' + (otherUser ? otherUser.id : '') + '" class="btn btn-secondary">\uD83D\uDCAC ' + t('orders_message') + '</a>' +
     '</div></div></div>';
 
   // Notes

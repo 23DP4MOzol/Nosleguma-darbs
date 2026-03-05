@@ -309,14 +309,15 @@ async function ensureGlobalMessageListener() {
 // ============================
 async function handleQueryParams() {
   const urlParams = new URLSearchParams(window.location.search);
-  const sellerParam = urlParams.get('seller'); // Can be username (new) or user ID (backward compat)
-  const productId = urlParams.get('product');
+  // Support both 'seller' and 'user' URL params for compatibility
+  const sellerParam = urlParams.get('seller') || urlParams.get('user');
+  const productId = urlParams.get('product') || null;
   
   if (sellerParam && currentUser) {
     try {
       let recipientId = sellerParam;
       
-      // Check if sellerParam looks like a UUID (user ID) or a username
+      // Check if param looks like a UUID or a username
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isUuid = uuidRegex.test(sellerParam);
       
@@ -333,22 +334,28 @@ async function handleQueryParams() {
           recipientId = userRow.id;
         } else {
           console.warn('User not found with username:', sellerParam);
+          await showInfoModal('User not found. They may have changed their username.', 'User Not Found');
           return;
         }
       }
       
-      if (recipientId && recipientId !== currentUser.id) {
-        // Get or create conversation
-        const conv = await getOrCreateConversation(productId, currentUser.id, recipientId);
-        if (conv) {
-          await loadConversations();
-          openConversation(conv);
-          // Clear URL params after opening chat
-          window.history.replaceState(null, '', window.location.pathname);
-        }
+      // Prevent chatting with yourself
+      if (recipientId === currentUser.id) {
+        console.warn('Cannot chat with yourself');
+        return;
+      }
+      
+      // Get or create conversation and auto-open it
+      const conv = await getOrCreateConversation(productId, currentUser.id, recipientId);
+      if (conv) {
+        await loadConversations();
+        openConversation(conv);
+        // Clear URL params after opening chat
+        window.history.replaceState(null, '', window.location.pathname);
       }
     } catch (err) {
       console.error('Error handling query params:', err);
+      await showInfoModal('Could not start chat. Please try again.', 'Error');
     }
   }
 }

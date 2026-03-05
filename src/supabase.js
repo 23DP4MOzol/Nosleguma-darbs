@@ -1185,31 +1185,49 @@ export async function resolveDispute(ticketId, resolution, adminId) {
 // ============================
 
 // Get or create conversation
-export async function getOrCreateConversation(productId, buyerId, sellerId) {
+// Handles: null productId, swapped buyer/seller roles, returns full join data
+export async function getOrCreateConversation(productId, currentUserId, otherUserId) {
   try {
-    // Check if conversation already exists
-    const { data: existing, error: fetchError } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('product_id', productId)
-      .eq('buyer_id', buyerId)
-      .eq('seller_id', sellerId)
-      .single();
+    const selectFields = '*, product:products(id,name), buyer:users!buyer_id(id,username), seller:users!seller_id(id,username)';
 
+    // Find existing conversation between these two users (either direction)
+    let query;
+    if (productId) {
+      query = supabase
+        .from('conversations')
+        .select(selectFields)
+        .eq('product_id', productId)
+        .or(`and(buyer_id.eq.${currentUserId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${currentUserId})`)
+        .limit(1)
+        .maybeSingle();
+    } else {
+      query = supabase
+        .from('conversations')
+        .select(selectFields)
+        .is('product_id', null)
+        .or(`and(buyer_id.eq.${currentUserId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${currentUserId})`)
+        .limit(1)
+        .maybeSingle();
+    }
+
+    const { data: existing, error: fetchError } = await query;
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
     if (existing) return existing;
 
     // Create new conversation
+    const insertPayload = {
+      buyer_id: currentUserId,
+      seller_id: otherUserId,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    if (productId) insertPayload.product_id = productId;
+
     const { data: newConv, error: insertError } = await supabase
       .from('conversations')
-      .insert({
-        product_id: productId,
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
+      .insert(insertPayload)
+      .select(selectFields)
       .single();
 
     if (insertError) throw insertError;
