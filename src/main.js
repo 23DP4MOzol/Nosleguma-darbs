@@ -154,6 +154,7 @@ export async function updateNavbarAuth(sessionParam) {
   const sellBtn = document.getElementById('sellBtn');
   const settingsBtn = document.getElementById('settingsBtn');
   const adminBtn = document.getElementById('adminBtn');
+  const footerAdmin = document.getElementById('footerAdmin');
   
   console.log('🎛️ Navbar elements check:', {
     loginBtnExists: !!loginBtn,
@@ -409,6 +410,10 @@ export async function updateNavbarAuth(sessionParam) {
         adminBtn.style.display = 'none';
       }
     }
+    // Footer admin link visibility
+    if (footerAdmin) {
+      footerAdmin.style.display = (userRole === 'admin') ? 'inline' : 'none';
+    }
   } else {
     console.log('ℹ️ No user logged in, resetting navbar...');
     
@@ -437,6 +442,7 @@ export async function updateNavbarAuth(sessionParam) {
     if (adminBtn) {
       adminBtn.style.display = 'none';
     }
+    if (footerAdmin) footerAdmin.style.display = 'none';
   }
   
   console.log('✅ updateNavbarAuth() completed successfully');

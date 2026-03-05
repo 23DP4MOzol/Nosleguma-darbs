@@ -166,6 +166,12 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* Make layout a column so footer can stick to bottom when page is short */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
 html[data-theme="dark"],
 html.dark {
@@ -932,6 +938,8 @@ html.light .btn-hero-secondary {
   margin: 0 auto;
   padding: 4rem 2rem;
 }
+/* Allow main content to grow so footer stays at bottom */
+.main-container { flex: 1 0 auto; }
 
 .section-header {
   display: flex;
@@ -1433,6 +1441,11 @@ html.light .btn-hero-secondary {
   color: var(--muted);
 }
 
+/* Improve readability of hero stats on variable gradient backgrounds */
+.hero-modern .stat-value,
+.hero-modern .stat-label {
+  text-shadow: 0 4px 18px rgba(0,0,0,0.5);
+}
 .chat-last-message {
   display: flex;
   justify-content: space-between;
