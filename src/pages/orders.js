@@ -23,10 +23,90 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadOrders();
     setupEventListeners();
+    // Handle optional query params (e.g., ?product=<id>) to open quick checkout
+    await handleQueryParams();
   } catch (error) {
     console.error('Error initializing orders page:', error);
   }
 });
+
+async function handleQueryParams() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product');
+    if (!productId) return;
+
+    // Fetch product details
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .maybeSingle();
+
+    if (error || !product) {
+      console.warn('Product not found for checkout:', productId);
+      return;
+    }
+
+    // Open the order details modal with a simple checkout form
+    const modal = document.getElementById('orderDetailsModal');
+    const content = document.getElementById('orderDetailsContent');
+    if (!modal || !content) return;
+
+    content.innerHTML = `
+      <h2>Checkout: ${product.name ? product.name.replace(/</g,'&lt;') : 'Product'}</h2>
+      <p>Price: €${parseFloat(product.price || 0).toFixed(2)}</p>
+      <label>Shipping address</label>
+      <textarea id="checkoutShipping" rows="3" style="width:100%;margin:0.5rem 0"></textarea>
+      <label>Delivery method</label>
+      <select id="checkoutDelivery" style="width:100%;margin:0.5rem 0">
+        <option value="meetup">Meetup</option>
+        <option value="shipping">Shipping</option>
+      </select>
+      <div style="display:flex;gap:8px;margin-top:1rem;">
+        <button class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
+        <button class="btn btn-sell" id="placeOrderBtn">Place Order</button>
+      </div>
+    `;
+
+    // Show modal
+    modal.style.display = 'flex';
+
+    // Wire up place order button
+    document.getElementById('placeOrderBtn').onclick = async () => {
+      const shipping = document.getElementById('checkoutShipping').value || '';
+      const delivery = document.getElementById('checkoutDelivery').value || 'meetup';
+      try {
+        const { data, error: insertError } = await supabase
+          .from('orders')
+          .insert({
+            product_id: product.id,
+            buyer_id: currentUser.id,
+            seller_id: product.seller_id || null,
+            shipping_address: shipping,
+            delivery_method: delivery,
+            order_status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        // refresh orders list and close modal
+        await loadOrders();
+        modal.style.display = 'none';
+        if (window.showToast) window.showToast('Order created. Complete payment in Balance or Orders.', 'success'); else alert('Order created.');
+      } catch (err) {
+        console.error('Error creating order:', err);
+        if (window.showToast) window.showToast(err.message || 'Failed to create order', 'error'); else alert('Failed to create order');
+      }
+    };
+  } catch (err) {
+    console.error('handleQueryParams error:', err);
+  }
+}
 
 // ============================
 // Event Listeners

@@ -1,0 +1,18 @@
+{
+  "name": "Vendly - Marketplace",
+  "short_name": "Vendly",
+  "description": "Local marketplace web app (buy & sell) with offline support.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5a4",
+  "icons": [
+    {
+      "src": "/assets/vendly-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": "/"
+}

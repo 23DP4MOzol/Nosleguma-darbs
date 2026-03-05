@@ -235,6 +235,24 @@ npm run build
 
 ---
 
+## 📲 PWA Support
+
+This project includes basic Progressive Web App support:
+
+- `manifest.webmanifest` at project root (app name, icons, theme colors)
+- `service-worker.js` at project root provides a simple offline cache for core assets
+- `src/sw-register.js` registers the service worker in supported browsers
+
+To test PWA behaviour locally:
+
+```bash
+npm run dev
+# Open http://localhost:5173 in Chrome, then open DevTools > Application to inspect manifest and service worker
+```
+
+Note: For production hosting, ensure the service worker and manifest are served from the site root so the PWA scope covers the application.
+
+
 ## 🗄 Database Schema
 
 ### Main Tables

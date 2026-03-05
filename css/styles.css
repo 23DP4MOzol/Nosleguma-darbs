@@ -941,6 +941,14 @@ html.light .btn-hero-secondary {
 /* Allow main content to grow so footer stays at bottom */
 .main-container { flex: 1 0 auto; }
 
+/* Generic container used on some pages (ensure it grows so footer stays at page bottom) */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  flex: 1 0 auto;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;

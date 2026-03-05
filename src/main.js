@@ -26,6 +26,7 @@ import './navbar.js';
 import './app.js';
 import './product-modal.js';
 import './checkout-modal.js';
+import './sw-register.js';
 import { showConfirmModal, showInfoModal } from './ui/modal.js';
 // AI widget disabled - requires Netlify functions setup
 // import './ai-widget.js';
@@ -1385,17 +1386,12 @@ async function initializeIndexPage() {
         setTimeout(() => (window.location.href = 'login.html'), 1500);
         return;
       }
-
-      // dynamic import of helper function from supabase.js (if available)
-      const mod = await import('./supabase.js');
-      if (mod && typeof mod.purchaseProduct === 'function') {
-        await mod.purchaseProduct(productId, user.id);
-        showToast(i18n.t ? i18n.t('purchaseComplete') : 'Purchase completed', 'success');
-        await loadProducts();
-        await updateNavbarAuth();
-      } else {
-        throw new Error('Purchase function not available');
-      }
+      // Instead of performing the purchase immediately, redirect the user
+      // to the Orders page so they can finish the order there.
+      const params = new URLSearchParams();
+      params.set('product', productId);
+      // preserve intent so orders page can open checkout UI
+      window.location.href = `orders.html?${params.toString()}`;
     } catch (error) {
       console.error('Purchase error:', error);
       showToast(error.message || 'Purchase failed', 'error');
