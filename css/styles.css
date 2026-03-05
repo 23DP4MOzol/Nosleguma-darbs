@@ -834,6 +834,35 @@ html[data-theme="dark"] .balance-badge {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Light-mode overrides so hero stats/buttons are readable on bright backgrounds */
+html[data-theme="light"] .stat-value,
+html.light .stat-value {
+  color: var(--fg);
+}
+
+html[data-theme="light"] .stat-label,
+html.light .stat-label {
+  color: var(--muted);
+}
+
+html[data-theme="light"] .stat-divider,
+html.light .stat-divider {
+  background: var(--border);
+}
+
+html[data-theme="light"] .hero-badge,
+html.light .hero-badge {
+  color: var(--fg);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="light"] .btn-hero-secondary,
+html.light .btn-hero-secondary {
+  color: var(--fg);
+  border-color: var(--border);
+  background: rgba(15, 23, 42, 0.04);
+}
+
 /* =======================================================
    MAIN CONTAINER
    ======================================================= */
