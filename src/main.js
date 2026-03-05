@@ -1493,15 +1493,27 @@ async function initializeIndexPage() {
       
       sellerData = seller;
       
-      // Get seller rating from reviews (placeholder for now)
-      sellerRating = 4.5;
-      sellerReviews = 23;
+      // Get real seller rating from reviews table
+      try {
+        const { data: reviewsData } = await supabase
+          .from('reviews')
+          .select('rating')
+          .eq('seller_id', product.seller_id);
+        if (reviewsData && reviewsData.length > 0) {
+          sellerReviews = reviewsData.length;
+          sellerRating = (reviewsData.reduce((sum, r) => sum + r.rating, 0) / sellerReviews).toFixed(1);
+        }
+      } catch (e) { /* reviews table may not exist yet */ }
     }
     
-    // Get product stats (placeholders)
-    const productLikes = Math.floor(Math.random() * 50);
-    const productSaves = Math.floor(Math.random() * 30);
-    const productViews = Math.floor(Math.random() * 200) + 50;
+    // Get real product stats from favorites
+    let productLikes = 0;
+    try {
+      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);
+      productLikes = count || 0;
+    } catch (e) { /* favorites may not exist */ }
+    const productSaves = productLikes;
+    const productViews = 0; // No view tracking table yet
     
     const conditionEmoji = {
       'new': '✨',
@@ -2618,64 +2630,7 @@ function initializeSettingsPage() {
    }
  };
 
-// Sell page functions
-function initializeSellPage() {
-  if (!document.getElementById('sellForm')) return;
-
-  async function checkAuth() {
-    const { data } = await supabase.auth.getUser();
-    const user = data ? data.user : null;
-    if (!user) {
-      showToast('You must be logged in to sell items.', 'error');
-      setTimeout(() => (window.location.href = 'login.html'), 2000);
-    }
-  }
-
-  checkAuth();
-
-  const sellForm = document.getElementById('sellForm');
-  if (sellForm) {
-    sellForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const { data } = await supabase.auth.getUser();
-      const user = data ? data.user : null;
-      if (!user) {
-        showToast(i18n.t ? i18n.t('loginFirst') : 'Please log in first', 'error');
-        return;
-      }
-
-      const productData = {
-        name: document.getElementById('productNameInput')?.value || '',
-        category: document.getElementById('productCategoryInput')?.value || '',
-        price: parseFloat(document.getElementById('productPriceInput')?.value || '0'),
-        description: document.getElementById('productDescriptionInput')?.value || '',
-        image_url: document.getElementById('productImageInput')?.value || '',
-        stock: parseInt(document.getElementById('productStockInput')?.value || '1'),
-        condition: document.getElementById('productConditionInput')?.value || '',
-        location: document.getElementById('productLocationInput')?.value || ''
-      };
-
-      try {
-        const mod = await import('./supabase.js');
-        if (mod && typeof mod.listProduct === 'function') {
-          const result = await mod.listProduct(productData, user.id);
-          if (result) {
-            showToast('Product listed successfully!', 'success');
-            e.target.reset();
-            // optionally refresh listings
-          } else {
-            showToast('Error listing product', 'error');
-          }
-        } else {
-          throw new Error('listProduct helper not found');
-        }
-      } catch (error) {
-        console.error('Error listing product:', error);
-        showToast('Error listing product: ' + (error.message || ''), 'error');
-      }
-    });
-  }
-}
+// Sell page functions - MOVED TO src/pages/sell.js\nfunction initializeSellPage() {\n  // Sell page is now handled by src/pages/sell.js to avoid conflicts\n  // This function is kept for reference but does nothing\n  if (document.getElementById('sellForm')) {\n    console.log('initializeSellPage() - Sell page is handled by src/pages/sell.js');\n  }\n}
 
 // ============================
 // Login page functions - MOVED TO src/pages/login.js

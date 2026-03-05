@@ -246,7 +246,7 @@ window.viewUserDetails = async function(userId) {
     // Stats
     const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', userId);
     const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', userId);
-    const { count: conversationsCount } = await supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`user_1.eq.${userId},user_2.eq.${userId}`);
+    const { count: conversationsCount } = await supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
     
     // Financials - detailed breakdown
     const { data: transactions } = await supabase.from('user_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
@@ -272,7 +272,7 @@ window.viewUserDetails = async function(userId) {
     const { data: conversations } = await supabase
       .from('conversations')
       .select('*, product:products(name, price)')
-      .or(`user_1.eq.${userId},user_2.eq.${userId}`)
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order('last_message_at', { ascending: false })
       .limit(10);
     
@@ -572,7 +572,7 @@ window.deleteUser = async function(userId) {
     const { error: delConvErr } = await supabase
       .from('conversations')
       .delete()
-      .or(`user_1.eq.${userId},user_2.eq.${userId}`);
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
     
     if (delConvErr) {
       console.warn('Warning: Could not delete conversations:', delConvErr);

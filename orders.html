@@ -96,11 +96,27 @@
 
       <!-- Shipping Options -->
       <div id="shippingOptions" class="delivery-options" style="display:none;">
+        <!-- Shipping origin info (from seller) -->
+        <div class="info-box" id="shippingOriginInfo" style="margin-bottom:1rem;">
+          <strong>📍 <span data-i18n="co_shipping_from">Shipping from</span>: <span id="sellerCityDisplay">—</span></strong>
+        </div>
+
+        <!-- Package weight -->
+        <div class="form-group">
+          <label data-i18n="co_package_weight">Package Weight (kg)</label>
+          <input type="number" id="packageWeight" class="form-input" data-i18n-placeholder="co_package_weight_ph" placeholder="e.g. 0.5" min="0.01" step="0.01" value="">
+        </div>
+
         <div class="form-group">
           <label data-i18n="co_select_carrier">Select Carrier</label>
           <div class="shipping-carriers" id="carrierList">
             <!-- filled dynamically -->
           </div>
+        </div>
+
+        <!-- Carrier detail / quote panel (appears when clicking a carrier) -->
+        <div id="carrierDetailPanel" class="carrier-detail-panel" style="display:none;">
+          <div id="carrierDetailContent"></div>
         </div>
 
         <div class="form-group">

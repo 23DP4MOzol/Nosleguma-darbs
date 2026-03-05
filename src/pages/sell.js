@@ -211,7 +211,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         condition: document.getElementById('productConditionInput').value,
         location: document.getElementById('productLocationInput').value,
         brand: document.getElementById('productBrandInput')?.value || '',
-        color: document.getElementById('productColorInput')?.value || ''
+        color: document.getElementById('productColorInput')?.value || '',
+        weight_kg: parseFloat(document.getElementById('productWeightInput')?.value) || null,
+        seller_street: document.getElementById('sellerStreetInput')?.value || '',
+        seller_city: document.getElementById('sellerCityInput')?.value || '',
+        seller_postal_code: document.getElementById('sellerPostalInput')?.value || ''
       };
 
       const { listProduct } = await import('../supabase.js');

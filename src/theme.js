@@ -13,6 +13,7 @@ const THEME_DARK = 'dark';
     const savedTheme = localStorage.getItem(THEME_KEY) || THEME_LIGHT;
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(savedTheme);
   } catch (e) {
     // localStorage might not be available
     document.documentElement.setAttribute('data-theme', THEME_LIGHT);
@@ -49,6 +50,9 @@ class ThemeManager {
     // Set data-theme attribute (our single source of truth)
     html.setAttribute('data-theme', theme);
     
+    // Also add the class so html.dark / html.light CSS selectors work
+    html.classList.add(theme);
+    
     if (save) {
       localStorage.setItem(THEME_KEY, theme);
     }
@@ -75,8 +79,8 @@ class ThemeManager {
     }
 
     const userThemeToggle = document.getElementById('userThemeToggle');
-    if (userThemeToggle && window.i18n) {
-      userThemeToggle.textContent = window.i18n.t('toggle_theme');
+    if (userThemeToggle) {
+      userThemeToggle.textContent = theme === THEME_DARK ? '☀️ Light Mode' : '🌙 Dark Mode';
     }
   }
 

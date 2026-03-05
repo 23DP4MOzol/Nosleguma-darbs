@@ -65,7 +65,7 @@
     <!-- FORM SECTION -->
     <div class="sell-form-section">
       <form id="sellForm" class="sell-form-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
+        <h3 style="margin-bottom: 0.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
         
         <!-- Listing Fee Info -->
         <div style="background: color-mix(in srgb, #f59e0b 15%, var(--card-bg)); border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
@@ -149,6 +149,40 @@
             <span class="form-label" data-i18n="sell_color">Color (Optional)</span>
             <input type="text" id="productColorInput" class="form-input" data-i18n-placeholder="sell_enter_color" placeholder="Enter color">
           </label>
+
+          <label class="form-field">
+            <span class="form-label" data-i18n="sell_weight">Weight (kg) — for shipping</span>
+            <input type="number" id="productWeightInput" class="form-input" data-i18n-placeholder="sell_enter_weight" placeholder="e.g. 0.5" min="0.01" step="0.01">
+          </label>
+        </div>
+
+        <!-- Shipping Origin Address -->
+        <div style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
+          <h4 style="margin-bottom: 0.75rem; color: var(--fg);">📦 <span data-i18n="sell_shipping_origin">Shipping Origin (your address)</span></h4>
+          <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_shipping_origin_desc">This address is used to calculate shipping costs. It will NOT be shown to buyers.</p>
+          <div class="form-cols">
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_origin_street">Street Address</span>
+              <input type="text" id="sellerStreetInput" class="form-input" data-i18n-placeholder="sell_origin_street_ph" placeholder="Brīvības iela 100">
+            </label>
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_origin_city">City</span>
+              <select id="sellerCityInput" class="form-select">
+                <option value="Rīga">Rīga</option>
+                <option value="Daugavpils">Daugavpils</option>
+                <option value="Liepāja">Liepāja</option>
+                <option value="Jelgava">Jelgava</option>
+                <option value="Jūrmala">Jūrmala</option>
+                <option value="Ventspils">Ventspils</option>
+                <option value="Rēzekne">Rēzekne</option>
+                <option value="Valmiera">Valmiera</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_origin_postal">Postal Code</span>
+              <input type="text" id="sellerPostalInput" class="form-input" data-i18n-placeholder="sell_origin_postal_ph" placeholder="LV-1001">
+            </label>
+          </div>
         </div>
 
         <label class="form-field" style="margin-top: 1rem;">
@@ -161,15 +195,15 @@
           <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
               <input type="radio" name="imageType" value="url" checked style="margin: 0;">
-              <span style="font-size: 0.875rem; color: var(--text-primary);">URL</span>
+              <span style="font-size: 0.875rem; color: var(--fg);">URL</span>
             </label>
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
               <input type="radio" name="imageType" value="file" style="margin: 0;">
-              <span style="font-size: 0.875rem; color: var(--text-primary);">Upload File</span>
+              <span style="font-size: 0.875rem; color: var(--fg);">Upload File</span>
             </label>
           </div>
           <input type="url" id="productImageInput" class="form-input" data-i18n-placeholder="sell_enter_image_url" placeholder="https://example.com/image.jpg" required>
-          <input type="file" id="productImageFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none;">
+          <input type="file" id="productImageFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none; background: var(--card-bg); color: var(--fg);">
         </label>
 
         <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
@@ -216,16 +250,18 @@
 
 .form-label {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--fg);
   font-size: 0.875rem;
 }
 
 .form-input, .form-select, .form-textarea {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.875rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--card-bg);
+  color: var(--fg);
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {

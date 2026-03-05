@@ -99,13 +99,12 @@ export async function loadProducts(containerId='productsContainer'){
 }
 
 // ---------------------
-// INIT PAGE
+// INIT PAGE - Disabled: main.js handles all page initialization
 // ---------------------
-window.addEventListener("load", async ()=>{
-  updateNavbar();
-  loadProducts();
-  // Initialize language
-  if (i18n && typeof i18n.setLang === 'function') {
-    i18n.setLang(i18n.lang || localStorage.getItem('lang') || 'en');
-  }
-});
+// window.addEventListener("load", async ()=>{
+//   updateNavbar();
+//   loadProducts();
+//   if (i18n && typeof i18n.setLang === 'function') {
+//     i18n.setLang(i18n.lang || localStorage.getItem('lang') || 'en');
+//   }
+// });

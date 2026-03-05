@@ -527,6 +527,12 @@ export async function listProduct(productData, userId) {
       listing_fee: listingFee,
       reserve_fee: parseFloat(productData.reserve_fee) || 0.20,
       is_reserved: false,
+      weight_kg: parseFloat(productData.weight_kg) || null,
+      seller_street: productData.seller_street || null,
+      seller_city: productData.seller_city || null,
+      seller_postal_code: productData.seller_postal_code || null,
+      brand: productData.brand || null,
+      color: productData.color || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }]).select();

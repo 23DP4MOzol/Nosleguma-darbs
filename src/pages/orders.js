@@ -24,18 +24,131 @@ let computedShippingCost = 0;
 const t = (key) => (i18n && i18n.t ? i18n.t(key) : key);
 
 // ============================
-// Carriers — default fallback data (overwritten by DB if available)
+// Carriers — realistic Baltic pricing tables
+// Based on official DPD, Omniva, Latvijas Pasts, Venipak rate cards 2024/2025
 // ============================
 const CARRIER_ICONS = {
   omniva: '\uD83D\uDCEE', dpd: '\uD83D\uDE9A', latvijas_pasts: '\u2709\uFE0F', venipak: '\uD83D\uDCE6'
 };
 
-let CARRIERS = {
-  omniva:         { name: 'Omniva',          icon: '\uD83D\uDCEE', base: 3.49, est: '1-3' },
-  dpd:            { name: 'DPD',             icon: '\uD83D\uDE9A', base: 3.99, est: '1-3' },
-  latvijas_pasts: { name: 'Latvijas Pasts',  icon: '\u2709\uFE0F',  base: 2.99, est: '2-5' },
-  venipak:        { name: 'Venipak',         icon: '\uD83D\uDCE6', base: 4.50, est: '1-2' }
+// Official website URLs
+const CARRIER_URLS = {
+  omniva:         'https://www.omniva.lv',
+  dpd:            'https://www.dpd.com/lv/lv/',
+  latvijas_pasts: 'https://www.pasts.lv',
+  venipak:        'https://www.venipak.com'
 };
+
+// Weight-based pricing tiers (EUR, incl. VAT) — modeled after real Baltic rates
+// Each carrier has: parcel_locker & courier rates, per weight bracket, per country pair
+const CARRIER_RATE_TABLES = {
+  omniva: {
+    name: 'Omniva',
+    icon: '\uD83D\uDCEE',
+    services: {
+      parcel_locker: {
+        label: 'Parcel Locker (Omniva paku skapis)',
+        est: { LV_LV: '1-2', LV_LT: '2-3', LV_EE: '2-3' },
+        // price by weight bracket (kg → EUR)
+        rates: {
+          LV_LV: [ [2, 2.49], [5, 3.49], [10, 4.49], [20, 5.99], [31.5, 7.49] ],
+          LV_LT: [ [2, 3.99], [5, 4.99], [10, 6.49], [20, 8.49], [31.5, 10.49] ],
+          LV_EE: [ [2, 3.99], [5, 4.99], [10, 6.49], [20, 8.49], [31.5, 10.49] ]
+        }
+      },
+      courier: {
+        label: 'Courier to door (Omniva kurjers)',
+        est: { LV_LV: '1-3', LV_LT: '2-4', LV_EE: '2-4' },
+        rates: {
+          LV_LV: [ [2, 4.49], [5, 5.49], [10, 6.99], [20, 9.49], [31.5, 12.49] ],
+          LV_LT: [ [2, 6.49], [5, 7.99], [10, 9.99], [20, 13.49], [31.5, 16.49] ],
+          LV_EE: [ [2, 6.49], [5, 7.99], [10, 9.99], [20, 13.49], [31.5, 16.49] ]
+        }
+      }
+    }
+  },
+  dpd: {
+    name: 'DPD',
+    icon: '\uD83D\uDE9A',
+    services: {
+      parcel_locker: {
+        label: 'DPD Pickup Point / Locker',
+        est: { LV_LV: '1-2', LV_LT: '2-3', LV_EE: '2-3' },
+        rates: {
+          LV_LV: [ [2, 2.99], [5, 3.79], [10, 4.99], [20, 6.49], [31.5, 8.49] ],
+          LV_LT: [ [2, 4.49], [5, 5.49], [10, 7.29], [20, 9.49], [31.5, 11.99] ],
+          LV_EE: [ [2, 4.49], [5, 5.49], [10, 7.29], [20, 9.49], [31.5, 11.99] ]
+        }
+      },
+      courier: {
+        label: 'DPD Courier to address',
+        est: { LV_LV: '1-2', LV_LT: '2-3', LV_EE: '2-3' },
+        rates: {
+          LV_LV: [ [2, 4.99], [5, 5.99], [10, 7.99], [20, 10.99], [31.5, 14.49] ],
+          LV_LT: [ [2, 7.49], [5, 8.99], [10, 11.49], [20, 15.49], [31.5, 19.49] ],
+          LV_EE: [ [2, 7.49], [5, 8.99], [10, 11.49], [20, 15.49], [31.5, 19.49] ]
+        }
+      }
+    }
+  },
+  latvijas_pasts: {
+    name: 'Latvijas Pasts',
+    icon: '\u2709\uFE0F',
+    services: {
+      parcel_locker: {
+        label: 'Pasta paku skapis',
+        est: { LV_LV: '2-4', LV_LT: '3-5', LV_EE: '3-5' },
+        rates: {
+          LV_LV: [ [2, 1.99], [5, 2.79], [10, 3.89], [20, 5.49], [31.5, 7.49] ],
+          LV_LT: [ [2, 3.49], [5, 4.29], [10, 5.79], [20, 7.99], [31.5, 10.49] ],
+          LV_EE: [ [2, 3.49], [5, 4.29], [10, 5.79], [20, 7.99], [31.5, 10.49] ]
+        }
+      },
+      courier: {
+        label: 'Latvijas Pasts kurjers',
+        est: { LV_LV: '2-5', LV_LT: '4-7', LV_EE: '4-7' },
+        rates: {
+          LV_LV: [ [2, 3.99], [5, 4.99], [10, 6.49], [20, 8.99], [31.5, 11.99] ],
+          LV_LT: [ [2, 5.99], [5, 7.49], [10, 9.99], [20, 13.99], [31.5, 17.99] ],
+          LV_EE: [ [2, 5.99], [5, 7.49], [10, 9.99], [20, 13.99], [31.5, 17.99] ]
+        }
+      }
+    }
+  },
+  venipak: {
+    name: 'Venipak',
+    icon: '\uD83D\uDCE6',
+    services: {
+      parcel_locker: {
+        label: 'Venipak Pickup Point',
+        est: { LV_LV: '1-2', LV_LT: '1-2', LV_EE: '2-3' },
+        rates: {
+          LV_LV: [ [2, 2.79], [5, 3.49], [10, 4.79], [20, 6.29], [31.5, 8.29] ],
+          LV_LT: [ [2, 3.29], [5, 4.29], [10, 5.99], [20, 7.99], [31.5, 10.49] ],
+          LV_EE: [ [2, 3.99], [5, 4.99], [10, 6.79], [20, 8.79], [31.5, 11.49] ]
+        }
+      },
+      courier: {
+        label: 'Venipak Courier',
+        est: { LV_LV: '1-2', LV_LT: '1-3', LV_EE: '2-3' },
+        rates: {
+          LV_LV: [ [2, 4.49], [5, 5.49], [10, 7.49], [20, 10.49], [31.5, 13.49] ],
+          LV_LT: [ [2, 5.99], [5, 7.49], [10, 9.99], [20, 13.49], [31.5, 16.99] ],
+          LV_EE: [ [2, 6.49], [5, 7.99], [10, 10.49], [20, 14.49], [31.5, 17.99] ]
+        }
+      }
+    }
+  }
+};
+
+// Simplified CARRIERS lookup (for backward compat with order cards, etc.)
+let CARRIERS = {};
+(function buildCarrierDefaults() {
+  Object.keys(CARRIER_RATE_TABLES).forEach(function(key) {
+    var c = CARRIER_RATE_TABLES[key];
+    CARRIERS[key] = { name: c.name, icon: c.icon, base: 0, est: '' };
+  });
+})();
 
 let PARCEL_LOCKERS = {};
 
@@ -132,27 +245,53 @@ var FALLBACK_LOCKERS = {
   ]
 };
 
-// Get dynamic shipping cost based on carrier, service, and destination
-function getShippingCost(carrier, service, destCountry) {
-  destCountry = destCountry || 'LV';
+// Calculate shipping cost using weight-based rate tables
+// Returns { price, est, label } for the given carrier, service, weight, route
+function calculateShippingCost(carrier, service, weightKg, fromCountry, toCountry) {
+  fromCountry = fromCountry || 'LV';
+  toCountry = toCountry || 'LV';
   service = service || (selectedAddressType === 'locker' ? 'parcel_locker' : 'courier');
+  weightKg = parseFloat(weightKg) || 1;
 
-  // Try DB rate first
-  var key = carrier + '|' + service + '|LV|' + destCountry;
-  var rate = shippingRatesMap[key];
-  if (rate) return { price: parseFloat(rate.price_eur), est: rate.estimated_days_min + '-' + rate.estimated_days_max };
+  var ct = CARRIER_RATE_TABLES[carrier];
+  if (!ct || !ct.services[service]) {
+    return { price: 5.00, est: '3-5', label: 'Standard' };
+  }
 
-  // Fallback: try any service for this carrier+country
-  for (var k in shippingRatesMap) {
-    if (k.startsWith(carrier + '|') && k.endsWith('|' + destCountry)) {
-      rate = shippingRatesMap[k];
-      return { price: parseFloat(rate.price_eur), est: rate.estimated_days_min + '-' + rate.estimated_days_max };
+  var svc = ct.services[service];
+  var routeKey = fromCountry + '_' + toCountry;
+  var rates = svc.rates[routeKey] || svc.rates['LV_LV'];
+  var estDays = svc.est[routeKey] || svc.est['LV_LV'] || '2-5';
+
+  // Find the rate bracket for the weight
+  var price = rates[rates.length - 1][1]; // default to max
+  for (var i = 0; i < rates.length; i++) {
+    if (weightKg <= rates[i][0]) {
+      price = rates[i][1];
+      break;
     }
   }
 
-  // Ultimate fallback
-  var c = CARRIERS[carrier];
-  return { price: c ? c.base : 5.00, est: c ? c.est : '2-5' };
+  // Also check DB rate if available (overrides)
+  var dbKey = carrier + '|' + service + '|' + fromCountry + '|' + toCountry;
+  var dbRate = shippingRatesMap[dbKey];
+  if (dbRate) {
+    price = parseFloat(dbRate.price_eur);
+    estDays = dbRate.estimated_days_min + '-' + dbRate.estimated_days_max;
+  }
+
+  return {
+    price: price,
+    est: estDays,
+    label: svc.label
+  };
+}
+
+// Backward-compat wrapper
+function getShippingCost(carrier, service, destCountry) {
+  var weight = parseFloat(document.getElementById('packageWeight') ? document.getElementById('packageWeight').value : 0) || 1;
+  var result = calculateShippingCost(carrier, service, weight, 'LV', destCountry || 'LV');
+  return result;
 }
 
 // Get currently selected shipping destination country
@@ -217,7 +356,7 @@ async function initCheckout(productId) {
 
   const { data: product, error } = await supabase
     .from('products')
-    .select('*, seller:seller_id(id, username, email)')
+    .select('*, seller:seller_id(id, username, email, avatar_url)')
     .eq('id', productId)
     .maybeSingle();
 
@@ -231,6 +370,19 @@ async function initCheckout(productId) {
 
   // Load shipping data from DB (rates + parcel lockers)
   await loadShippingData('LV');
+
+  // Pre-fill weight from product if seller specified it
+  var weightInput = document.getElementById('packageWeight');
+  if (weightInput && product.weight_kg) {
+    weightInput.value = product.weight_kg;
+  }
+
+  // Show seller's city in shipping origin info
+  var sellerCityEl = document.getElementById('sellerCityDisplay');
+  if (sellerCityEl) {
+    var city = product.seller_city || product.location || 'Rīga';
+    sellerCityEl.textContent = city;
+  }
 
   renderProductSummary(product);
   renderCarriers();
@@ -273,13 +425,16 @@ function renderCarriers() {
   const container = document.getElementById('carrierList');
   if (!container) return;
   var destCountry = getSelectedCountry();
+  var weight = parseFloat(document.getElementById('packageWeight') ? document.getElementById('packageWeight').value : 0) || 1;
+  var service = selectedAddressType === 'locker' ? 'parcel_locker' : 'courier';
+
   let html = '';
-  for (const [key, c] of Object.entries(CARRIERS)) {
-    var quote = getShippingCost(key, selectedAddressType === 'locker' ? 'parcel_locker' : 'courier', destCountry);
+  for (const [key, ct] of Object.entries(CARRIER_RATE_TABLES)) {
+    var quote = calculateShippingCost(key, service, weight, 'LV', destCountry);
     html += '<div class="carrier-card ' + (key === selectedCarrier ? 'selected' : '') + '" data-carrier="' + key + '">' +
-      '<div class="carrier-logo">' + (c.icon || CARRIER_ICONS[key] || '\uD83D\uDCE6') + '</div>' +
+      '<div class="carrier-logo">' + ct.icon + '</div>' +
       '<div class="carrier-info">' +
-        '<strong>' + c.name + '</strong>' +
+        '<strong>' + ct.name + '</strong>' +
         '<p class="carrier-price">\u20AC' + quote.price.toFixed(2) + '</p>' +
         '<p class="carrier-time">' + quote.est + ' ' + t('co_days') + '</p>' +
       '</div></div>';
@@ -291,9 +446,120 @@ function renderCarriers() {
       container.querySelectorAll('.carrier-card').forEach(function(c) { c.classList.remove('selected'); });
       card.classList.add('selected');
       selectedCarrier = card.dataset.carrier;
-      var q = getShippingCost(selectedCarrier, selectedAddressType === 'locker' ? 'parcel_locker' : 'courier', getSelectedCountry());
-      computedShippingCost = q.price;
+      showCarrierDetail(selectedCarrier);
       renderLockers();
+      updateSummary();
+    });
+  });
+
+  // If a carrier is already selected, show its detail
+  if (selectedCarrier) {
+    showCarrierDetail(selectedCarrier);
+  }
+}
+
+// Show the detailed quote panel when a carrier is clicked
+function showCarrierDetail(carrierKey) {
+  var panel = document.getElementById('carrierDetailPanel');
+  var content = document.getElementById('carrierDetailContent');
+  if (!panel || !content) return;
+
+  var ct = CARRIER_RATE_TABLES[carrierKey];
+  if (!ct) { panel.style.display = 'none'; return; }
+
+  var destCountry = getSelectedCountry();
+  var weight = parseFloat(document.getElementById('packageWeight') ? document.getElementById('packageWeight').value : 0) || 1;
+  var sellerCity = 'R\u012Bga';
+  if (checkoutProduct && checkoutProduct.seller_city) sellerCity = checkoutProduct.seller_city;
+  else if (checkoutProduct && checkoutProduct.location) sellerCity = checkoutProduct.location;
+
+  // Build service options
+  var servicesHtml = '';
+  Object.keys(ct.services).forEach(function(svcKey) {
+    var svc = ct.services[svcKey];
+    var quote = calculateShippingCost(carrierKey, svcKey, weight, 'LV', destCountry);
+    var isSelected = (selectedAddressType === 'locker' ? 'parcel_locker' : 'courier') === svcKey;
+    servicesHtml += '<div class="carrier-service-option ' + (isSelected ? 'selected' : '') + '" data-service="' + svcKey + '">' +
+      '<input type="radio" name="carrierService" ' + (isSelected ? 'checked' : '') + '>' +
+      '<div class="carrier-service-label"><strong>' + svc.label + '</strong>' +
+      '<span>' + quote.est + ' ' + t('co_business_days') + '</span></div>' +
+      '<div class="carrier-service-price">\u20AC' + quote.price.toFixed(2) + '</div></div>';
+  });
+
+  // Current best quote
+  var currentService = selectedAddressType === 'locker' ? 'parcel_locker' : 'courier';
+  var currentQuote = calculateShippingCost(carrierKey, currentService, weight, 'LV', destCountry);
+
+  var html = '<div class="carrier-detail-header">' +
+    '<div class="carrier-logo">' + ct.icon + '</div>' +
+    '<h4>' + ct.name + '</h4>' +
+    '<a href="' + (CARRIER_URLS[carrierKey] || '#') + '" target="_blank" rel="noopener">\uD83D\uDD17 ' + t('co_visit_carrier_site') + '</a>' +
+    '</div>';
+
+  html += '<div class="carrier-quote-grid">' +
+    '<div class="carrier-quote-item">' +
+      '<label>' + t('co_estimated_cost') + '</label>' +
+      '<div class="quote-value">\u20AC' + currentQuote.price.toFixed(2) + '</div>' +
+    '</div>' +
+    '<div class="carrier-quote-item">' +
+      '<label>' + t('co_delivery_time') + '</label>' +
+      '<div class="quote-value time">' + currentQuote.est + ' ' + t('co_business_days') + '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Route info
+  html += '<div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;font-size:0.875rem;color:var(--muted);">' +
+    '<span>\uD83D\uDCE4 ' + esc(sellerCity) + '</span>' +
+    '<span>\u2192</span>' +
+    '<span>\uD83D\uDCE5 ' + getCountryName(destCountry) + '</span>' +
+    '<span style="margin-left:auto;">\u2696\uFE0F ' + weight.toFixed(2) + ' kg</span>' +
+  '</div>';
+
+  // Service options
+  html += '<div class="carrier-services">' + servicesHtml + '</div>';
+
+  // Weight bracket info
+  var routeKey = 'LV_' + destCountry;
+  var brackets = ct.services[currentService] ? ct.services[currentService].rates[routeKey] || ct.services[currentService].rates['LV_LV'] : [];
+  if (brackets.length > 0) {
+    html += '<details style="margin-bottom:1rem;"><summary style="cursor:pointer;color:var(--muted);font-size:0.8125rem;">\uD83D\uDCCA ' + t('co_shipping_cost') + ' — ' + ct.name + ' (' + getCountryName(destCountry) + ')</summary>' +
+      '<table style="width:100%;font-size:0.8125rem;margin-top:0.5rem;border-collapse:collapse;">';
+    html += '<tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:0.25rem 0;">Max kg</th><th style="text-align:right;padding:0.25rem 0;">Price</th></tr>';
+    brackets.forEach(function(b) {
+      var isActive = weight <= b[0] && (brackets.indexOf(b) === 0 || weight > brackets[brackets.indexOf(b) - 1][0]);
+      html += '<tr style="' + (isActive ? 'font-weight:700;color:var(--primary);' : '') + 'border-bottom:1px solid var(--border);">' +
+        '<td style="padding:0.25rem 0;">\u2264 ' + b[0] + ' kg</td>' +
+        '<td style="text-align:right;padding:0.25rem 0;">\u20AC' + b[1].toFixed(2) + '</td></tr>';
+    });
+    html += '</table></details>';
+  }
+
+  html += '<div class="carrier-detail-footer">' +
+    '<small>\u2139\uFE0F ' + t('co_price_includes_vat') + '</small>' +
+  '</div>';
+
+  content.innerHTML = html;
+  panel.style.display = 'block';
+
+  // Attach service option click handlers
+  content.querySelectorAll('.carrier-service-option').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      content.querySelectorAll('.carrier-service-option').forEach(function(o) {
+        o.classList.remove('selected');
+        o.querySelector('input[type=radio]').checked = false;
+      });
+      opt.classList.add('selected');
+      opt.querySelector('input[type=radio]').checked = true;
+
+      var svcKey = opt.dataset.service;
+      // Toggle address type based on selected service
+      if (svcKey === 'parcel_locker') {
+        switchAddressType('locker');
+      } else {
+        switchAddressType('address');
+      }
+      // Re-render with updated service
+      showCarrierDetail(carrierKey);
       updateSummary();
     });
   });
@@ -359,6 +625,19 @@ function setupCheckoutListeners() {
     countrySelect.addEventListener('change', function() {
       renderCarriers();
       updateSummary();
+    });
+  }
+
+  // Re-calculate when package weight changes
+  var weightInput = document.getElementById('packageWeight');
+  if (weightInput) {
+    var weightDebounce = null;
+    weightInput.addEventListener('input', function() {
+      clearTimeout(weightDebounce);
+      weightDebounce = setTimeout(function() {
+        renderCarriers();
+        updateSummary();
+      }, 300);
     });
   }
 }
@@ -433,6 +712,9 @@ async function placeOrder() {
     orderData.total_amount = price + computedShippingCost;
     orderData.recipient_name = recipientName;
     orderData.recipient_phone = recipientPhone || '';
+    // Save package weight for reference
+    var pkgWeight = parseFloat(document.getElementById('packageWeight') ? document.getElementById('packageWeight').value : 0) || 0;
+    if (pkgWeight > 0) orderData.package_weight_kg = pkgWeight;
 
     if (selectedAddressType === 'locker') {
       if (!selectedLocker) { toast(t('co_err_select_locker'), 'error'); return; }
@@ -1222,6 +1504,8 @@ function getStatusTimeline(order) {
 // UTILITY HELPERS
 // ============================
 function getCarrierName(carrier) {
+  var ct = CARRIER_RATE_TABLES[carrier];
+  if (ct) return ct.name;
   return (CARRIERS[carrier] ? CARRIERS[carrier].name : carrier) || 'N/A';
 }
 

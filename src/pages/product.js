@@ -386,13 +386,18 @@ function showProductModal(productId) {
 
 // Handle product actions
 function handleProductAction(productId, action) {
-  // For now, just show alerts
   if (action === 'buy') {
-    showInfoModal('Purchase functionality would be implemented here', 'Info');
+    // Redirect to orders page to complete purchase
+    window.location.href = `orders.html?buy=${productId}`;
   } else {
-    showInfoModal('Add to cart functionality would be implemented here', 'Info');
+    // Add to cart - redirect to orders page
+    window.location.href = `orders.html?buy=${productId}`;
   }
 }
+
+// Expose functions to window for inline onclick handlers
+window.showUserProfile = showUserProfile;
+window.handleProductAction = handleProductAction;
 
 // Edit product
 function editProduct(productId) {
