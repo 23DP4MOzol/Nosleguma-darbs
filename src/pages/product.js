@@ -243,17 +243,17 @@ function displayProducts(products) {
         <div class="product-footer">
           <div class="product-price">
             ${product.original_price && product.original_price > product.price ?
-              \`<span class="price-original">\u20ac\${parseFloat(product.original_price).toFixed(2)}</span>\` : ''}
-            <span class="price-currency">\u20ac</span>
+              `<span class="price-original">€${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
+            <span class="price-currency">€</span>
             <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
           </div>
           <div class="product-actions">
             ${product.seller_id === currentUser?.id ?
-              \`<button class="btn-edit" data-product-id="\${product.id}">\u270f\ufe0f</button>
-               <button class="btn-delete" data-product-id="\${product.id}">\ud83d\uddd1\ufe0f</button>\` :
+              `<button class="btn-edit" data-product-id="${product.id}">✏️</button>
+               <button class="btn-delete" data-product-id="${product.id}">🗑️</button>` :
               (isSold ? '<span style="color:#ef4444; font-weight:600; font-size:0.8rem;">SOLD</span>' :
-              \`<button class="btn-add-cart" data-product-id="\${product.id}">\ud83d\uded2</button>
-               <button class="btn-buy-now" data-product-id="\${product.id}">Buy Now</button>\`)
+              `<button class="btn-add-cart" data-product-id="${product.id}">🛒</button>
+               <button class="btn-buy-now" data-product-id="${product.id}">Buy Now</button>`)
             }
           </div>
         </div>
