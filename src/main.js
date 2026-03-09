@@ -391,6 +391,28 @@ export async function updateNavbarAuth(sessionParam) {
       }
     }
     
+    // ============================
+    // THEME ACCOUNT SYNC
+    // ============================
+    // Load the user's saved theme preference from their Supabase account.
+    // This runs once per navbar update (login / page load) so the user
+    // sees the same mode they chose on any device.
+    try {
+      await themeManager.loadFromAccount(supabase, user.id);
+    } catch (themeSyncErr) {
+      console.warn('Theme account sync skipped:', themeSyncErr?.message);
+    }
+
+    // Register a one-time onChange callback so every future toggle
+    // automatically saves the preference to the user's account.
+    if (!themeManager._accountSyncRegistered) {
+      themeManager._accountSyncRegistered = true;
+      themeManager.onChange((newTheme) => {
+        // Fire-and-forget — don't block UI
+        themeManager.saveToAccount(supabase, user.id, newTheme);
+      });
+    }
+
     console.log('Admin button element:', adminBtn);
     console.log('Setting admin button display for role:', userRole);
 

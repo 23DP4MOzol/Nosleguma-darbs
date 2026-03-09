@@ -153,7 +153,46 @@
     .scam-content strong {
       color: var(--error);
     }
-    
+
+    /* Dark mode overrides for info boxes */
+    html[data-theme="dark"] .warning-box,
+    html.dark .warning-box {
+      background: rgba(234, 179, 8, 0.15);
+      border-color: rgba(234, 179, 8, 0.4);
+    }
+    html[data-theme="dark"] .warning-box h4,
+    html.dark .warning-box h4 { color: #fcd34d; }
+    html[data-theme="dark"] .warning-box p,
+    html.dark .warning-box p { color: #fde68a; }
+
+    html[data-theme="dark"] .danger-box,
+    html.dark .danger-box {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    html[data-theme="dark"] .danger-box h4,
+    html.dark .danger-box h4 { color: #fca5a5; }
+    html[data-theme="dark"] .danger-box p,
+    html.dark .danger-box p { color: #fecaca; }
+
+    html[data-theme="dark"] .legal-box,
+    html.dark .legal-box {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+    html[data-theme="dark"] .legal-box h4,
+    html.dark .legal-box h4 { color: #93c5fd; }
+    html[data-theme="dark"] .legal-box p,
+    html.dark .legal-box p { color: #bfdbfe; }
+
+    html[data-theme="dark"] .scam-item,
+    html.dark .scam-item {
+      background: var(--secondary);
+      color: var(--fg);
+    }
+    html[data-theme="dark"] .scam-content strong,
+    html.dark .scam-content strong { color: #fca5a5; }
+
     @media (max-width: 768px) {
       .terms-container {
         margin: 1rem;

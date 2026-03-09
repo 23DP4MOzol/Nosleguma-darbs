@@ -204,6 +204,7 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       bio: bio,
       what_i_sell: whatISell,
       avatar_url: avatarUrl,
+      theme: themeManager.getTheme(),
       updated_at: new Date().toISOString()
     };
 

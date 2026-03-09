@@ -2849,6 +2849,7 @@ html.dark .filter-tab {
 
 html[data-theme="dark"] .filter-tab.active,
 html.dark .filter-tab.active {
+  background: var(--card-bg) !important;
   color: var(--primary) !important;
   border-bottom-color: var(--primary) !important;
 }
@@ -2995,6 +2996,37 @@ html.dark .badge-inactive {
   color: #9ca3af !important;
 }
 
+/* Order page badge dark mode overrides */
+html[data-theme="dark"] .badge-warning,
+html.dark .badge-warning {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fcd34d !important;
+}
+
+html[data-theme="dark"] .badge-success,
+html.dark .badge-success {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .badge-info,
+html.dark .badge-info {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .badge-primary,
+html.dark .badge-primary {
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: #a5b4fc !important;
+}
+
+html[data-theme="dark"] .badge-danger,
+html.dark .badge-danger {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
 /* =======================================================
    LIGHT MODE - BUTTON & BADGE COLOR PRESERVATION
    Same specificity fix as dark mode: the universal light-mode
@@ -3128,6 +3160,7 @@ html.light .filter-tab {
 
 html[data-theme="light"] .filter-tab.active,
 html.light .filter-tab.active {
+  background: var(--card-bg) !important;
   color: var(--primary) !important;
   border-bottom-color: var(--primary) !important;
 }
@@ -3178,6 +3211,222 @@ html[data-theme="light"] .btn-quick-view,
 html.light .btn-quick-view {
   background: rgba(255, 255, 255, 0.9) !important;
   color: var(--fg) !important;
+}
+
+/* Hero primary button light mode - preserve text color */
+html[data-theme="light"] .btn-hero-primary,
+html.light .btn-hero-primary {
+  background: var(--card-bg) !important;
+  color: var(--primary) !important;
+}
+
+/* Login button light mode */
+html[data-theme="light"] .btn-login,
+html.light .btn-login {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+/* Sell button light mode */
+html[data-theme="light"] .btn-sell,
+html.light .btn-sell {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+/* Send button light mode */
+html[data-theme="light"] .btn-send,
+html.light .btn-send {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+/* Buy button light mode */
+html[data-theme="light"] .btn-buy-now,
+html.light .btn-buy-now {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+/* Delivery tab active state - both modes */
+html[data-theme="light"] .delivery-tab.active,
+html.light .delivery-tab.active {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .delivery-tab.active,
+html.dark .delivery-tab.active {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="light"] .delivery-tab,
+html.light .delivery-tab {
+  background: var(--card-bg) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .delivery-tab,
+html.dark .delivery-tab {
+  background: var(--card-bg) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+/* Carrier card selected - both modes */
+html[data-theme="light"] .carrier-card.selected,
+html.light .carrier-card.selected {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .carrier-card.selected,
+html.dark .carrier-card.selected {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+/* Parcel locker card selected - both modes */
+html[data-theme="light"] .parcel-locker-card.selected,
+html.light .parcel-locker-card.selected {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+html[data-theme="dark"] .parcel-locker-card.selected,
+html.dark .parcel-locker-card.selected {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+/* Admin nav button active - both modes */
+html[data-theme="light"] .admin-nav-btn.active,
+html.light .admin-nav-btn.active {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="dark"] .admin-nav-btn.active,
+html.dark .admin-nav-btn.active {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* Admin mobile nav toggle - both modes */
+html[data-theme="light"] .admin-mobile-nav-toggle,
+html.light .admin-mobile-nav-toggle {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="dark"] .admin-mobile-nav-toggle,
+html.dark .admin-mobile-nav-toggle {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* Small icon button (chat +) - both modes */
+html[data-theme="light"] .btn-icon-small,
+html.light .btn-icon-small {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+html[data-theme="dark"] .btn-icon-small,
+html.dark .btn-icon-small {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* Modal close button - both modes */
+html[data-theme="light"] .modal-close,
+html.light .modal-close {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--fg) !important;
+}
+
+html[data-theme="dark"] .modal-close,
+html.dark .modal-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--fg) !important;
+}
+
+/* Terms modal close - both modes */
+html[data-theme="light"] .terms-modal-close,
+html.light .terms-modal-close {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+}
+
+html[data-theme="dark"] .terms-modal-close,
+html.dark .terms-modal-close {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+}
+
+/* Accept terms button - both modes */
+html[data-theme="light"] .btn-accept-terms,
+html.light .btn-accept-terms {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+}
+
+html[data-theme="dark"] .btn-accept-terms,
+html.dark .btn-accept-terms {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+}
+
+/* Logout button override for settings page inline bg */
+html[data-theme="light"] #settingsLogoutBtn,
+html.light #settingsLogoutBtn {
+  background: #dc3545 !important;
+  color: white !important;
+  border-color: #dc3545 !important;
+}
+
+html[data-theme="dark"] #settingsLogoutBtn,
+html.dark #settingsLogoutBtn {
+  background: #dc3545 !important;
+  color: white !important;
+  border-color: #dc3545 !important;
+}
+
+html[data-theme="light"] #deleteAccountBtn,
+html.light #deleteAccountBtn {
+  background: #6c757d !important;
+  color: white !important;
+  border-color: #6c757d !important;
+}
+
+html[data-theme="dark"] #deleteAccountBtn,
+html.dark #deleteAccountBtn {
+  background: #6c757d !important;
+  color: white !important;
+  border-color: #6c757d !important;
+}
+
+/* Chat back button - both modes */
+html[data-theme="light"] .chat-back-btn,
+html.light .chat-back-btn {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .chat-back-btn,
+html.dark .chat-back-btn {
+  background: var(--secondary) !important;
+  color: var(--fg) !important;
+  border-color: var(--border) !important;
 }
 
 /* Badge light mode - preserve text colors against backgrounds */
