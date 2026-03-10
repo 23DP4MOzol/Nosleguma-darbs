@@ -279,14 +279,13 @@ updated_at TIMESTAMP
 #### `user_transactions`
 ```sql
 id UUID PRIMARY KEY,
-user_id UUID REFERENCES users(id),
-amount DECIMAL,
-transaction_type TEXT,
+user_id UUID NOT NULL,
+transaction_type TEXT NOT NULL CHECK (IN 'deposit','withdrawal','purchase','sale','refund','admin_adjustment','escrow_hold','escrow_release'),
+amount DECIMAL(10,2) NOT NULL,
 description TEXT,
-reference_id UUID,
-escrow_id UUID,
-escrow_status TEXT,
-created_at TIMESTAMP
+reference_id UUID,   -- links to order_id or product_id
+created_at TIMESTAMPTZ,
+updated_at TIMESTAMPTZ
 ```
 
 #### `conversations`
@@ -325,14 +324,89 @@ created_at TIMESTAMP
 #### `orders`
 ```sql
 id UUID PRIMARY KEY,
-product_id UUID,
-buyer_id UUID REFERENCES users(id),
-seller_id UUID REFERENCES users(id),
+order_number TEXT UNIQUE NOT NULL,    -- auto-generated: ORD-YYYY-NNNN
+buyer_id UUID NOT NULL,
+seller_id UUID NOT NULL,
+product_id UUID NOT NULL,
+quantity INTEGER NOT NULL DEFAULT 1,
+unit_price DECIMAL(10,2) NOT NULL,
+total_amount DECIMAL(10,2) NOT NULL,
+status TEXT DEFAULT 'pending' CHECK (IN 'pending','paid','escrow','processing','ready_for_pickup','shipped','in_transit','delivered','completed','cancelled','refunded','disputed'),
+payment_method TEXT DEFAULT 'balance' CHECK (IN 'balance','card','bank_transfer'),
+payment_status TEXT DEFAULT 'pending' CHECK (IN 'pending','paid','failed','refunded','escrowed'),
+paid_at TIMESTAMPTZ,
+escrow_amount DECIMAL(10,2) DEFAULT 0,
+escrow_released BOOLEAN DEFAULT FALSE,
+escrow_released_at TIMESTAMPTZ,
+delivery_method TEXT NOT NULL CHECK (IN 'meetup','shipping'),
+shipping_carrier TEXT,               -- 'omniva','dpd','latvijas_pasts'
+shipping_service TEXT,               -- 'parcel_locker','courier','post_office'
+tracking_number TEXT,
+shipping_cost DECIMAL(10,2) DEFAULT 0,
+recipient_name TEXT,
+recipient_phone TEXT,
 shipping_address TEXT,
-shipping_cost DECIMAL,
-order_status TEXT,
-created_at TIMESTAMP,
-updated_at TIMESTAMP
+shipping_city TEXT,
+shipping_postal_code TEXT,
+shipping_country TEXT CHECK (IN 'LV','LT','EE'),
+parcel_locker_id TEXT,
+parcel_locker_address TEXT,
+meetup_location TEXT,
+meetup_date TIMESTAMPTZ,
+meetup_confirmed_by_buyer BOOLEAN DEFAULT FALSE,
+meetup_confirmed_by_seller BOOLEAN DEFAULT FALSE,
+buyer_notes TEXT,
+seller_notes TEXT,
+admin_notes TEXT,
+created_at TIMESTAMPTZ,
+updated_at TIMESTAMPTZ,
+completed_at TIMESTAMPTZ,
+cancelled_at TIMESTAMPTZ
+```
+
+#### `order_status_history`
+```sql
+id UUID PRIMARY KEY,
+order_id UUID NOT NULL,
+old_status TEXT,
+new_status TEXT NOT NULL,
+changed_by UUID,
+notes TEXT,
+created_at TIMESTAMPTZ
+```
+
+#### `shipping_rates`
+```sql
+id UUID PRIMARY KEY,
+carrier TEXT NOT NULL,          -- 'omniva','dpd','latvijas_pasts'
+service TEXT NOT NULL,          -- 'parcel_locker','courier','post_office'
+from_country TEXT NOT NULL,     -- 'LV','LT','EE'
+to_country TEXT NOT NULL,
+weight_min_kg DECIMAL(5,2) NOT NULL DEFAULT 0,
+weight_max_kg DECIMAL(5,2) NOT NULL,
+price_eur DECIMAL(10,2) NOT NULL,
+estimated_days_min INTEGER,
+estimated_days_max INTEGER,
+active BOOLEAN DEFAULT TRUE,
+created_at TIMESTAMPTZ,
+updated_at TIMESTAMPTZ
+```
+
+#### `parcel_lockers`
+```sql
+id UUID PRIMARY KEY,
+carrier TEXT NOT NULL,
+locker_id TEXT NOT NULL UNIQUE,
+name TEXT NOT NULL,
+address TEXT NOT NULL,
+city TEXT NOT NULL,
+postal_code TEXT,
+country TEXT NOT NULL CHECK (IN 'LV','LT','EE'),
+latitude DECIMAL(10,7),
+longitude DECIMAL(10,7),
+active BOOLEAN DEFAULT TRUE,
+created_at TIMESTAMPTZ,
+updated_at TIMESTAMPTZ
 ```
 
 #### `support_tickets`
