@@ -156,6 +156,13 @@
           </label>
         </div>
 
+        <!-- Category-Specific Extra Fields (dynamic, shown/hidden via JS) -->
+        <div id="categoryExtraFields" style="display:none; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
+          <h4 id="categoryExtraTitle" style="margin-bottom: 0.75rem; color: var(--fg); font-size: 1rem; font-weight: 600;">📋 <span data-i18n="sell_extra_details">Category Details</span></h4>
+          <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_extra_details_desc">Fill in details specific to this category for better listings.</p>
+          <div id="categoryExtraFieldsGrid" class="form-grid" style="grid-template-columns: 1fr 1fr;"></div>
+        </div>
+
         <!-- Shipping Origin Address -->
         <div style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
           <h4 style="margin-bottom: 0.75rem; color: var(--fg);">📦 <span data-i18n="sell_shipping_origin">Shipping Origin (your address)</span></h4>

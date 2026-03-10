@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="page_title">Vendly - Home</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
-  <link rel="manifest" href="./assets/manifest-D_19pU2Q.webmanifest">
+  <link rel="manifest" href="./assets/manifest-Bx13-_KX.webmanifest">
   <meta name="theme-color" content="#0ea5a4">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/main-TjPgvPhD.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/styles-BLS6VZqc.css">
+  <script type="module" crossorigin src="./assets/main-rKd2jLMN.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/styles-CTC0Jwfh.css">
 </head>
 <body>
 
@@ -118,16 +118,16 @@
   </div>
 
   <!-- Advanced Filters (Hidden by default) -->
-  <div id="advancedFiltersContainer" class="advanced-filters" style="display: none; background: var(--card-bg); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); animation: slideDown 0.3s ease-out;">
+  <div id="advancedFiltersContainer" class="advanced-filters" style="display: none; animation: slideDown 0.3s ease-out;">
     <!-- Filter Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="filter-header">
       <div>
         <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--fg); margin-bottom: 0.25rem;">
           <span>🔎 </span><span data-i18n="advanced_filters">Advanced Filters</span>
         </h3>
         <p style="font-size: 0.875rem; color: var(--muted);" data-i18n="advanced_filters_subtitle">Refine your search to find exactly what you need</p>
       </div>
-      <div style="display: flex; gap: 0.75rem;">
+      <div class="filter-actions">
         <button id="applyFilters" style="background: var(--gradient-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition); display: flex; align-items: center; gap: 0.5rem;">
           <span>🔍</span>
           <span data-i18n="btn_apply_filters">Apply Filters</span>
@@ -140,7 +140,7 @@
     </div>
 
     <!-- Filters Grid -->
-    <div class="filters-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+    <div class="filters-grid">
       <!-- Search Filter -->
       <div class="filter-group">
         <label style="display: block; font-weight: 600; color: var(--fg); margin-bottom: 0.5rem; font-size: 0.875rem;">
@@ -264,6 +264,14 @@
         </label>
         <input type="text" id="colorFilter" data-i18n-placeholder="color_placeholder" placeholder="Enter color..." 
           style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; background: var(--bg); color: var(--fg); transition: var(--transition);">
+      </div>
+
+      <!-- Category-Specific Extra Filters (injected dynamically) -->
+      <div id="categoryExtraFilters" style="display:none; grid-column: 1 / -1;">
+        <div style="margin: 0.5rem 0 0.75rem 0; padding-top: 0.75rem; border-top: 1.5px solid var(--border);">
+          <h4 id="extraFiltersTitle" style="font-size: 0.9375rem; font-weight: 700; color: var(--fg); margin-bottom: 0.75rem;">📋 <span data-i18n="extra_category_filters">Category Filters</span></h4>
+        </div>
+        <div id="extraFiltersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;"></div>
       </div>
 
       <!-- Date Added Filter -->

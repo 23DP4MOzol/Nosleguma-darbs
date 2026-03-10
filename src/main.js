@@ -3,6 +3,7 @@
 // =======================================
 
 import { supabase, logoutUser } from './supabase.js';
+import { CATEGORY_FIELDS, parseProductAttrs, renderAttrBadges, buildBrowseFilters, getAttrLabel } from './category-fields.js';
 
 // Expose to window for debugging convenience (best-effort)
 try {
@@ -266,10 +267,10 @@ export async function updateNavbarAuth(sessionParam) {
             // Small delay to let Supabase settle
             await new Promise(resolve => setTimeout(resolve, 200));
             
-            // Try id first with short timeout
+            // Try id first with timeout
             let result = await Promise.race([
               supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
             ]);
             
             if (result?.data) {
@@ -299,7 +300,7 @@ export async function updateNavbarAuth(sessionParam) {
             if (user?.email) {
               result = await Promise.race([
                 supabase.from('users').select('balance, role').eq('email', user.email).maybeSingle(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
               ]);
               
               if (result?.data) {
@@ -1247,6 +1248,20 @@ async function initializeIndexPage() {
       );
     }
 
+    // Extra category-specific attribute filters
+    if (currentFilters.extraAttrs && Object.keys(currentFilters.extraAttrs).length > 0) {
+      filteredProducts = filteredProducts.filter(p => {
+        const { attrs } = parseProductAttrs(p.description);
+        for (const [key, filterVal] of Object.entries(currentFilters.extraAttrs)) {
+          if (!filterVal) continue;
+          const productVal = (attrs[key] || '').toLowerCase();
+          const fv = filterVal.toLowerCase();
+          if (!productVal.includes(fv)) return false;
+        }
+        return true;
+      });
+    }
+
     // Date filter
     if (currentFilters.date) {
       const now = new Date();
@@ -1358,6 +1373,10 @@ async function initializeIndexPage() {
       const viewsCount = parseInt(product.views_count || 0);
       const isLiked = userFavoritesSet.has(product.id);
 
+      // Parse extra attributes from description
+      const { attrs: productAttrs } = parseProductAttrs(product.description);
+      const attrBadgesHtml = renderAttrBadges(product.category, productAttrs);
+
       // Check if product was sold in the last 5 minutes
       const isSoldRecently = product.sold_at && (Date.now() - new Date(product.sold_at).getTime()) < 5 * 60 * 1000;
       const isSold = stock === 0 && product.sold_at;
@@ -1421,6 +1440,7 @@ async function initializeIndexPage() {
             ${locationText ? `<span style="font-size:0.8rem; color:var(--muted);">\ud83d\udccd ${locationText}</span>` : ''}
             <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
+          ${attrBadgesHtml ? `<div class="product-extra-attrs" style="display:flex; flex-wrap:wrap; gap:0.375rem; margin-top:0.5rem;">${attrBadgesHtml}</div>` : ''}
           <div class="product-footer">
             <div class="product-price">
               ${product.original_price && product.original_price > product.price ?
@@ -1663,6 +1683,10 @@ async function initializeIndexPage() {
     const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
     const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
     const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
+
+    // Parse extra attributes from description
+    const { description: cleanDescription, attrs: modalAttrs } = parseProductAttrs(product.description);
+    const modalAttrBadges = renderAttrBadges(product.category, modalAttrs);
     
     modalBody.innerHTML = `
       <div class="modal-product-grid">
@@ -1692,8 +1716,15 @@ async function initializeIndexPage() {
           
           <div class="modal-description">
             <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">Description</h3>
-            <p>${escapeHtml(product.description) || 'No description provided.'}</p>
+            <p>${escapeHtml(cleanDescription) || 'No description provided.'}</p>
           </div>
+
+          ${modalAttrBadges ? `
+          <div class="modal-extra-attrs" style="margin-top: 1rem;">
+            <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">📋 Details</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">${modalAttrBadges}</div>
+          </div>
+          ` : ''}
           
           <!-- Product Stats -->
           <div class="modal-stats">
@@ -1809,9 +1840,33 @@ async function initializeIndexPage() {
         filterTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentCategory = tab.dataset.category || 'all';
+        updateCategoryExtraFilters(currentCategory);
         applyFiltersAndRender();
       });
     });
+  }
+
+  // Render category-specific browse filters when category changes
+  function updateCategoryExtraFilters(cat) {
+    const container = document.getElementById('categoryExtraFilters');
+    const grid = document.getElementById('extraFiltersGrid');
+    const title = document.getElementById('extraFiltersTitle');
+    if (!container || !grid) return;
+    if (!cat || cat === 'all') {
+      container.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+    const html = buildBrowseFilters(cat);
+    if (!html) {
+      container.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+    grid.innerHTML = html;
+    container.style.display = 'block';
+    const catNames = { electronics:'Electronics', clothing:'Clothing', furniture:'Furniture', books:'Books', sports:'Sports', home:'Home', vehicles:'Vehicles', other:'Other' };
+    if (title) title.innerHTML = `📋 <span>${catNames[cat] || cat} Filters</span>`;
   }
 
   // Advanced filters
@@ -1832,6 +1887,24 @@ async function initializeIndexPage() {
       currentFilters.date = document.getElementById('dateFilter')?.value || '';
       currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
 
+      // Also sync category dropdown → tabs
+      const catDropdown = document.getElementById('categoryFilter');
+      if (catDropdown && catDropdown.value) {
+        currentCategory = catDropdown.value;
+        filterTabs.forEach(t => {
+          t.classList.toggle('active', t.dataset.category === currentCategory);
+        });
+        updateCategoryExtraFilters(currentCategory);
+      }
+
+      // Collect extra category-specific filter values
+      currentFilters.extraAttrs = {};
+      const catFields = CATEGORY_FIELDS[currentCategory] || [];
+      catFields.forEach(f => {
+        const el = document.getElementById(`extraFilter_${f.key}`);
+        if (el && el.value) currentFilters.extraAttrs[f.key] = el.value;
+      });
+
       applyFiltersAndRender();
       updateActiveFilters();
       showToast('Filters applied successfully!', 'success');
@@ -1851,7 +1924,8 @@ async function initializeIndexPage() {
         brand: '',
         color: '',
         date: '',
-        sortBy: 'newest'
+        sortBy: 'newest',
+        extraAttrs: {}
       };
 
       // Clear form inputs
@@ -1876,6 +1950,9 @@ async function initializeIndexPage() {
       filterTabs.forEach(t => t.classList.remove('active'));
       const allTab = document.querySelector('[data-category="all"]');
       if (allTab) allTab.classList.add('active');
+
+      // Hide extra category filters
+      updateCategoryExtraFilters('all');
 
       applyFiltersAndRender();
       updateActiveFilters();
@@ -2011,6 +2088,41 @@ async function initializeIndexPage() {
 
   // Show edit product modal
   function showEditProductModal(product) {
+    // Parse existing extra attributes
+    const { description: editCleanDesc, attrs: editAttrs } = parseProductAttrs(product.description);
+    const editCat = (product.category || 'other').toLowerCase();
+    const catFields = CATEGORY_FIELDS[editCat] || [];
+
+    // Build extra fields HTML for edit modal
+    let editExtraFieldsHtml = '';
+    if (catFields.length > 0) {
+      editExtraFieldsHtml = `
+        <div style="border: 1px solid #d1d5db; border-radius: 8px; padding: 1rem; margin-top: 0.5rem;">
+          <h4 style="margin-bottom: 0.75rem; font-size: 0.9375rem; font-weight: 600;">📋 Category Details</h4>
+          <div id="editExtraFieldsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            ${catFields.map(f => {
+              const existingVal = editAttrs[f.key] || '';
+              if (f.type === 'select') {
+                const opts = f.options.map(o => `<option value="${o.value}" ${existingVal === o.value ? 'selected' : ''}>${o.label}</option>`).join('');
+                return `<div>
+                  <label style="display:block;margin-bottom:0.5rem;font-weight:500;">${f.emoji || ''} ${f.label}</label>
+                  <select id="editExtra_${f.key}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:8px;">
+                    <option value="">— Select —</option>
+                    ${opts}
+                  </select>
+                </div>`;
+              }
+              return `<div>
+                <label style="display:block;margin-bottom:0.5rem;font-weight:500;">${f.emoji || ''} ${f.label}</label>
+                <input type="${f.type || 'text'}" id="editExtra_${f.key}" value="${escapeHtml(existingVal)}"
+                  placeholder="${f.placeholder || ''}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:8px;">
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     // Create modal
     const modalHtml = `
       <div id="editProductModal" class="product-modal" style="display: flex;">
@@ -2070,8 +2182,10 @@ async function initializeIndexPage() {
               
               <div>
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
-                <textarea id="editDescription" required rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">${escapeHtml(product.description || '')}</textarea>
+                <textarea id="editDescription" required rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">${escapeHtml(editCleanDesc || '')}</textarea>
               </div>
+
+              ${editExtraFieldsHtml}
               
               <div>
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Image URL</label>
@@ -2126,16 +2240,34 @@ async function initializeIndexPage() {
         return;
       }
 
+      // Collect extra category attributes from edit form
+      const editCat = document.getElementById('editCategory').value;
+      const editCatFields = CATEGORY_FIELDS[editCat] || [];
+      const editExtraAttrs = {};
+      editCatFields.forEach(f => {
+        const el = document.getElementById('editExtra_' + f.key);
+        if (el && el.value.trim()) editExtraAttrs[f.key] = el.value.trim();
+      });
+
+      let editDesc = document.getElementById('editDescription').value;
+      if (Object.keys(editExtraAttrs).length > 0) {
+        editDesc = editDesc + '\n<!--vendly-attrs:' + JSON.stringify(editExtraAttrs) + '-->';
+      }
+
       const productData = {
         name: document.getElementById('editName').value,
         price: parseFloat(document.getElementById('editPrice').value),
-        category: document.getElementById('editCategory').value,
+        category: editCat,
         condition: document.getElementById('editCondition').value,
         stock: parseInt(document.getElementById('editStock').value),
         location: document.getElementById('editLocation').value,
-        description: document.getElementById('editDescription').value,
+        description: editDesc,
         image_url: document.getElementById('editImageUrl').value
       };
+
+      // Also sync brand/color to top-level columns if available
+      if (editExtraAttrs.brand) productData.brand = editExtraAttrs.brand;
+      if (editExtraAttrs.color) productData.color = editExtraAttrs.color;
 
       const { updateProduct } = await import('./supabase.js');
       await updateProduct(productId, user.id, productData);

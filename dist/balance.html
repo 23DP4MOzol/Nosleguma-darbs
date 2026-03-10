@@ -6,9 +6,9 @@
   <title>Vendly - Balance</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/balance-BzsHkxOz.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-TjPgvPhD.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-BLS6VZqc.css">
+  <script type="module" crossorigin src="./assets/balance-CUSxTx2g.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-rKd2jLMN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CTC0Jwfh.css">
 </head>
 <body>
 
@@ -62,11 +62,11 @@
     <p class="section-subtitle" data-i18n="balance_subtitle">Manage your funds and view transaction history.</p>
   </div>
 
-  <div class="balance-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+  <div class="balance-section" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
     <div class="current-balance" style="background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border); text-align: center;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
       <h3 data-i18n="current_balance" style="margin-bottom: 1rem; color: var(--fg);">Current Balance</h3>
-      <div class="balance-amount" id="currentBalance" style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem;">€0.00</div>
+      <div class="balance-amount" id="currentBalance" style="font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 700; color: var(--primary); margin-bottom: 1rem;">€0.00</div>
       <div style="color: var(--muted); font-size: 0.875rem;" data-i18n="available_for_purchases">Available for purchases</div>
     </div>
 
@@ -96,9 +96,9 @@
   </div>
 
   <div class="transaction-history" id="transactionHistory" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="transaction-header">
       <h4 style="margin: 0; color: var(--fg);" data-i18n="recent_transactions">Recent Transactions</h4>
-      <div style="display: flex; gap: 0.5rem;">
+      <div class="balance-filter-btns">
         <button id="filterAll" class="filter-btn active" data-i18n="filter_all_tx" style="padding: 0.5rem 1rem; border: 1px solid var(--primary); border-radius: 6px; background: var(--primary); color: white; font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">All</button>
         <button id="filterDeposits" class="filter-btn" data-i18n="filter_deposits" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Deposits</button>
         <button id="filterPurchases" class="filter-btn" data-i18n="filter_purchases" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--fg); font-size: 0.875rem; cursor: pointer; font-weight: 600; transition: var(--transition);">Purchases</button>

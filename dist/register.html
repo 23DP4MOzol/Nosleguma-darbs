@@ -61,6 +61,63 @@
     .error-message.show {
       display: block;
     }
+
+    /* Email Verification Notice - theme-aware */
+    .email-verification-notice {
+      background: #dbeafe;
+      border: 1px solid #3b82f6;
+      color: #1e40af;
+    }
+    .email-verification-notice strong { color: #1e40af; }
+
+    html[data-theme="dark"] .email-verification-notice,
+    html.dark .email-verification-notice {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+    html[data-theme="dark"] .email-verification-notice strong,
+    html.dark .email-verification-notice strong { color: #93c5fd; }
+
+    /* Warning/Danger/Legal/Scam boxes - dark mode */
+    html[data-theme="dark"] .warning-box,
+    html.dark .warning-box {
+      background: rgba(234, 179, 8, 0.15) !important;
+      border-color: rgba(234, 179, 8, 0.4) !important;
+    }
+    html[data-theme="dark"] .warning-box h4,
+    html.dark .warning-box h4 { color: #fcd34d !important; }
+    html[data-theme="dark"] .warning-box p,
+    html.dark .warning-box p { color: #fde68a !important; }
+
+    html[data-theme="dark"] .danger-box,
+    html.dark .danger-box {
+      background: rgba(239, 68, 68, 0.15) !important;
+      border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+    html[data-theme="dark"] .danger-box h4,
+    html.dark .danger-box h4 { color: #fca5a5 !important; }
+    html[data-theme="dark"] .danger-box p,
+    html.dark .danger-box p { color: #fecaca !important; }
+
+    html[data-theme="dark"] .legal-box,
+    html.dark .legal-box {
+      background: rgba(59, 130, 246, 0.15) !important;
+      border-color: rgba(59, 130, 246, 0.4) !important;
+    }
+    html[data-theme="dark"] .legal-box h4,
+    html.dark .legal-box h4 { color: #93c5fd !important; }
+    html[data-theme="dark"] .legal-box p,
+    html.dark .legal-box p { color: #bfdbfe !important; }
+
+    html[data-theme="dark"] .scam-item,
+    html.dark .scam-item {
+      background: var(--secondary) !important;
+      border-color: var(--border) !important;
+      color: var(--fg) !important;
+    }
+    html[data-theme="dark"] .scam-item strong,
+    html.dark .scam-item strong { color: #fca5a5 !important; }
     
     /* Terms Modal Styles */
     .terms-modal-overlay {
@@ -252,7 +309,7 @@
     .accept-section {
       position: sticky;
       bottom: 0;
-      background: linear-gradient(to top, var(--card-bg) 80%, rgba(255,255,255,0));
+      background: linear-gradient(to top, var(--card-bg) 80%, transparent);
       padding: 1.5rem;
       border-top: 1px solid var(--border);
       display: flex;
@@ -306,9 +363,9 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="./assets/register-DSUeqBL6.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-TjPgvPhD.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-BLS6VZqc.css">
+  <script type="module" crossorigin src="./assets/register-CR74eCFZ.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-rKd2jLMN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CTC0Jwfh.css">
 </head>
 <body>
 
@@ -382,7 +439,7 @@
     </div>
     
     <!-- Email Verification Notice -->
-    <div style="background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; font-size: 0.875rem; color: #1e40af;">
+    <div class="email-verification-notice" style="border-radius: 8px; padding: 1rem; font-size: 0.875rem;">
       <strong>📧 <span data-i18n="email_verification_required">Email Verification Required</span></strong><br>
       <span data-i18n="email_verification_notice">After registration, you must verify your email address before you can log in.</span>
     </div>

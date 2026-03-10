@@ -6,9 +6,9 @@
   <title data-i18n="sell">Vendly - Sell Item</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/sell-CHYgW-hd.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-TjPgvPhD.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-BLS6VZqc.css">
+  <script type="module" crossorigin src="./assets/sell-CO4tV81O.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-rKd2jLMN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CTC0Jwfh.css">
 </head>
 <body>
 
@@ -62,7 +62,7 @@
     <p class="section-subtitle" data-i18n="sell_subtitle">List your products easily and reach thousands of buyers.</p>
   </div>
 
-  <div class="sell-container" style="display: grid; grid-template-columns: 1fr 400px; gap: 2rem; max-width: 1200px; margin: 0 auto; padding: 2rem 1rem;">
+  <div class="sell-container" style="grid-template-columns: 1fr 400px;">
 
     <!-- FORM SECTION -->
     <div class="sell-form-section">
@@ -83,7 +83,7 @@
           </p>
         </div>
 
-        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
           <label class="form-field">
             <span class="form-label" data-i18n="sell_product_name">Product Name *</span>
             <input type="text" id="productNameInput" class="form-input" data-i18n-placeholder="sell_enter_name" placeholder="Enter product name" required>
@@ -156,6 +156,13 @@
             <span class="form-label" data-i18n="sell_weight">Weight (kg) — for shipping</span>
             <input type="number" id="productWeightInput" class="form-input" data-i18n-placeholder="sell_enter_weight" placeholder="e.g. 0.5" min="0.01" step="0.01">
           </label>
+        </div>
+
+        <!-- Category-Specific Extra Fields (dynamic, shown/hidden via JS) -->
+        <div id="categoryExtraFields" style="display:none; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
+          <h4 id="categoryExtraTitle" style="margin-bottom: 0.75rem; color: var(--fg); font-size: 1rem; font-weight: 600;">📋 <span data-i18n="sell_extra_details">Category Details</span></h4>
+          <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_extra_details_desc">Fill in details specific to this category for better listings.</p>
+          <div id="categoryExtraFieldsGrid" class="form-grid" style="grid-template-columns: 1fr 1fr;"></div>
         </div>
 
         <!-- Shipping Origin Address -->

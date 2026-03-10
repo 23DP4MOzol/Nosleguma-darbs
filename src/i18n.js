@@ -235,6 +235,9 @@ export const i18n = {
         sports: "Sports",
         home: "Home",
         vehicles: "Vehicles",
+        sell_extra_details: "Category Details",
+        sell_extra_details_desc: "Fill in details specific to this category for better listings.",
+        extra_category_filters: "Category Filters",
         // Balance page translations
         balance_title: "Your Balance",
         balance_subtitle: "Manage your funds and view transaction history.",
@@ -860,6 +863,9 @@ export const i18n = {
         sports: "Sports",
         home: "Māja",
         vehicles: "Transportlīdzekļi",
+        sell_extra_details: "Kategorijas detaļas",
+        sell_extra_details_desc: "Aizpildiet kategorijas specifiskus laukus labākiem sludinājumiem.",
+        extra_category_filters: "Kategorijas filtri",
         // Balance page translations
         balance_title: "Jūsu bilance",
         balance_subtitle: "Pārvaldiet savus līdzekļus un skatiet transakciju vēsturi.",

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Vendly</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
-  <script type="module" crossorigin src="./assets/admin-C0rDrNkr.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-TjPgvPhD.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-BLS6VZqc.css">
+  <script type="module" crossorigin src="./assets/admin-Bt844-PQ.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-rKd2jLMN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CTC0Jwfh.css">
 </head>
 <body>
 
@@ -67,6 +67,10 @@
     </nav>
   </aside>
 
+  <!-- Mobile sidebar toggle -->
+  <button class="admin-mobile-nav-toggle" id="adminMobileNavToggle" onclick="document.querySelector('.admin-sidebar').classList.toggle('mobile-open');document.getElementById('adminSidebarOverlay').classList.toggle('active');">☰ Menu</button>
+  <div class="admin-sidebar-overlay" id="adminSidebarOverlay" onclick="document.querySelector('.admin-sidebar').classList.remove('mobile-open');this.classList.remove('active');"></div>
+
   <!-- Main Content -->
   <main class="admin-main">
     
@@ -116,10 +120,12 @@
       
       <div class="admin-card">
         <h3>🔔 Recent Activities</h3>
+        <div class="admin-table-wrapper">
         <table class="admin-table">
           <thead><tr><th>User</th><th>Action</th><th>Date</th><th>Amount</th></tr></thead>
           <tbody id="dash-activities"><tr><td colspan="4">Loading...</td></tr></tbody>
         </table>
+        </div>
       </div>
     </section>
     
@@ -140,6 +146,7 @@
       </div>
       
       <div class="admin-card">
+        <div class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
             <tr>
@@ -154,6 +161,7 @@
           </thead>
           <tbody id="users-table-body"><tr><td colspan="7">Loading...</td></tr></tbody>
         </table>
+        </div>
       </div>
     </section>
     
@@ -174,6 +182,7 @@
       </div>
       
       <div class="admin-card">
+        <div class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
             <tr>
@@ -190,6 +199,7 @@
           </thead>
           <tbody id="products-table-body"><tr><td colspan="9">Loading...</td></tr></tbody>
         </table>
+        </div>
       </div>
     </section>
     
@@ -246,6 +256,7 @@
       
       <!-- Transactions Table -->
       <div class="admin-card">
+        <div class="admin-table-wrapper">
         <table class="admin-table" style="width:100%;border-collapse:collapse;">
           <thead style="background:var(--secondary);">
             <tr>
@@ -263,6 +274,7 @@
             <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted);">⏳ Loading transactions...</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
     </section>
     
@@ -273,6 +285,7 @@
       </div>
       
       <div class="admin-card">
+        <div class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
             <tr>
@@ -287,6 +300,7 @@
           </thead>
           <tbody id="orders-table-body"><tr><td colspan="7">Loading...</td></tr></tbody>
         </table>
+        </div>
       </div>
     </section>
     
@@ -822,8 +836,8 @@
     }
 
     /* Confirm modal styles */
-    .confirm-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1200; }
-    .confirm-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
+    .confirm-modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; z-index: 1200; }
+    .confirm-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
     .confirm-content { position: relative; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; width: 520px; max-width: calc(100% - 40px); padding: 1rem 1.25rem; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1201; }
     .confirm-close { position: absolute; right: 8px; top: 6px; background: none; border: none; font-size: 1.25rem; cursor: pointer; }
     .confirm-body h3 { margin: 0 0 0.25rem 0; }

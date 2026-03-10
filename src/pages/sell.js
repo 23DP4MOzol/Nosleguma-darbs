@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
+import { CATEGORY_FIELDS } from '../category-fields.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -26,6 +27,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const form = document.getElementById('sellForm');
   const productPreview = document.getElementById('productPreview');
+
+  // ============================
+  // Dynamic Category-Specific Fields
+  // ============================
+  const categorySelect = document.getElementById('productCategoryInput');
+  const extraContainer = document.getElementById('categoryExtraFields');
+  const extraGrid = document.getElementById('categoryExtraFieldsGrid');
+  const extraTitle = document.getElementById('categoryExtraTitle');
+
+  function renderCategoryFields(categoryValue) {
+    const cat = (categoryValue || '').toLowerCase();
+    const fields = CATEGORY_FIELDS[cat];
+    if (!fields || fields.length === 0) {
+      if (extraContainer) extraContainer.style.display = 'none';
+      if (extraGrid) extraGrid.innerHTML = '';
+      return;
+    }
+    if (extraContainer) extraContainer.style.display = 'block';
+    const catEmojis = { electronics:'📱', clothing:'👕', furniture:'🪑', books:'📚', sports:'⚽', home:'🏠', vehicles:'🚗', other:'📦' };
+    if (extraTitle) {
+      const emoji = catEmojis[cat] || '📋';
+      extraTitle.innerHTML = `${emoji} <span data-i18n="sell_extra_details_${cat}">${categoryValue} Details</span>`;
+    }
+    if (extraGrid) {
+      extraGrid.innerHTML = fields.map(f => {
+        if (f.type === 'select') {
+          const opts = f.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+          return `<label class="form-field">
+            <span class="form-label">${f.emoji || ''} ${f.label}${f.required ? ' *' : ''}</span>
+            <select id="extra_${f.key}" class="form-select" ${f.required ? 'required' : ''}>
+              <option value="">— ${i18n.t ? i18n.t('select') || 'Select' : 'Select'} —</option>
+              ${opts}
+            </select>
+          </label>`;
+        }
+        return `<label class="form-field">
+          <span class="form-label">${f.emoji || ''} ${f.label}${f.required ? ' *' : ''}</span>
+          <input type="${f.type || 'text'}" id="extra_${f.key}" class="form-input"
+            placeholder="${f.placeholder || ''}" ${f.min !== undefined ? `min="${f.min}"` : ''} ${f.step ? `step="${f.step}"` : ''}
+            ${f.required ? 'required' : ''}>
+        </label>`;
+      }).join('');
+    }
+  }
+
+  if (categorySelect) {
+    categorySelect.addEventListener('change', () => renderCategoryFields(categorySelect.value));
+    // Render on load if category is pre-selected
+    if (categorySelect.value) renderCategoryFields(categorySelect.value);
+  }
 
   // Image type radio buttons
   const imageTypeRadios = document.querySelectorAll('input[name="imageType"]');
@@ -217,6 +268,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         seller_city: document.getElementById('sellerCityInput')?.value || '',
         seller_postal_code: document.getElementById('sellerPostalInput')?.value || ''
       };
+
+      // Collect category-specific extra attributes
+      const cat = productData.category;
+      const catFields = CATEGORY_FIELDS[cat] || [];
+      if (catFields.length > 0) {
+        const extraAttrs = {};
+        catFields.forEach(f => {
+          const el = document.getElementById(`extra_${f.key}`);
+          if (el && el.value) {
+            extraAttrs[f.key] = el.value;
+            // Also populate top-level brand/color if the extra field overrides them
+            if (f.key === 'brand' || f.key === 'make') productData.brand = productData.brand || el.value;
+            if (f.key === 'color') productData.color = productData.color || el.value;
+          }
+        });
+        if (Object.keys(extraAttrs).length > 0) {
+          // Append structured attrs to description (hidden marker)
+          productData.description = productData.description + '\n<!--vendly-attrs:' + JSON.stringify(extraAttrs) + '-->';
+        }
+      }
 
       const { listProduct } = await import('../supabase.js');
       const result = await listProduct(productData, user.id);
