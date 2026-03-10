@@ -721,8 +721,7 @@ export async function getSellerReviews(sellerId, limit = 10) {
       .from('reviews')
       .select(`
         *,
-        buyer:users!buyer_id(username),
-        product:products(name)
+        buyer:users!buyer_id(username)
       `)
       .eq('seller_id', sellerId)
       .order('created_at', { ascending: false })
@@ -736,31 +735,16 @@ export async function getSellerReviews(sellerId, limit = 10) {
   }
 }
 
-// Submit review for completed transaction
-export async function submitReview(buyerId, sellerId, productId, rating, comment = '') {
+// Submit a buyer-to-seller review (1 review per buyer per seller, enforced by DB UNIQUE constraint)
+export async function submitReview(buyerId, sellerId, rating, comment = '') {
   try {
-    // Check if transaction exists and is completed
-    const { data: transaction, error: txError } = await supabase
-      .from('user_transactions')
-      .select('*')
-      .eq('user_id', buyerId)
-      .eq('reference_id', productId)
-      .eq('transaction_type', 'escrow_hold')
-      .eq('escrow_status', 'released')
-      .single();
-
-    if (txError || !transaction) throw new Error('No completed transaction found for this product');
-
-    // Insert review
     const { error } = await supabase
       .from('reviews')
       .insert({
         buyer_id: buyerId,
         seller_id: sellerId,
-        product_id: productId,
         rating: parseInt(rating),
-        comment,
-        created_at: new Date().toISOString()
+        comment: comment || null
       });
 
     if (error) throw error;

@@ -145,29 +145,41 @@ price numeric(12,2) NOT NULL, category text, condition text, location text,
 image_url text, stock integer DEFAULT 0, is_reserved boolean DEFAULT false,
 reserved_by uuid → users(id), reserved_at timestamptz,
 listing_fee numeric(12,2), reserve_fee numeric(12,2) DEFAULT 0.20,
+brand text, color text, weight_kg decimal(10,2),
+seller_street text, seller_city text, seller_postal_code text,
+original_price decimal(12,2), status text DEFAULT 'active',
+likes_count integer DEFAULT 0, views_count integer DEFAULT 0,
+sold_at timestamptz,
 created_at timestamptz, updated_at timestamptz
 ```
 
 **`conversations`**
 ```
-id uuid PK, product_id uuid → products(id) ON DELETE CASCADE,
-buyer_id uuid → users(id), seller_id uuid → users(id),
-status text DEFAULT 'active', last_message text, last_message_at timestamptz,
+id uuid PK,
+buyer_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+seller_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+product_id uuid → products(id) ON DELETE SET NULL,
+status text DEFAULT 'active' CHECK(IN 'active','archived','blocked'),
+last_message text, last_message_at timestamptz,
 created_at timestamptz, updated_at timestamptz
+UNIQUE INDEX (buyer_id, seller_id, product_id) WHERE product_id IS NOT NULL
 ```
 
 **`messages`**
 ```
-id uuid PK, conversation_id uuid → conversations(id) ON DELETE CASCADE,
-sender_id uuid → users(id), content text,
-message_type text DEFAULT 'text', is_read boolean DEFAULT false, created_at timestamptz
+id uuid PK, conversation_id uuid NOT NULL → conversations(id) ON DELETE CASCADE,
+sender_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+content text NOT NULL,
+message_type text DEFAULT 'text' CHECK(IN 'text','image','system'),
+is_read boolean DEFAULT false, created_at timestamptz
 ```
 
 **`user_transactions`**
 ```
 id uuid PK, user_id uuid → users(id) ON DELETE CASCADE,
 amount numeric(12,2) NOT NULL,
-transaction_type text CHECK(IN 'topup','purchase','refund','sale','fee'),
+transaction_type text CHECK(IN 'deposit','withdrawal','purchase','sale','refund',
+  'admin_adjustment','escrow_hold','escrow_release','topup','fee','withdraw'),
 description text, reference_id uuid, created_at timestamptz
 ```
 
@@ -180,8 +192,21 @@ created_at timestamptz, updated_at timestamptz
 
 **`reviews`**
 ```
-id uuid PK, product_id uuid → products(id) ON DELETE CASCADE,
-user_id uuid → users(id), rating integer CHECK(1–5), comment text, created_at timestamptz
+id uuid PK,
+buyer_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+seller_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+rating integer NOT NULL CHECK(1–5), comment text,
+created_at timestamptz, updated_at timestamptz,
+UNIQUE(buyer_id, seller_id), CHECK(buyer_id != seller_id)
+```
+
+**`product_views`** *(skatījumu izsekošana)*
+```
+id uuid PK,
+user_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+product_id uuid NOT NULL → products(id) ON DELETE CASCADE,
+created_at timestamptz,
+UNIQUE(user_id, product_id)
 ```
 
 **`support_tickets`**
@@ -207,21 +232,31 @@ sender_type text, message_type text DEFAULT 'text', created_at timestamptz
 
 **`favorites`**
 ```
-id uuid PK, user_id uuid → users(id) ON DELETE CASCADE,
-product_id uuid → products(id) ON DELETE CASCADE,
+id uuid PK, user_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+product_id uuid NOT NULL → products(id) ON DELETE CASCADE,
 created_at timestamptz, UNIQUE(user_id, product_id)
 ```
 
 #### Veiktie uzlabojumi un precizējumi
 
+- ✅ `products` tabulā pievienoti lauki: `brand`, `color`, `weight_kg`, `seller_street`, `seller_city`, `seller_postal_code`, `original_price`, `status`
+- ✅ `products` tabulā pievienoti skaitītāji: `likes_count`, `views_count`, `sold_at`
 - ✅ `products` tabulā divvalodu lauki: `name_lv`, `description_lv` latviešu tulkojumam
-- ✅ `products` tabulā pievienots `reserve_fee` (rezervācijas komisija, noklusējums €0.20)
+- ✅ `products` tabulā `reserve_fee` (rezervācijas komisija, noklusējums €0.20)
+- ✅ Jauna tabula `product_views` – unikāls skatījums uz produktu vienam lietotājam
+- ✅ Pārveidota `reviews` tabula: `buyer_id`/`seller_id` (bez `product_id`); `UNIQUE(buyer_id, seller_id)` un `CHECK(buyer_id != seller_id)` nodrošina 1 atsauksme pārdevējam un novērš pašvērtēšanu
+- ✅ `user_transactions` CHECK ierobežojums paplašināts ar `deposit`, `withdrawal`, `admin_adjustment`, `escrow_hold`, `escrow_release`, `withdraw`
+- ✅ `conversations` tabula: `status` CHECK, `NOT NULL` uz `buyer_id`/`seller_id`, daļējais unikālais indekss pēc pircēja-pārdevēja-produkta
+- ✅ `messages` tabula: `content NOT NULL`, `message_type` CHECK, `sender_id NOT NULL`
+- ✅ Trigeri skaitītāju automātiskai atjaunošanai:
+  - `trigger_update_likes_count` – atjaunina `products.likes_count` pēc `favorites` INSERT/DELETE
+  - `trigger_update_views_count` – atjaunina `products.views_count` pēc `product_views` INSERT
+- ✅ Triggeris `handle_new_user()` – automātiski izveido `public.users` rindu, reģistrējoties caur Supabase Auth
+- ✅ Indeksi produktu meklēšanai: `idx_products_status`, `idx_products_brand`
 - ✅ `users` tabulā `profile_image` un `language` lauki lietotāja preferenču glabāšanai
 - ✅ `conversations` tabulā `last_message` un `last_message_at` sānjoslas priekšskatījumam
 - ✅ Atsevišķas tabulas admin/AI čatam: `chat_sessions` un `chat_messages`
-- ✅ Izveidota `favorites` tabula ar `UNIQUE(user_id, product_id)` ierobežojumu
-- ✅ Ieviesti CHECK ierobežojumi: `users.role`, `user_transactions.transaction_type`, `reviews.rating`
-- ✅ RLS politikas precizētas visām 10 tabulām
+- ✅ RLS politikas precizētas visām 12 tabulām
 - ✅ Testdati: 1 admins un 2 lietotāji iepriekš ierakstīti ar sākotnējām bilancēm
 
 #### Normalizācijas pārbaude (3NF)
@@ -234,7 +269,8 @@ Datu bāze ir pārbaudīta atbilstībai **3. normālformai (3NF)**:
 
 **Atklātās problēmas:**
 - `products.category` glabājas kā brīvs teksts (nav atsevišķas `categories` atsauces tabulas) – risināms, pievienojot atsauces tabulu
-- `products.seller_id` ir `ON DELETE SET NULL` (nevis CASCADE) – pēc dzēšanas paliek produkti bez pārdevēja; jāapsver biznesa loģika
+- `products.seller_id` ir `ON DELETE SET NULL` – pēc pārdevēja dzēšanas paliek produkti bez pārdevēja; jāapsver biznesa loģika
+- `products.likes_count` / `products.views_count` ir denormalizēti skaitītāji (trigeri uztur to pareizību), kas ir apzināts veiktspējas kompromiss
 
 #### Ievieستie ierobežojumi
 
@@ -245,10 +281,15 @@ Datu bāze ir pārbaudīta atbilstībai **3. normālformai (3NF)**:
 | `users` | `CHECK (role IN ('user','admin','viewer'))` | Pieļauj tikai derīgas lomas |
 | `products` | `NOT NULL` (name, price) | Garantē obligātos sludinājuma laukus |
 | `products` | `REFERENCES users(id) ON DELETE SET NULL` | Produkts saglabājas pēc pārdevēja dzēšanas |
-| `products` | `REFERENCES users(id)` uz `reserved_by` | Rezervācijas integritāte |
-| `user_transactions` | `CHECK (transaction_type IN ('topup','purchase','refund','sale','fee'))` | Pieļauj tikai derīgus darījumu tipus |
+| `conversations` | `CHECK (status IN ('active','archived','blocked'))` | Derīgi sarunu stāvokļi |
+| `messages` | `NOT NULL` (content, sender_id) | Novērš tukšus ziņojumus |
+| `messages` | `CHECK (message_type IN ('text','image','system'))` | Derīgi ziņojumu tipi |
+| `user_transactions` | `CHECK (transaction_type IN ('deposit','withdrawal','purchase','sale','refund','admin_adjustment','escrow_hold','escrow_release','topup','fee','withdraw'))` | Pieļauj tikai derīgus darījumu tipus |
 | `reviews` | `CHECK (rating >= 1 AND rating <= 5)` | Vērtējums tikai 1–5 diapazonā |
-| `reviews` | `REFERENCES products(id) ON DELETE CASCADE` | Dzēšot produktu, dzēš arī tā atsauksmes |
+| `reviews` | `UNIQUE(buyer_id, seller_id)` | 1 atsauksme pārdevējam no katra pircēja |
+| `reviews` | `CHECK (buyer_id != seller_id)` | Novērš pašvērtēšanu |
+| `reviews` | `ON DELETE CASCADE` uz abām FK | Dzēšot lietotāju, dzēš arī viņa atsauksmes |
+| `product_views` | `UNIQUE(user_id, product_id)` | Viens skatījums uz produktu vienam lietotājam |
 | `messages` | `REFERENCES conversations(id) ON DELETE CASCADE` | Dzēšot sarunu, dzēš arī ziņojumus |
 | `chat_messages` | `REFERENCES chat_sessions(id) ON DELETE CASCADE` | Dzēšot čata sesiju, dzēš arī ziņojumus |
 | `favorites` | `UNIQUE(user_id, product_id)` | Novērš dublikātus izlasē |
@@ -262,30 +303,47 @@ Datu bāze ir pārbaudīta atbilstībai **3. normālformai (3NF)**:
 | `rpc_topup(amount)` | Atomiski papildina bilanci un ieraksta darījumu; apstrādā gadījumu, ja rinda neeksistē (`unique_violation`) |
 | `rpc_withdraw(amount)` | Atomiski atskaita summu no bilances; met kļūdu `insufficient_funds`, ja bilance nepietiekama |
 | `rpc_charge_admin_fee(amount, description)` | Pārskaita komisiju no lietotāja uz adminu; ieraksta abpusējos darījumus |
-| `rpc_send_message(p_conversation_id, p_content)` | Atomiski ievieto ziņojumu un atjaunina `last_message` sarunā; pārbauda dalībnieku tiesības |
+| `rpc_send_message(p_conversation_id, p_content)` | Atomiski ievieto ziņojumu un atjaunina `last_message` sarunā; atgriež JSON `{success, message_id}` vai `{error}`; pārbauda dalībnieku tiesības un pielāgo saturu |
 
 Visas RPC funkcijas izpildās ar `SECURITY DEFINER` un ir pieejamas autentificētiem lietotājiem (`GRANT EXECUTE TO authenticated`).
+
+#### Automātiskie trigeri
+
+| Trigeris | Tabula | Mērķis |
+|----------|--------|--------|
+| `on_auth_user_created` | `auth.users` | Auto-izveido `public.users` rindu pēc reģistrācijas |
+| `trigger_update_likes_count` | `favorites` | Atjaunina `products.likes_count` pēc INSERT/DELETE |
+| `trigger_update_views_count` | `product_views` | Atjaunina `products.views_count` pēc INSERT |
+| `update_conversations_updated_at` | `conversations` | Atjaunina `updated_at` laiku |
 
 #### Indeksēšana
 
 - ✅ `idx_favorites_user_id` – ātra lietotāja izlases iegūšana
 - ✅ `idx_favorites_product_id` – ātra izlases produktu pārbaude
 - ✅ `idx_favorites_created_at DESC` – izlases kārtošana pēc pievienošanas laika
-- ⬜ Produktu meklēšanas indeksi (`category`, `price`, `name`) – vēl jāpievieno
+- ✅ `idx_products_status` – filtrēšana pēc produkta statusa
+- ✅ `idx_products_brand` – meklēšana pēc zīmola
+- ✅ `idx_reviews_seller_id` – ātra pārdevēja vērtējumu iegūšana
+- ✅ `idx_reviews_buyer_id` – pircēja atsauksmju atrašana
+- ✅ `idx_product_views_product_id` – skatījumu skaita aprēķins
+- ✅ `idx_conversations_buyer_id`, `idx_conversations_seller_id` – sarunu filtrēšana
+- ⬜ Pilna teksta meklēšanas indekss produktu nosaukumiem (`name`, `description`)
 
 #### Kas pabeigts un kas vēl trūkst
 
 **Pabeigts:**
-- ✅ Visas 10 tabulas izveidotas un darbojas ar RLS: `users`, `products`, `user_transactions`, `conversations`, `messages`, `orders`, `reviews`, `support_tickets`, `chat_sessions`, `chat_messages`
-- ✅ `favorites` tabula ar unikālo ierobežojumu un kaskādes dzēšanu
-- ✅ CHECK ierobežojumi uz `users.role`, `user_transactions.transaction_type`, `reviews.rating`
+- ✅ Visas 12 tabulas izveidotas un darbojas ar RLS: `users`, `products`, `user_transactions`, `conversations`, `messages`, `orders`, `reviews`, `support_tickets`, `chat_sessions`, `chat_messages`, `favorites`, `product_views`
+- ✅ CHECK ierobežojumi uz `users.role`, `user_transactions.transaction_type`, `reviews.rating`, `conversations.status`, `messages.message_type`
+- ✅ Paplašināts `user_transactions.transaction_type` CHECK ar 11 derīgiem tipiem
 - ✅ Četras RPC funkcijas bilances, darījumu un ziņojumu atomiskai apstrādei
+- ✅ 4 automātiski trigeri (lietotāju izveide, skaitītāji, laika zīmogi)
 - ✅ Sākotnējie testdati: 1 admins un 2 lietotāji ar bilancēm
-- ✅ Indeksi izlases tabulai
+- ✅ 10 indeksi ātrākai datu piekļuvei
+- ✅ Realtime ieslēgts `messages` un `conversations` tabulām
 
 **Vēl trūkst:**
 - ⬜ `categories` atsauces tabula (pašreiz kategorija ir brīvs teksts)
-- ⬜ Indeksi produktu meklēšanai (`name`, `category`, `price`)
+- ⬜ Pilna teksta meklēšanas indekss (`name`, `description`)
 - ⬜ `orders` tabulas pilna integrācija front-endā (pasūtījumu statusi, piegāde)
 - ⬜ `chat_sessions` / `chat_messages` integrācija admin panelī
 - ⬜ Plašāki testdati demonstrācijai (produkti, sarakstes, atsauksmes)

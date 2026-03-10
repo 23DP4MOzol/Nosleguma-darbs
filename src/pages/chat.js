@@ -266,6 +266,8 @@ sendBtn.addEventListener('click', async () => {
     // Call the secure RPC which inserts message and updates conversation atomically
     const { data, error } = await supabase.rpc('rpc_send_message', { p_conversation_id: activeConversation.id, p_content: text });
     if (error) throw error;
+    // New RPC returns JSON; check for application-level errors embedded in the payload
+    if (data?.error) throw new Error(data.error);
     const inserted = Array.isArray(data) ? data[0] : data;
     // rpc may return message_id (avoid ambiguous 'id' column); fall back to id if present
     const insertedId = inserted?.message_id ?? inserted?.id ?? null;
