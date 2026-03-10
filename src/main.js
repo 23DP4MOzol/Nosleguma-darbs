@@ -981,46 +981,36 @@ async function showUserProfile(userId) {
 
 // Index page functions
 async function initializeIndexPage() {
-  if (!document.querySelector('.product-grid-modern')) return;
+  if (!document.querySelector('.product-grid-modern')) {
+    console.log('[IndexPage] product-grid-modern not found, skipping index init');
+    return;
+  }
+  console.log('[IndexPage] Initializing index page...');
 
 
   // Stats updater
   async function updateStats() {
     try {
-      // Products count (use id only for lighter response)
+      console.log('[Stats] Fetching stats...');
+
+      // Products count
       const productsResp = await supabase.from('products').select('id', { count: 'exact', head: true });
       
-      // Users count - count rows in users table (use id only)
+      // Users count
       const usersResp = await supabase.from('users').select('id', { count: 'exact', head: true });
       
-      // Sellers count - count unique seller_id from products table
-      // Using RPC to count distinct values
-      const { data: sellerData, error: sellerError } = await supabase
-        .rpc('count_unique_sellers');
-      
-      // Fallback: if RPC doesn't exist, count manually
+      // Sellers count - count unique seller_id from products table (manual)
       let sellersCount = 0;
-      if (sellerError || !sellerData) {
-        // Manual count of unique sellers
-        const { data: products } = await supabase.from('products').select('seller_id');
-        if (products) {
-          const uniqueSellers = new Set(products.map(p => p.seller_id));
-          sellersCount = uniqueSellers.size;
-        }
-      } else {
-        sellersCount = sellerData || 0;
+      const { data: sellerProducts } = await supabase.from('products').select('seller_id');
+      if (sellerProducts) {
+        const uniqueSellers = new Set(sellerProducts.map(p => p.seller_id).filter(Boolean));
+        sellersCount = uniqueSellers.size;
       }
 
       const productsCount = productsResp.count || 0;
       const usersCount = usersResp.count || 0;
 
-      // Debug: log full responses for troubleshooting RLS / permission issues
-      console.log('Stats full responses:', {
-        productsResp,
-        usersResp,
-        sellerData,
-        sellerError
-      });
+      console.log('[Stats] Results:', { productsCount, usersCount, sellersCount, productsError: productsResp.error, usersError: usersResp.error });
 
       const statsProductsEl = document.getElementById('statsProducts');
       const statsUsersEl = document.getElementById('statsUsers');
@@ -1049,7 +1039,8 @@ async function initializeIndexPage() {
     brand: '',
     color: '',
     date: '',
-    sortBy: 'newest'
+    sortBy: 'newest',
+    extraAttrs: {}
   };
 
   // Load user's favorites for heart icon state
@@ -1120,15 +1111,32 @@ async function initializeIndexPage() {
 
   async function loadProducts() {
     try {
-      const { data, error } = await supabase
+      console.log('[Products] Loading products...');
+
+      // Try with join first, fall back to plain query if join fails
+      let data, error;
+      const joinResult = await supabase
         .from('products')
         .select('*, users!seller_id(username)')
         .order('created_at', { ascending: false });
 
+      if (joinResult.error) {
+        console.warn('[Products] Join query failed, trying without join:', joinResult.error.message);
+        const plainResult = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+        data = plainResult.data;
+        error = plainResult.error;
+      } else {
+        data = joinResult.data;
+        error = joinResult.error;
+      }
+
       if (error) {
         // 401 errors are expected for unauthenticated users - don't show error toast
-        if (error.status === 401 || error.message.includes('401')) {
-          console.log('Products require authentication to view');
+        if (error.status === 401 || (error.message && error.message.includes('401'))) {
+          console.log('[Products] Products require authentication to view');
           allProducts = [];
           applyFiltersAndRender();
           return;
@@ -1136,6 +1144,7 @@ async function initializeIndexPage() {
         throw error;
       }
       allProducts = Array.isArray(data) ? data : [];
+      console.log('[Products] Loaded', allProducts.length, 'products');
       await loadUserFavorites();
       applyFiltersAndRender();
       updateStats();
