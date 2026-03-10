@@ -90,7 +90,7 @@ async function loadTransactions(userId, filter = 'all') {
     if (filter !== 'all') {
       switch(filter) {
         case 'deposits':
-          filteredData = data.filter(tx => tx.transaction_type === 'topup');
+          filteredData = data.filter(tx => tx.transaction_type === 'deposit');
           break;
         case 'purchases':
           filteredData = data.filter(tx => tx.transaction_type === 'purchase');
@@ -123,22 +123,25 @@ async function loadTransactions(userId, filter = 'all') {
 
       const getTransactionIcon = (type) => {
         switch(type) {
-          case 'topup': return '💰';
+          case 'deposit': return '💰';
           case 'purchase': return '🛒';
           case 'sale': return '💸';
-          case 'fee': return '📝';
+          case 'admin_adjustment': return '📝';
           case 'refund': return '↩️';
-          case 'withdraw': return '💳';
+          case 'withdrawal': return '💳';
+          case 'escrow_hold': return '🔒';
+          case 'escrow_release': return '🔓';
           default: return '💳';
         }
       };
 
       const getTransactionColor = (type) => {
         switch(type) {
-          case 'topup': return '#10b981';
+          case 'deposit': return '#10b981';
           case 'sale': return '#10b981';
           case 'refund': return '#10b981';
-          case 'purchase': case 'fee': case 'withdraw': return '#ef4444';
+          case 'escrow_release': return '#10b981';
+          case 'purchase': case 'admin_adjustment': case 'withdrawal': case 'escrow_hold': return '#ef4444';
           default: return '#6b7280';
         }
       };
@@ -171,7 +174,7 @@ async function loadTransactions(userId, filter = 'all') {
       };
 
       const amount = Math.abs(parseFloat(tx.amount || 0));
-      const isPositive = ['topup', 'sale', 'refund'].includes(tx.transaction_type);
+      const isPositive = ['deposit', 'sale', 'refund', 'escrow_release'].includes(tx.transaction_type);
 
       div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -334,7 +337,7 @@ if (withdrawBtn) {
       await supabase.from('user_transactions').insert({
         user_id: user.id,
         amount: -amount,
-        transaction_type: 'withdraw',
+        transaction_type: 'withdrawal',
         description: 'Withdrawal',
         created_at: new Date().toISOString()
       });

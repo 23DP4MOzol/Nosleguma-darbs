@@ -292,7 +292,7 @@ export async function addBalance(userId, amount, description = 'Balance top-up')
       .insert({
         user_id: userId,
         amount: parseFloat(amount),
-        transaction_type: 'topup',
+        transaction_type: 'deposit',
         description,
         created_at: new Date().toISOString()
       });
@@ -441,7 +441,7 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
     await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -fee,
-      transaction_type: 'fee',
+      transaction_type: 'admin_adjustment',
       description: `Reserve fee for ${product.name}`,
       reference_id: productId,
       created_at: new Date().toISOString()
@@ -527,7 +527,7 @@ export async function listProduct(productData, userId) {
     await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -listingFee,
-      transaction_type: 'fee',
+      transaction_type: 'admin_adjustment',
       description: `Listing fee for ${productData.name}`,
       created_at: new Date().toISOString()
     });
@@ -548,7 +548,7 @@ export async function listProduct(productData, userId) {
       await supabase.from('user_transactions').insert({
         user_id: adminUser.id,
         amount: listingFee,
-        transaction_type: 'topup',
+        transaction_type: 'deposit',
         description: `Listing fee from ${productData.name}`,
         reference_id: userId,
         created_at: new Date().toISOString()
@@ -812,53 +812,21 @@ export async function getShippingEstimate(productLocation, shippingAddress, prov
   }
 }
 
-// Create order with shipping address and logistics provider
-export async function createOrder(productId, buyerId, shippingAddress, logisticsProvider = 'omniva') {
+// Create order via the create_order_from_product RPC
+export async function createOrder(productId, buyerId, deliveryDetails = {}, deliveryMethod = 'shipping') {
   try {
-    // Get product details
-    const product = await getProduct(productId);
-    if (!product) throw new Error('Product not found');
+    const { data, error } = await supabase.rpc('create_order_from_product', {
+      p_product_id: productId,
+      p_buyer_id: buyerId,
+      p_quantity: 1,
+      p_delivery_method: deliveryMethod,
+      p_delivery_details: deliveryDetails
+    });
 
-    // Check if buyer has completed purchase (escrow released)
-    const { data: transaction, error: txError } = await supabase
-      .from('user_transactions')
-      .select('*')
-      .eq('user_id', buyerId)
-      .eq('reference_id', productId)
-      .eq('escrow_status', 'released')
-      .single();
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
 
-    if (txError || !transaction) throw new Error('No completed purchase found for this product');
-
-    // Create order
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        product_id: productId,
-        buyer_id: buyerId,
-        seller_id: product.seller_id,
-        shipping_address: shippingAddress,
-        order_status: 'pending',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // Calculate shipping based on product location, shipping address, and provider
-    const shippingCost = await calculateShippingCost(product.location, shippingAddress, logisticsProvider);
-
-    // Update order with shipping cost and provider info
-    await supabase
-      .from('orders')
-      .update({
-        shipping_cost: shippingCost,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id);
-
-    return { ...order, shipping_cost: shippingCost, logistics_provider: logisticsProvider };
+    return data;
   } catch (error) {
     console.error('Error creating order:', error);
     throw error;

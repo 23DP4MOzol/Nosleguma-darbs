@@ -176,17 +176,70 @@ is_read boolean DEFAULT false, created_at timestamptz
 
 **`user_transactions`**
 ```
-id uuid PK, user_id uuid → users(id) ON DELETE CASCADE,
-amount numeric(12,2) NOT NULL,
-transaction_type text CHECK(IN 'deposit','withdrawal','purchase','sale','refund',
-  'admin_adjustment','escrow_hold','escrow_release','topup','fee','withdraw'),
-description text, reference_id uuid, created_at timestamptz
+id uuid PK, user_id uuid NOT NULL → users(id) ON DELETE CASCADE,
+transaction_type text NOT NULL CHECK(IN 'deposit','withdrawal','purchase','sale','refund',
+  'admin_adjustment','escrow_hold','escrow_release'),
+amount decimal(10,2) NOT NULL,
+description text, reference_id uuid,
+created_at timestamptz, updated_at timestamptz
 ```
 
 **`orders`**
 ```
-id uuid PK, user_id uuid → users(id), total numeric(12,2),
-status text DEFAULT 'pending', shipping_address text,
+id uuid PK, order_number text UNIQUE NOT NULL (auto-generated ORD-YYYY-NNNN),
+buyer_id uuid NOT NULL → users(id),
+seller_id uuid NOT NULL → users(id),
+product_id uuid NOT NULL → products(id),
+quantity integer NOT NULL DEFAULT 1,
+unit_price decimal(10,2) NOT NULL, total_amount decimal(10,2) NOT NULL,
+status text NOT NULL DEFAULT 'pending'
+  CHECK(IN 'pending','paid','escrow','processing','ready_for_pickup',
+         'shipped','in_transit','delivered','completed','cancelled','refunded','disputed'),
+payment_method text DEFAULT 'balance' CHECK(IN 'balance','card','bank_transfer'),
+payment_status text DEFAULT 'pending' CHECK(IN 'pending','paid','failed','refunded','escrowed'),
+paid_at timestamptz,
+escrow_amount decimal(10,2) DEFAULT 0,
+escrow_released boolean DEFAULT false, escrow_released_at timestamptz,
+delivery_method text NOT NULL CHECK(IN 'meetup','shipping'),
+shipping_carrier text, shipping_service text, tracking_number text, shipping_cost decimal(10,2) DEFAULT 0,
+recipient_name text, recipient_phone text,
+shipping_address text, shipping_city text, shipping_postal_code text,
+shipping_country text CHECK(IN 'LV','LT','EE'),
+parcel_locker_id text, parcel_locker_address text,
+meetup_location text, meetup_date timestamptz,
+meetup_confirmed_by_buyer boolean DEFAULT false,
+meetup_confirmed_by_seller boolean DEFAULT false,
+buyer_notes text, seller_notes text, admin_notes text,
+created_at timestamptz, updated_at timestamptz,
+completed_at timestamptz, cancelled_at timestamptz
+```
+
+**`order_status_history`**
+```
+id uuid PK, order_id uuid NOT NULL → orders(id),
+old_status text, new_status text NOT NULL,
+changed_by uuid → users(id), notes text, created_at timestamptz
+```
+
+**`shipping_rates`**
+```
+id uuid PK, carrier text NOT NULL, service text NOT NULL,
+from_country text NOT NULL, to_country text NOT NULL,
+weight_min_kg decimal(5,2) NOT NULL DEFAULT 0,
+weight_max_kg decimal(5,2) NOT NULL,
+price_eur decimal(10,2) NOT NULL,
+estimated_days_min integer, estimated_days_max integer,
+active boolean DEFAULT true,
+created_at timestamptz, updated_at timestamptz
+```
+
+**`parcel_lockers`**
+```
+id uuid PK, carrier text NOT NULL, locker_id text NOT NULL UNIQUE,
+name text NOT NULL, address text NOT NULL, city text NOT NULL,
+postal_code text, country text NOT NULL CHECK(IN 'LV','LT','EE'),
+latitude decimal(10,7), longitude decimal(10,7),
+active boolean DEFAULT true,
 created_at timestamptz, updated_at timestamptz
 ```
 
@@ -245,9 +298,12 @@ created_at timestamptz, UNIQUE(user_id, product_id)
 - ✅ `products` tabulā `reserve_fee` (rezervācijas komisija, noklusējums €0.20)
 - ✅ Jauna tabula `product_views` – unikāls skatījums uz produktu vienam lietotājam
 - ✅ Pārveidota `reviews` tabula: `buyer_id`/`seller_id` (bez `product_id`); `UNIQUE(buyer_id, seller_id)` un `CHECK(buyer_id != seller_id)` nodrošina 1 atsauksme pārdevējam un novērš pašvērtēšanu
-- ✅ `user_transactions` CHECK ierobežojums paplašināts ar `deposit`, `withdrawal`, `admin_adjustment`, `escrow_hold`, `escrow_release`, `withdraw`
+- ✅ `user_transactions` CHECK ierobežojums paplašināts ar `deposit`, `withdrawal`, `admin_adjustment`, `escrow_hold`, `escrow_release`
 - ✅ `conversations` tabula: `status` CHECK, `NOT NULL` uz `buyer_id`/`seller_id`, daļējais unikālais indekss pēc pircēja-pārdevēja-produkta
 - ✅ `messages` tabula: `content NOT NULL`, `message_type` CHECK, `sender_id NOT NULL`
+- ✅ Pārbūvēta `orders` tabula ar pilnu piegādes/maksājumu/eskrova loģiku; atsevišķas `order_status_history`, `shipping_rates`, `parcel_lockers` tabulas
+- ✅ 77 paku automāti (Omniva + DPD) Latvijā, Lietuvā, Igaunijā
+- ✅ 18 piegādes tarifi (`shipping_rates`)
 - ✅ Trigeri skaitītāju automātiskai atjaunošanai:
   - `trigger_update_likes_count` – atjaunina `products.likes_count` pēc `favorites` INSERT/DELETE
   - `trigger_update_views_count` – atjaunina `products.views_count` pēc `product_views` INSERT
@@ -256,7 +312,7 @@ created_at timestamptz, UNIQUE(user_id, product_id)
 - ✅ `users` tabulā `profile_image` un `language` lauki lietotāja preferenču glabāšanai
 - ✅ `conversations` tabulā `last_message` un `last_message_at` sānjoslas priekšskatījumam
 - ✅ Atsevišķas tabulas admin/AI čatam: `chat_sessions` un `chat_messages`
-- ✅ RLS politikas precizētas visām 12 tabulām
+- ✅ RLS politikas precizētas visām 17 tabulām
 - ✅ Testdati: 1 admins un 2 lietotāji iepriekš ierakstīti ar sākotnējām bilancēm
 
 #### Normalizācijas pārbaude (3NF)
@@ -284,7 +340,7 @@ Datu bāze ir pārbaudīta atbilstībai **3. normālformai (3NF)**:
 | `conversations` | `CHECK (status IN ('active','archived','blocked'))` | Derīgi sarunu stāvokļi |
 | `messages` | `NOT NULL` (content, sender_id) | Novērš tukšus ziņojumus |
 | `messages` | `CHECK (message_type IN ('text','image','system'))` | Derīgi ziņojumu tipi |
-| `user_transactions` | `CHECK (transaction_type IN ('deposit','withdrawal','purchase','sale','refund','admin_adjustment','escrow_hold','escrow_release','topup','fee','withdraw'))` | Pieļauj tikai derīgus darījumu tipus |
+| `user_transactions` | `CHECK (transaction_type IN ('deposit','withdrawal','purchase','sale','refund','admin_adjustment','escrow_hold','escrow_release'))` | Pieļauj tikai 8 derīgus darījumu tipus |
 | `reviews` | `CHECK (rating >= 1 AND rating <= 5)` | Vērtējums tikai 1–5 diapazonā |
 | `reviews` | `UNIQUE(buyer_id, seller_id)` | 1 atsauksme pārdevējam no katra pircēja |
 | `reviews` | `CHECK (buyer_id != seller_id)` | Novērš pašvērtēšanu |
@@ -304,6 +360,11 @@ Datu bāze ir pārbaudīta atbilstībai **3. normālformai (3NF)**:
 | `rpc_withdraw(amount)` | Atomiski atskaita summu no bilances; met kļūdu `insufficient_funds`, ja bilance nepietiekama |
 | `rpc_charge_admin_fee(amount, description)` | Pārskaita komisiju no lietotāja uz adminu; ieraksta abpusējos darījumus |
 | `rpc_send_message(p_conversation_id, p_content)` | Atomiski ievieto ziņojumu un atjaunina `last_message` sarunā; atgriež JSON `{success, message_id}` vai `{error}`; pārbauda dalībnieku tiesības un pielāgo saturu |
+| `create_order_from_product(product_id, buyer_id, quantity, delivery_method, delivery_details)` | Izveido pasūtījumu, aprēķina piegādes izmaksas no `shipping_rates`, samazina krājumus; atgriež JSON `{success, order_id, total_amount}` |
+| `process_order_payment(order_id, buyer_id)` | Apstrādā maksājumu: tikšanās — ievieto eskrovā; piegāde — nekavējoties pārskaita pārdevējam; ieraksta `user_transactions` |
+| `release_escrow(order_id, confirmed_by)` | Reģistrē tikšanās apstiprinājumu; kad abi posmabiedri apstiprinājuši — pārskaita eskrova summu pārdevējam un atzīmē pasūtījumu kā `completed` |
+| `refund_order(order_id, refund_reason)` | Atmaksā pircējam; atgriež krājumus; ja piegāde bija apmaksāta — atskaita no pārdevēja |
+| `get_shipping_quote(carrier, service, from_country, to_country, weight_kg)` | Atgriež cenu un laiku no `shipping_rates` tabulas; JSON `{success, price, estimated_days_min, estimated_days_max}` |
 
 Visas RPC funkcijas izpildās ar `SECURITY DEFINER` un ir pieejamas autentificētiem lietotājiem (`GRANT EXECUTE TO authenticated`).
 
@@ -315,6 +376,10 @@ Visas RPC funkcijas izpildās ar `SECURITY DEFINER` un ir pieejamas autentificē
 | `trigger_update_likes_count` | `favorites` | Atjaunina `products.likes_count` pēc INSERT/DELETE |
 | `trigger_update_views_count` | `product_views` | Atjaunina `products.views_count` pēc INSERT |
 | `update_conversations_updated_at` | `conversations` | Atjaunina `updated_at` laiku |
+| `set_order_number_trigger` | `orders` | Auto-ģenerē `order_number` (`ORD-YYYY-NNNN`) pirms INSERT |
+| `log_order_status_change_trigger` | `orders` | Ieraksta katru statusa maiņu `order_status_history` tabulā |
+| `update_orders_updated_at` | `orders` | Atjaunina `updated_at` laiku |
+| `update_user_transactions_updated_at` | `user_transactions` | Atjaunina `updated_at` laiku |
 
 #### Indeksēšana
 
@@ -327,24 +392,25 @@ Visas RPC funkcijas izpildās ar `SECURITY DEFINER` un ir pieejamas autentificē
 - ✅ `idx_reviews_buyer_id` – pircēja atsauksmju atrašana
 - ✅ `idx_product_views_product_id` – skatījumu skaita aprēķins
 - ✅ `idx_conversations_buyer_id`, `idx_conversations_seller_id` – sarunu filtrēšana
+- ✅ `idx_orders_buyer_id`, `idx_orders_seller_id`, `idx_orders_status`, `idx_orders_created_at` – pasūtījumu filtrēšana
+- ✅ `idx_shipping_rates_carrier`, `idx_shipping_rates_countries` – tarifa meklēšana
+- ✅ `idx_parcel_lockers_carrier`, `idx_parcel_lockers_country`, `idx_parcel_lockers_city` – paku automātu meklēšana
 - ⬜ Pilna teksta meklēšanas indekss produktu nosaukumiem (`name`, `description`)
 
 #### Kas pabeigts un kas vēl trūkst
 
 **Pabeigts:**
-- ✅ Visas 12 tabulas izveidotas un darbojas ar RLS: `users`, `products`, `user_transactions`, `conversations`, `messages`, `orders`, `reviews`, `support_tickets`, `chat_sessions`, `chat_messages`, `favorites`, `product_views`
-- ✅ CHECK ierobežojumi uz `users.role`, `user_transactions.transaction_type`, `reviews.rating`, `conversations.status`, `messages.message_type`
-- ✅ Paplašināts `user_transactions.transaction_type` CHECK ar 11 derīgiem tipiem
-- ✅ Četras RPC funkcijas bilances, darījumu un ziņojumu atomiskai apstrādei
-- ✅ 4 automātiski trigeri (lietotāju izveide, skaitītāji, laika zīmogi)
-- ✅ Sākotnējie testdati: 1 admins un 2 lietotāji ar bilancēm
-- ✅ 10 indeksi ātrākai datu piekļuvei
+- ✅ Visas 17 tabulas izveidotas un darbojas ar RLS: `users`, `products`, `user_transactions`, `conversations`, `messages`, `orders`, `order_status_history`, `shipping_rates`, `parcel_lockers`, `reviews`, `support_tickets`, `chat_sessions`, `chat_messages`, `favorites`, `product_views`
+- ✅ CHECK ierobežojumi uz `users.role`, `user_transactions.transaction_type` (8 tipi), `reviews.rating`, `conversations.status`, `messages.message_type`, `orders.status`, `orders.payment_status`, `orders.delivery_method`
+- ✅ 9 RPC funkcijas bilances, darījumu, ziņojumu un pasūtījumu atomiskai apstrādei
+- ✅ 8 automātiski trigeri (lietotāju izveide, skaitītāji, laika zīmogi, pasūtījumu numuri, statusa vēsture)
+- ✅ Sākotnējie testdati: 1 admins un 2 lietotāji ar bilancēm; 77 paku automāti; 18 piegādes tarifi
+- ✅ 15+ indeksi ātrākai datu piekļuvei
 - ✅ Realtime ieslēgts `messages` un `conversations` tabulām
 
 **Vēl trūkst:**
 - ⬜ `categories` atsauces tabula (pašreiz kategorija ir brīvs teksts)
 - ⬜ Pilna teksta meklēšanas indekss (`name`, `description`)
-- ⬜ `orders` tabulas pilna integrācija front-endā (pasūtījumu statusi, piegāde)
 - ⬜ `chat_sessions` / `chat_messages` integrācija admin panelī
 - ⬜ Plašāki testdati demonstrācijai (produkti, sarakstes, atsauksmes)
 - ⬜ Datubāzes migrācijas fails ar versiju kontroli

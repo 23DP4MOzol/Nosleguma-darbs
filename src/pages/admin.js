@@ -244,28 +244,28 @@ window.viewUserDetails = async function(userId) {
     
     // Stats
     const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', userId);
-    const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+    const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
     const { count: conversationsCount } = await supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`user_1.eq.${userId},user_2.eq.${userId}`);
     
     // Financials - detailed breakdown
     const { data: transactions } = await supabase.from('user_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
     const totalSpent = transactions?.filter(t => t.transaction_type === 'purchase').reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
-    const totalFees = transactions?.filter(t => t.transaction_type === 'fee').reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
+    const totalFees = transactions?.filter(t => t.transaction_type === 'admin_adjustment').reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
     const totalEarned = transactions?.filter(t => t.transaction_type === 'sale').reduce((sum, t) => sum + t.amount, 0) || 0;
-    const totalTopUps = transactions?.filter(t => t.transaction_type === 'topup').reduce((sum, t) => sum + t.amount, 0) || 0;
+    const totalTopUps = transactions?.filter(t => t.transaction_type === 'deposit').reduce((sum, t) => sum + t.amount, 0) || 0;
     
     // Purchase history with product details
     const { data: purchaseOrders } = await supabase
       .from('orders')
-      .select('*, items:order_items(*)')
-      .eq('user_id', userId)
+      .select('*')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order('created_at', { ascending: false });
     
     // Products sold (seller history)
     const { data: products } = await supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false });
     
     // Orders
-    const { data: orders } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+    const { data: orders } = await supabase.from('orders').select('*').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order('created_at', { ascending: false }).limit(20);
     
     // Recent conversations
     const { data: conversations } = await supabase
@@ -792,14 +792,14 @@ function displayTransactions(transactions, stats = {}) {
   // Get icon for transaction type
   const getTypeIcon = (type) => {
     const icons = {
+      'deposit': '📥',
+      'withdrawal': '📤',
       'purchase': '🛒',
       'sale': '💵',
-      'deposit': '📥',
-      'withdraw': '📤',
-      'topup': '➕',
-      'fee': '💸',
       'refund': '↩️',
-      'transfer': '↔️'
+      'admin_adjustment': '⚙️',
+      'escrow_hold': '🔒',
+      'escrow_release': '🔓'
     };
     return icons[type] || '💳';
   };
@@ -1419,7 +1419,7 @@ window.createManualTransaction = async function() {
       return;
     }
     
-    const types = ['deposit', 'withdraw', 'topup', 'refund', 'fee', 'adjustment'];
+    const types = ['deposit', 'withdrawal', 'refund', 'admin_adjustment', 'escrow_hold', 'escrow_release'];
     const type = prompt(`Select transaction type:\n${types.map((t, i) => `${i+1}. ${t}`).join('\n')}\n\nEnter 1-6:`);
     if (!type) return;
     
@@ -2006,7 +2006,7 @@ window.deleteSpecificUser = async function() {
     // Delete user's data
     await supabase.from('user_transactions').delete().eq('user_id', user.id);
     await supabase.from('products').delete().eq('seller_id', user.id);
-    await supabase.from('orders').delete().eq('user_id', user.id);
+    await supabase.from('orders').delete().or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
     await supabase.from('conversations').delete().eq('user_id', user.id);
     
     const { error } = await supabase
