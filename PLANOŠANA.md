@@ -24,7 +24,10 @@ Sistēma **Vendly** ir tiešsaistes tirdzniecības platforma (marketplace), kas 
 | 12 | **Profils un iestatījumi** | Lietotājs var rediģēt lietotājvārdu, bio, avatāru un mainīt paroli |
 | 13 | **Administratora panelis** | Admins var apskatīt statistiku, pārvaldīt lietotājus, produktus, atbalsta biļetes un darījumus |
 | 14 | **E-pasta verifikācija** | Pēc reģistrācijas lietotājam jāapstiprina e-pasts, lai pieslēgtos |
-| 15 | **Vērtējumi un atsauksmes** | Pircēji var atstāt vērtējumu un komentāru pārdevējiem (plānots) |
+| 15 | **Vērtējumi un atsauksmes** | Pircēji var atstāt vērtējumu (1–5 zvaigznes) un komentāru pārdevējiem pēc pirkuma; katrs pircējs var novērtēt pārdevēju tikai vienu reizi |
+| 16 | **Pasūtījumu pārvaldība** | Pēc pirkuma tiek izveidots pasūtījums ar unikālu numuru (`ORD-YYYY-NNNN`); pircējs un pārdevējs var sekot līdzi pasūtījuma statusam (gaidošs → nosūtīts → pabeigts) |
+| 17 | **Piegādes metožu izvēle** | Pircējs izvēlas starp tikšanos (meetup) vai sūtījumu; sūtījumam pieejami 3 nesēji (Omniva, DPD, Latvijas Pasts) ar 77+ paku automātiem LV/LT/EE |
+| 18 | **Eskrova sistēma (tikšanās)** | Tikšanās pirkumos līdzekļi tiek bloķēti līdz abu pušu (pircēja un pārdevēja) apstiprinājumam; pēc apstiprinājuma automātiski pārskaitīti pārdevējam |
 
 ---
 
@@ -42,8 +45,9 @@ Sistēma **Vendly** ir tiešsaistes tirdzniecības platforma (marketplace), kas 
 | 8 | **XSS aizsardzība** | Visas lietotāja ievades tiek "escapotas" pirms izvadīšanas HTML saturā |
 | 9 | **Escrow darījumi** | Maksājumi tiek turēti sistēmas līmenī līdz darījuma apstiprināšanai |
 | 10 | **Pretkrāpšanas politika** | Reģistrācijas laikā lietotājam jāpieņem pretkrāpšanas noteikumi ar brīdinājumu |
-| 11 | **Veiktspēja** | Statiskai hostingam izmanto Vite build (minifikācija, kodu sadalīšana); Supabase nodrošina ātrās API atbildes |
+| 11 | **Veiktspēja** | Statiskai hostingam izmanto Vite build (minifikācija, kodu sadalīšana); Supabase nodrošina ātrās API atbildes; indeksi uz visām biežāk vaicātajām kolonnām |
 | 12 | **Saderība ar pārlūkprogrammām** | Darbojas visos mūsdienu pārlūkos (Chrome, Firefox, Safari, Edge) |
+| 13 | **Datu integritāte** | Visas kritiskās datubāzes operācijas (bilances izmaiņas, pasūtījumu izveide, eskrova apstrāde) notiek kā atomiskas `SECURITY DEFINER` RPC funkcijas, novēršot daļēju stāvokli |
 
 ---
 
@@ -79,6 +83,10 @@ Sistēma **Vendly** ir tiešsaistes tirdzniecības platforma (marketplace), kas 
 - ✅ Reālaika produktu priekšskatījums publicēšanas laikā
 - ✅ Modālie logi (noteikumi, dzēšanas apstiprināšana, informācija)
 - ✅ XSS aizsardzība ar `escapeHtml` funkcijām
+- ✅ Izrakstīšanās modāls (čekautā) ar piegādes metodes izvēli (tikšanās / piegāde), nesēja un paku automāta izvēli, adresāta datu ievadi un kopējo summas aprēķinu reāllaikā
+- ✅ Pasūtījumu maksājumu plūsma: tikšanās gadījumā līdzekļi tiek bloķēti eskrovā, piegādes gadījumā – nekavējoties pārskaitīti pārdevējam
+- ✅ Tikšanās apstiprinājums: gan pircējs, gan pārdevējs var apstiprināt tikšanos; pēc abu apstiprinājuma eskrova līdzekļi tiek atbrīvoti
+- ✅ Piegādes tarifi un paku automātu meklēšana: 77 Omniva/DPD atrašanās vietas LV/LT/EE ar filtrēšanu pēc valsts un pilsētas
 
 ---
 
@@ -96,12 +104,12 @@ Sistēmas aizmugure tiek realizēta caur **Supabase** (Backend-as-a-Service) bez
 
 #### CRUD elementi
 
-| Darbība | Produkti | Lietotāji | Ziņojumi | Darījumi | Izlase |
-|---------|----------|-----------|----------|----------|--------|
-| **Create** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Read** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Update** | ✅ | ✅ | — | — | — |
-| **Delete** | ✅ | — | — | — | ✅ |
+| Darbība | Produkti | Lietotāji | Ziņojumi | Darījumi | Izlase | Pasūtījumi | Atsauksmes |
+|---------|----------|-----------|----------|----------|--------|------------|------------|
+| **Create** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Read** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Update** | ✅ | ✅ | — | — | — | ✅ | — |
+| **Delete** | ✅ | ✅ (admin) | — | — | ✅ | — | — |
 
 #### API maršruti (Supabase klienta vaicājumi)
 
@@ -115,6 +123,20 @@ Sistēmas aizmugure tiek realizēta caur **Supabase** (Backend-as-a-Service) bez
 - ✅ `getOrCreateConversation(productId, buyerId, sellerId)` – sarunu inicializācija
 - ✅ `rpc_send_message` – ziņojumu sūtīšana caur Supabase RPC (atomiska operācija)
 - ✅ `addToFavorites / removeFromFavorites / getUserFavorites` – izlases pārvaldība
+- ✅ `supabase.rpc('create_order_from_product', {...})` – pasūtījuma izveide ar krājumu rezervāciju un piegādes izmaksu aprēķinu
+- ✅ `supabase.rpc('process_order_payment', {...})` – maksājuma apstrāde ar eskrova/tūlītējas pārskaites loģiku
+- ✅ `supabase.rpc('release_escrow', {...})` – eskrova atbrīvošana pēc abu pušu apstiprinājuma
+- ✅ `supabase.rpc('refund_order', {...})` – pasūtījuma atmaksa ar krājumu atjaunošanu
+- ✅ `supabase.rpc('get_shipping_quote', {...})` – piegādes cenas pieprasīšana no `shipping_rates`
+
+#### Validācija un datu apstrāde
+
+- ✅ Servera puses validācija caur Supabase RLS – katrs vaicājums tiek pārbaudīts pret `auth.uid()`
+- ✅ Klienta puses formu validācija: obligātie lauki, e-pasta formāts, paroles minimālais garums (6 rakstzīmes), cenas/daudzuma pozitivitāte
+- ✅ Produktu stāvoklis ir obligāts (`CHECK IN ('new','like_new','good','fair','poor')`)
+- ✅ Pasūtījumu `delivery_method` ir obligāts (`CHECK IN ('meetup','shipping')`)
+- ✅ Bilances pārbaude pirms pirkuma un publicēšanas komisijas ieturēšanas
+- ✅ Nevar iegādāties pats savus produktus (pārbaudīts RPC un klienta pusē)
 
 #### Kļūdu apstrāde
 
@@ -419,11 +441,16 @@ Visas RPC funkcijas izpildās ar `SECURITY DEFINER` un ir pieejamas autentificē
 
 ## 3. Darbu plāns līdz 23. martam
 
-| Termiņš | Sasniedzamais rezultāts |
-|---------|------------------------|
-| **Līdz 7. martam** | Darbojas pilnvērtīga produktu meklēšana un filtrēšana sākumlapā (pēc nosaukuma, kategorijas, cenas intervāla); produktu lapa ar pilnu aprakstu un "Sazināties ar pārdevēju" pogu |
-| **Līdz 11. martam** | Pabeigta vērtējumu un atsauksmju sistēma – pircējs pēc pirkuma var novērtēt pārdevēju (1–5 zvaigznes + komentārs); vērtējumu attēlošana profila un produktu lapās |
-| **Līdz 14. martam** | `orders` tabulas pilna integrācija – pasūtījumu statusi (gaidošs / nosūtīts / pabeigts / atcelts); pircējs var aplūkot savu pasūtījumu vēsturi; pārdevējs var atzīmēt nosūtīšanu |
-| **Līdz 17. martam** | Datu bāzes uzlabojumi: `categories` atsauces tabula, meklēšanas indeksi, testdati (seed) demonstrācijai; normalizācijas pārbaudes pabeigšana |
-| **Līdz 20. martam** | Pilna front-end un back-end integrācijas testēšana; kļūdu labošana; mobilās versijas pārbaude; administratora paneļa pabeigšana (statistika, moderācija) |
-| **Līdz 23. martam** | Pilnīgi integrēts front-end ar back-end; pabeigta demonstrācija ar testdatiem; dokumentācija aktualizēta; projekts izvietots (deployed) un gatavs prezentācijai |
+> **Šodienas datums:** 10. marts 2026. Tālāk norādīts katrs posms ar konkrētu, izmērāmu sasniedzamo rezultātu.
+
+- **Līdz 7. martam** ✅ — Sasniedzamais rezultāts: darbojas pilnvērtīga produktu meklēšana un filtrēšana sākumlapā (pēc nosaukuma, kategorijas, cenas intervāla); produktu lapa ar pilnu aprakstu un "Sazināties ar pārdevēju" pogu; front-end čekautas modāls ar piegādes metodes izvēli.
+
+- **Līdz 10. martam** ✅ — Sasniedzamais rezultāts: pilnībā integrēts pasūtījumu sistēmas datu bāzes slānis — 5 jaunas tabulas (`orders`, `order_status_history`, `shipping_rates`, `parcel_lockers`, `user_transactions` pārveidota), 5 RPC funkcijas, 8 trigeri, 77 paku automāti, 18 piegādes tarifi; front-end darījumu tipi saskaņoti ar datubāzes `CHECK` ierobežojumu (8 derīgi tipi); administrācijas panelis un bilances lapa atjaunināta.
+
+- **Līdz 14. martam** — Sasniedzamais rezultāts: pircējs var izveidot pasūtījumu caur čekautas modālu, apmaksāt to no bilances un redzēt sava pasūtījuma statusu; pārdevējs var apstiprināt tikšanos vai atzīmēt nosūtīšanu; darbojas pilna eskrova plūsma (bloķēšana → apstiprinājums → atbrīvošana).
+
+- **Līdz 17. martam** — Sasniedzamais rezultāts: pabeigta vērtējumu un atsauksmju sistēma – pircējs pēc pasūtījuma var novērtēt pārdevēju (1–5 zvaigznes + komentārs); vērtējumi redzami pārdevēja profila lapā; `categories` atsauces tabula vai nostiprināts saraksts aizvieto brīvā teksta kategorijas lauku.
+
+- **Līdz 20. martam** — Sasniedzamais rezultāts: pilna front-end un back-end integrācijas testēšana – visas CRUD darbības pārbaudītas ar testdatiem (vismaz 3 lietotāji, 10 produkti, 5 pasūtījumi dažādos statusos); mobilās versijas pārbaude visās lapās; administratora paneļa moderācijas funkcijas pabeigtas (pasūtījumu pārskats, atmaksas iespēja).
+
+- **Līdz 23. martam** — Sasniedzamais rezultāts: pilnīgi integrēts front-end ar back-end; visi galvenie lietotāja scenāriji darbojas bez kļūdām (reģistrācija → pirkums → čats → piegāde → atsauksme); pabeigta demonstrācija ar reālistiskiem testdatiem; dokumentācija (`PLANOŠANA.md`, `README.md`) aktualizēta; projekts izvietots (deployed) uz Netlify/Vercel un gatavs prezentācijai.
