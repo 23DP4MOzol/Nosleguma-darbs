@@ -20,11 +20,11 @@ export async function showProductModal(product) {
     
     sellerData = seller;
     
-    // Get seller rating from reviews
+    // Get seller rating from reviews (keyed on seller_id, not product_id)
     const { data: reviews } = await supabase
       .from('reviews')
-      .select('rating, product_id')
-      .in('product_id', await getSellerProducts(product.seller_id));
+      .select('rating')
+      .eq('seller_id', product.seller_id);
     
     if (reviews && reviews.length > 0) {
       const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
@@ -157,16 +157,6 @@ export async function showProductModal(product) {
   
   document.getElementById('modalClose').onclick = closeModal;
   document.getElementById('modalOverlay').onclick = closeModal;
-}
-
-// Helper function to get seller's products
-async function getSellerProducts(sellerId) {
-  const { data } = await supabase
-    .from('products')
-    .select('id')
-    .eq('seller_id', sellerId);
-  
-  return data ? data.map(p => p.id) : [];
 }
 
 // Global functions for modal actions
