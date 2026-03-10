@@ -14,12 +14,13 @@
     "i18next-browser-languagedetector": "^8.2.0"
   },
   "devDependencies": {
-    "vite": "^7.3.1",
-    "tailwindcss": "^4.1.14",
     "@tailwindcss/postcss": "^4.1.14",
     "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.9.14",
     "postcss": "^8.5.6",
-    "baseline-browser-mapping": "^2.9.14"
+    "tailwindcss": "^4.1.14",
+    "vite": "^7.3.1",
+    "wrangler": "^4.71.0"
   },
   "engines": {
     "node": ">=18"
