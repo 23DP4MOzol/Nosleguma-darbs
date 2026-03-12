@@ -259,71 +259,88 @@ export async function updateNavbarAuth(sessionParam) {
       }
       
       // Fetch user row from database (awaited so balance/role are available below)
+      // Uses generous timeout (15s) + retry to handle Supabase free-tier cold starts
       if (!usersRow) {
         console.log('💰 [BALANCE DEBUG] No cache, querying users table...');
-        try {
-          // Try id first with timeout
-          let result = await Promise.race([
-            supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+
+        // Helper: run a single query with a timeout
+        const queryWithTimeout = (queryPromise, ms = 15000) =>
+          Promise.race([
+            queryPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
           ]);
 
+        // Helper: attempt the full lookup (id → email fallback → upsert)
+        const attemptLookup = async () => {
+          // Try id first
+          let result = await queryWithTimeout(
+            supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle()
+          );
+
           if (result?.data) {
-            usersRow = result.data;
-            console.log('💰 [BALANCE DEBUG] ID query succeeded:', usersRow);
-          } else if (result?.error) {
+            console.log('💰 [BALANCE DEBUG] ID query succeeded:', result.data);
+            return result.data;
+          }
+          if (result?.error) {
             console.warn('💰 [BALANCE DEBUG] ID query error:', result.error.message);
           }
 
           // Try email as fallback
-          if (!usersRow && user?.email) {
-            result = await Promise.race([
-              supabase.from('users').select('balance, role').eq('email', user.email).maybeSingle(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-            ]);
+          if (user?.email) {
+            result = await queryWithTimeout(
+              supabase.from('users').select('balance, role').eq('email', user.email).maybeSingle()
+            );
 
             if (result?.data) {
-              usersRow = result.data;
-              console.log('💰 [BALANCE DEBUG] Email query succeeded:', usersRow);
-            } else if (result?.error) {
+              console.log('💰 [BALANCE DEBUG] Email query succeeded:', result.data);
+              return result.data;
+            }
+            if (result?.error) {
               console.warn('💰 [BALANCE DEBUG] Email query error:', result.error.message);
             }
           }
 
-          // If STILL no user row found, auto-create one so the app works
-          if (!usersRow) {
-            console.log('💰 [BALANCE DEBUG] No users row found, auto-creating...');
-            try {
-              const { error: upsertErr } = await supabase.from('users').upsert({
-                id: user.id,
-                email: user.email,
-                username: user.user_metadata?.username || user.email?.split('@')[0] || 'User',
-                balance: 0,
-                role: 'user',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'id' });
-              if (!upsertErr) {
-                usersRow = { balance: 0, role: 'user' };
-                console.log('💰 [BALANCE DEBUG] Auto-created users row successfully');
-              } else {
-                console.warn('💰 [BALANCE DEBUG] Auto-create failed:', upsertErr.message);
-              }
-            } catch (createErr) {
-              console.warn('💰 [BALANCE DEBUG] Auto-create exception:', createErr?.message);
-            }
+          // Auto-create user row so the app works
+          console.log('💰 [BALANCE DEBUG] No users row found, auto-creating...');
+          const { error: upsertErr } = await queryWithTimeout(
+            supabase.from('users').upsert({
+              id: user.id,
+              email: user.email,
+              username: user.user_metadata?.username || user.email?.split('@')[0] || 'User',
+              balance: 0,
+              role: 'user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' })
+          );
+          if (!upsertErr) {
+            console.log('💰 [BALANCE DEBUG] Auto-created users row successfully');
+            return { balance: 0, role: 'user' };
           }
+          console.warn('💰 [BALANCE DEBUG] Auto-create failed:', upsertErr.message);
+          return null;
+        };
 
-          // Cache the result
-          if (usersRow) {
-            sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
-              userId: user.id,
-              balance: usersRow.balance,
-              role: usersRow.role
-            }));
+        // Attempt with one retry (handles DB cold-starts)
+        try {
+          usersRow = await attemptLookup();
+        } catch (firstErr) {
+          console.warn('💰 [BALANCE DEBUG] First attempt failed (' + firstErr.message + '), retrying in 2s...');
+          try {
+            await new Promise(r => setTimeout(r, 2000));
+            usersRow = await attemptLookup();
+          } catch (retryErr) {
+            console.warn('💰 [BALANCE DEBUG] Retry also failed:', retryErr.message);
           }
-        } catch (err) {
-          console.warn('💰 [BALANCE DEBUG] Query failed:', err?.message);
+        }
+
+        // Cache the result
+        if (usersRow) {
+          sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+            userId: user.id,
+            balance: usersRow.balance,
+            role: usersRow.role
+          }));
         }
       }
 
