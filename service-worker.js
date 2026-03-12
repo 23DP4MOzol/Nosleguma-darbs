@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vendly-static-v1';
+const CACHE_NAME = 'vendly-static-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -23,7 +23,16 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
   if (event.request.method !== 'GET') return;
+
+  // NEVER intercept external requests (Supabase API, CDNs, etc.)
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Skip non-navigation, non-asset requests (e.g. chrome-extension, ws://)
+  if (!event.request.url.startsWith('http')) return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
