@@ -204,9 +204,14 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       bio: bio,
       what_i_sell: whatISell,
       avatar_url: avatarUrl,
-      theme: themeManager.getTheme(),
       updated_at: new Date().toISOString()
     };
+
+    // Try adding theme to update — but don't break the save if column doesn't exist
+    // Theme is also synced via themeManager.saveToAccount() on every toggle
+    try {
+      updates.theme = themeManager.getTheme();
+    } catch (e) { /* ignore */ }
 
     // Prefer updating the row by auth user id; if absent, fallback to auth email.
     // This avoids duplicate email conflicts caused by legacy rows with a different id.
@@ -247,8 +252,10 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       if (!error) break;
 
       // Remove missing columns dynamically for older schemas
-      if (error.code === 'PGRST204') {
-        const missingColumn = (error.message || '').match(/'([^']+)' column/)?.[1];
+      // Handles PostgREST PGRST204 and PostgreSQL 42703 (undefined_column)
+      if (error.code === 'PGRST204' || error.code === '42703' || (error.message && error.message.includes('column'))) {
+        const missingColumn = (error.message || '').match(/'([^']+)' column/)?.[1]
+          || (error.message || '').match(/column ['"]?([^'"]+)['"]?/i)?.[1];
         if (missingColumn && Object.prototype.hasOwnProperty.call(updates, missingColumn)) {
           delete updates[missingColumn];
           console.warn(`users.${missingColumn} column missing; retrying profile save without it`);

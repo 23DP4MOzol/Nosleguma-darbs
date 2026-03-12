@@ -2740,48 +2740,8 @@ function initializeSettingsPage() {
      });
    }
 
-   // Theme toggle functionality
-   const userThemeToggle = document.getElementById('userThemeToggle');
-   if (userThemeToggle) {
-     userThemeToggle.addEventListener('click', async () => {
-       const html = document.documentElement;
-       const currentTheme = html.getAttribute('data-theme') || 'light';
-       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-       html.classList.remove('dark', 'light');
-       html.classList.add(newTheme);
-       html.setAttribute('data-theme', newTheme);
-       localStorage.setItem('theme', newTheme);
-
-       // Update button text with proper i18n
-       userThemeToggle.textContent = i18n.t('toggle_theme');
-
-       // Also update navbar theme toggle
-       const navThemeToggle = document.getElementById('themeToggle');
-       if (navThemeToggle) {
-         navThemeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-       }
-
-       // Save theme preference to user profile
-       try {
-         const { data } = await supabase.auth.getUser();
-         const user = data?.user;
-         if (user) {
-           await supabase
-             .from('users')
-             .update({
-               theme: newTheme,
-               updated_at: new Date().toISOString()
-             })
-             .eq('id', user.id);
-         }
-       } catch (error) {
-         console.error('Error saving theme preference:', error);
-       }
-
-       showToast(i18n.t(newTheme === 'dark' ? 'switched_to_dark' : 'switched_to_light'), 'success');
-     });
-   }
+   // Theme toggle is handled by centralized theme.js + settings.js
+   // (no duplicate handler here to avoid double-toggling)
 
    // Language change handler
    const userLangSelect = document.getElementById('userLang');
