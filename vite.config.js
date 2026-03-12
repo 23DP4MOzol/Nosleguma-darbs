@@ -18,7 +18,8 @@ export default defineConfig({
         settings: 'settings.html',
         orders: 'orders.html',
         terms: 'terms.html',
-        terms_lv: 'terms-lv.html'
+        terms_lv: 'terms-lv.html',
+        resend_verification: 'resend-verification.html'
       }
     }
   },

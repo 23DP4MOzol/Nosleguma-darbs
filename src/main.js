@@ -5,18 +5,10 @@
 import { supabase, logoutUser } from './supabase.js';
 import { CATEGORY_FIELDS, parseProductAttrs, renderAttrBadges, buildBrowseFilters, getAttrLabel } from './category-fields.js';
 
-// Expose to window for debugging convenience (best-effort)
+// Expose supabase to window for debugging convenience (best-effort)
 try {
   if (typeof window !== 'undefined') {
     window.supabase = supabase;
-    window.logoutUser = async () => {
-      try {
-        return await logoutUser();
-      } catch (e) {
-        console.error('window.logoutUser error', e);
-        return { error: e };
-      }
-    };
   }
 } catch (e) {
   // ignore
@@ -533,36 +525,6 @@ function initializeAuth() {
     });
   }
 
-  // Delegated logout handler (works if button is added later or listener missed)
-  document.addEventListener('click', async (e) => {
-    const btn = e.target.closest && e.target.closest('#logoutBtn');
-    if (!btn) return;
-    console.log('Logout button (delegated) clicked');
-    try {
-      let res;
-      if (typeof logoutUser === 'function') {
-        res = await logoutUser();
-      } else {
-        res = await supabase.auth.signOut();
-      }
-
-      console.log('Logout result:', res);
-      if (res && res.error) throw res.error;
-
-      try {
-        localStorage.removeItem('vendly_balance');
-        localStorage.removeItem('vendly_fallback_session');
-        localStorage.removeItem('supabase.auth');
-      } catch (e) {}
-
-      await updateNavbarAuth();
-      window.location.href = './index.html';
-    } catch (error) {
-      console.error('Error signing out (delegated):', error);
-      showToast('Error signing out', 'error');
-    }
-  });
-
   if (sellBtn) {
     sellBtn.addEventListener('click', async () => {
       const { data } = await supabase.auth.getUser();
@@ -621,125 +583,17 @@ function initializeAuth() {
   }
 
   // Check for hash-based session recovery (email confirmation)
-  const hash = window.location.hash;
-  if (hash.includes('access_token')) {
-    console.log('🔑 Hash detected, recovering session...');
-    setTimeout(async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (session) {
-          console.log('✅ Session recovered successfully:', session.user.email);
-          await updateNavbarAuth();
-          window.history.replaceState(null, '', window.location.pathname);
-          showInfoModal('Email Verified Successfully!', 'Email Verified');
-          
-          // Redirect if on login/register page
-          const currentPath = window.location.pathname;
-          if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
-            window.location.href = 'index.html';
-          }
-        } else if (error) {
-          console.warn('Error recovering session:', error.message);
-        }
-      } catch (err) {
-        console.warn('Session recovery failed:', err.message);
-        await updateNavbarAuth();
-      }
-    }, 500);
-  }
+  // Handled by onAuthStateChange + detectSessionInUrl: true — no extra code needed.
 
-  // Also try to get session on every page load
+  // Initial navbar update — onAuthStateChange fires INITIAL_SESSION, but add a
+  // single fallback in case Supabase is slow to emit it.
   (async () => {
-    console.log('🔍 Checking for existing session...');
-    
     try {
-      // Wait for Supabase auth to initialize - longer delay for cookie persistence
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // First try getSession which reads from storage/cookies
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.warn('Session error:', sessionError.message);
-      }
-      
-      if (session) {
-        console.log('✅ Existing session found:', session.user.email);
-        console.log('📋 Session access token present:', !!session.access_token);
-        console.log('📋 Session expires at:', session.expires_at ? new Date(session.expires_at * 1000) : 'none');
-      } else {
-        console.log('ℹ️ No session from getSession(), trying getUser()...');
-        
-        // Check for fallback session in localStorage
-        const fallbackSessionStr = localStorage.getItem('vendly_fallback_session');
-        if (fallbackSessionStr) {
-          try {
-            const fallbackSession = JSON.parse(fallbackSessionStr);
-            console.log('📦 Found fallback session for:', fallbackSession.user?.email);
-            
-            // Clear fallback after reading
-            localStorage.removeItem('vendly_fallback_session');
-            
-            // Set the session in Supabase
-            if (fallbackSession.access_token) {
-              // Create a session-like object for the navbar
-              sessionStorage.setItem('supabase.auth', JSON.stringify({
-                session_token: fallbackSession.access_token,
-                user: fallbackSession.user
-              }));
-              
-              console.log('📦 Fallback session restored from localStorage');
-              
-              // Update navbar with fallback user info
-              await updateNavbarAuth();
-              
-              // Log final auth state
-              console.log('👤 Current user (from fallback):', fallbackSession.user?.email || 'none');
-              return; // Skip normal session check
-            }
-          } catch (parseError) {
-            console.warn('Could not parse fallback session:', parseError.message);
-            localStorage.removeItem('vendly_fallback_session');
-          }
-        }
-        
-        // Fallback: try getUser() which can recover session from expired tokens
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.warn('Get user error:', userError.message);
-        }
-        
-        if (userData?.user) {
-          console.log('✅ User recovered from getUser():', userData.user.email);
-        } else {
-          console.log('ℹ️ No user found - user is not logged in');
-          
-          // Check if there are any auth cookies/storage
-          console.log('📋 Checking localStorage for supabase auth...');
-          const supabaseAuth = localStorage.getItem('supabase.auth');
-          if (supabaseAuth) {
-            console.log('📋 Found supabase.auth in localStorage (may be expired or corrupted)');
-          } else {
-            console.log('📋 No supabase.auth found in localStorage');
-          }
-        }
-      }
-      
-      // Update navbar with session info
-      await updateNavbarAuth();
-      
-      // Log final auth state for debugging
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 Current user:', user ? user.email : 'none');
+      const { data: { session } } = await supabase.auth.getSession();
+      await updateNavbarAuth(session);
     } catch (err) {
-      console.warn('Error checking session:', err.message);
-      // Still try to update navbar
-      try {
-        await updateNavbarAuth();
-      } catch (e) {
-        console.error('Failed to update navbar:', e);
-      }
+      console.warn('Initial session check failed:', err.message);
+      try { await updateNavbarAuth(); } catch (_) {}
     }
   })();
 }
