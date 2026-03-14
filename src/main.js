@@ -1015,20 +1015,39 @@ async function initializeIndexPage() {
   async function loadProducts() {
     try {
       console.log('[Products] Loading products...');
+      console.log('[Products][Debug] URL:', window.location.href);
+      console.log('[Products][Debug] Grid exists at load start:', !!document.getElementById('productGrid'));
 
       // Known-good loading strategy: try join first, then plain query fallback.
       let data, error;
+      console.log('[Products][Debug] Running join query...');
       const joinResult = await supabase
         .from('products')
         .select('*, users!seller_id(username)')
         .order('created_at', { ascending: false });
 
+      console.log('[Products][Debug] Join query result summary:', {
+        hasError: !!joinResult.error,
+        rowCount: Array.isArray(joinResult.data) ? joinResult.data.length : null,
+        errorCode: joinResult.error?.code,
+        errorMessage: joinResult.error?.message,
+        errorStatus: joinResult.error?.status
+      });
+
       if (joinResult.error) {
         console.warn('[Products] Join query failed, trying plain query:', joinResult.error.message);
+        console.log('[Products][Debug] Running plain query fallback...');
         const plainResult = await supabase
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
+        console.log('[Products][Debug] Plain query result summary:', {
+          hasError: !!plainResult.error,
+          rowCount: Array.isArray(plainResult.data) ? plainResult.data.length : null,
+          errorCode: plainResult.error?.code,
+          errorMessage: plainResult.error?.message,
+          errorStatus: plainResult.error?.status
+        });
         data = plainResult.data;
         error = plainResult.error;
       } else {
@@ -1048,6 +1067,14 @@ async function initializeIndexPage() {
       }
       allProducts = Array.isArray(data) ? data : [];
       console.log('[Products] Loaded', allProducts.length, 'products');
+      console.log('[Products][Debug] First 3 products (id/name/seller_id/stock):', allProducts.slice(0, 3).map(p => ({
+        id: p?.id,
+        name: p?.name,
+        seller_id: p?.seller_id,
+        stock: p?.stock,
+        sold_at: p?.sold_at,
+        is_reserved: p?.is_reserved
+      })));
       applyFiltersAndRender();
 
       // Favorites are optional for initial paint; refresh cards once loaded.
@@ -1079,6 +1106,7 @@ async function initializeIndexPage() {
 
   function applyFiltersAndRender() {
     let filteredProducts = [...allProducts];
+    const beforeFilterCount = filteredProducts.length;
 
     // Category filter
     if (currentCategory !== 'all') {
@@ -1238,12 +1266,30 @@ async function initializeIndexPage() {
         break;
     }
 
+    console.log('[Products][Debug] Filter pipeline summary:', {
+      beforeFilterCount,
+      afterFilterCount: filteredProducts.length,
+      currentCategory,
+      currentFilters
+    });
+
     renderProducts(filteredProducts);
   }
 
   async function renderProducts(products = null) {
     const grid = document.getElementById('productGrid');
-    if (!grid) return;
+    if (!grid) {
+      console.warn('[Products][Debug] renderProducts aborted: #productGrid not found');
+      return;
+    }
+
+    console.log('[Products][Debug] renderProducts start:', {
+      incomingProductsCount: Array.isArray(products) ? products.length : null,
+      allProductsCount: allProducts.length,
+      gridDisplay: getComputedStyle(grid).display,
+      gridVisibility: getComputedStyle(grid).visibility,
+      gridOpacity: getComputedStyle(grid).opacity
+    });
 
     const productsToRender = products || allProducts;
 
@@ -1253,6 +1299,7 @@ async function initializeIndexPage() {
         <span data-i18n="no_products">No products found</span>
         <p style="margin-top: 0.5rem; font-size: 0.875rem;">Try adjusting your filters or search terms</p>
       </div>`;
+      console.log('[Products][Debug] Rendered empty state (0 products)');
       if (i18n && typeof i18n.setLang === 'function') i18n.setLang(i18n.lang || 'en');
       return;
     }
@@ -1271,6 +1318,8 @@ async function initializeIndexPage() {
     }
 
     grid.innerHTML = '';
+    let appendedCount = 0;
+    let skippedSoldCount = 0;
 
     productsToRender.forEach(product => {
       const imageUrl = product.image_url || 'https://placehold.co/300x200/667eea/white?text=No+Image';
@@ -1304,7 +1353,10 @@ async function initializeIndexPage() {
       const canManage = (userRole === 'admin') || (currentUser && product.seller_id === currentUser.id);
 
       // Skip sold products unless sold in last 5 minutes
-      if (isSold && !isSoldRecently && !canManage) return;
+      if (isSold && !isSoldRecently && !canManage) {
+        skippedSoldCount += 1;
+        return;
+      }
 
       const card = document.createElement('div');
       card.className = 'product-card-modern';
@@ -1377,6 +1429,7 @@ async function initializeIndexPage() {
         </div>
       `;
       grid.appendChild(card);
+      appendedCount += 1;
       
       // Add management button handlers
       if (canManage) {
@@ -1400,6 +1453,13 @@ async function initializeIndexPage() {
           });
         }
       }
+    });
+
+    console.log('[Products][Debug] renderProducts finish:', {
+      requestedCount: productsToRender.length,
+      appendedCount,
+      skippedSoldCount,
+      gridChildCount: grid.children.length
     });
 
     // Apply translations to newly rendered elements (if i18n supports it)
