@@ -24,32 +24,6 @@ console.log('Supabase Anon Key configured:', !!supabaseAnonKey);
 // Configure Supabase client for static hosting (Cloudflare Pages)
 // This ensures session cookies are properly persisted and read
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  global: {
-    // Cloudflare-friendly fetch wrapper:
-    // - disables browser HTTP cache for API calls
-    // - adds a hard timeout so requests don't hang forever
-    fetch: async (input, init = {}) => {
-      const controller = new AbortController();
-      const timeoutMs = 15000;
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-      try {
-        const response = await fetch(input, {
-          ...init,
-          cache: 'no-store',
-          signal: controller.signal
-        });
-        return response;
-      } catch (err) {
-        if (err?.name === 'AbortError') {
-          throw new Error(`Supabase request timeout after ${timeoutMs}ms`);
-        }
-        throw err;
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-  },
   auth: {
     // Auto-refresh token before expiration (5 minutes before)
     autoRefreshToken: true,
