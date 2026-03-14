@@ -556,6 +556,16 @@ function initializeAuth() {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
 
+      // Broadcast auth state so page modules (e.g., product loader) can react
+      // when session restore completes after initial page render.
+      try {
+        document.dispatchEvent(new CustomEvent('vendly:auth-changed', {
+          detail: { event, session: session || null }
+        }));
+      } catch (e) {
+        // ignore event dispatch errors
+      }
+
       // Update navbar for all auth events. Pass session from the event to avoid storage race conditions.
       await updateNavbarAuth(session);
       
@@ -2162,6 +2172,17 @@ async function initializeIndexPage() {
 
   // Load products on page load
   loadProducts();
+
+  // Reload products when auth state changes (fixes race where products are
+  // requested before SIGNED_IN/INITIAL_SESSION is available).
+  document.addEventListener('vendly:auth-changed', (e) => {
+    const authEvent = e?.detail?.event;
+    if (!authEvent) return;
+    if (['INITIAL_SESSION', 'SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(authEvent)) {
+      console.log('[Products] Auth changed, reloading products:', authEvent);
+      loadProducts();
+    }
+  });
   
   // Listen for purchase/reserve events from modal
   document.addEventListener('purchaseProduct', async (e) => {
