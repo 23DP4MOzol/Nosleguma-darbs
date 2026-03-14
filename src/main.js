@@ -179,15 +179,20 @@ export async function updateNavbarAuth(sessionParam) {
   console.log('🔄 Fetching session...');
 
   let user = null;
+  // If caller explicitly passes null (e.g. SIGNED_OUT), treat it as authoritative
+  // and skip getSession() to avoid temporary stale-session flashes.
+  const forceSignedOut = sessionParam === null;
   if (sessionParam && sessionParam.user) {
     user = sessionParam.user;
     console.log('🔑 Using session passed from onAuthStateChange:', user?.email);
+  } else if (forceSignedOut) {
+    console.log('🔑 Explicit signed-out state received, skipping session fetch');
   }
   let userRole = 'user';
   let userData = null;
   
   try {
-    if (!user) {
+    if (!user && !forceSignedOut) {
       const sessionResult = await supabase.auth.getSession();
       console.log('🔄 Session result:', sessionResult);
       const { data: { session }, error: sessionError } = sessionResult;
@@ -454,8 +459,14 @@ function initializeAuth() {
   const logoutBtn = document.getElementById('logoutBtn');
   const sellBtn = document.getElementById('sellBtn');
   const settingsBtn = document.getElementById('settingsBtn');
+  let isLogoutInProgress = false;
 
   const performLogout = async (source = 'unknown') => {
+    if (isLogoutInProgress) {
+      console.log(`[Auth] Logout already in progress, ignoring (${source})`);
+      return;
+    }
+    isLogoutInProgress = true;
     console.log(`[Auth] Logout requested from: ${source}`);
 
     // Best-effort sign out: even if session is already missing/expired,
@@ -485,10 +496,12 @@ function initializeAuth() {
       localStorage.removeItem('vendly_balance');
       localStorage.removeItem('vendly_fallback_session');
       localStorage.removeItem('supabase.auth');
+      sessionStorage.removeItem('vendly_balance_cache');
     } catch (e) {}
 
     try {
-      await updateNavbarAuth();
+      // Force immediate signed-out navbar state (no stale getSession fallback)
+      await updateNavbarAuth(null);
     } catch (e) {
       console.warn('[Auth] updateNavbarAuth after logout failed:', e?.message || e);
     }
@@ -507,7 +520,9 @@ function initializeAuth() {
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
+    logoutBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       await performLogout('navbar-direct');
     });
   }
