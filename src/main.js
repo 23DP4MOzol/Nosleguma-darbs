@@ -3,12 +3,19 @@
 // =======================================
 
 import { supabase, logoutUser } from './supabase.js';
-import { CATEGORY_FIELDS, parseProductAttrs, renderAttrBadges, buildBrowseFilters, getAttrLabel } from './category-fields.js';
 
-// Expose supabase to window for debugging convenience (best-effort)
+// Expose to window for debugging convenience (best-effort)
 try {
   if (typeof window !== 'undefined') {
     window.supabase = supabase;
+    window.logoutUser = async () => {
+      try {
+        return await logoutUser();
+      } catch (e) {
+        console.error('window.logoutUser error', e);
+        return { error: e };
+      }
+    };
   }
 } catch (e) {
   // ignore
@@ -250,90 +257,74 @@ export async function updateNavbarAuth(sessionParam) {
         }
       }
       
-      // Fetch user row from database (awaited so balance/role are available below)
-      // Uses generous timeout (15s) + retry to handle Supabase free-tier cold starts
+      // If no cache, fire query in background (don't block UI)
       if (!usersRow) {
-        console.log('💰 [BALANCE DEBUG] No cache, querying users table...');
-
-        // Helper: run a single query with a timeout
-        const queryWithTimeout = (queryPromise, ms = 15000) =>
-          Promise.race([
-            queryPromise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
-          ]);
-
-        // Helper: attempt the full lookup (id → email fallback → upsert)
-        const attemptLookup = async () => {
-          // Try id first
-          let result = await queryWithTimeout(
-            supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle()
-          );
-
-          if (result?.data) {
-            console.log('💰 [BALANCE DEBUG] ID query succeeded:', result.data);
-            return result.data;
-          }
-          if (result?.error) {
-            console.warn('💰 [BALANCE DEBUG] ID query error:', result.error.message);
-          }
-
-          // Try email as fallback
-          if (user?.email) {
-            result = await queryWithTimeout(
-              supabase.from('users').select('balance, role').eq('email', user.email).maybeSingle()
-            );
-
-            if (result?.data) {
-              console.log('💰 [BALANCE DEBUG] Email query succeeded:', result.data);
-              return result.data;
-            }
-            if (result?.error) {
-              console.warn('💰 [BALANCE DEBUG] Email query error:', result.error.message);
-            }
-          }
-
-          // Auto-create user row so the app works
-          console.log('💰 [BALANCE DEBUG] No users row found, auto-creating...');
-          const { error: upsertErr } = await queryWithTimeout(
-            supabase.from('users').upsert({
-              id: user.id,
-              email: user.email,
-              username: user.user_metadata?.username || user.email?.split('@')[0] || 'User',
-              balance: 0,
-              role: 'user',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'id' })
-          );
-          if (!upsertErr) {
-            console.log('💰 [BALANCE DEBUG] Auto-created users row successfully');
-            return { balance: 0, role: 'user' };
-          }
-          console.warn('💰 [BALANCE DEBUG] Auto-create failed:', upsertErr.message);
-          return null;
-        };
-
-        // Attempt with one retry (handles DB cold-starts)
-        try {
-          usersRow = await attemptLookup();
-        } catch (firstErr) {
-          console.warn('💰 [BALANCE DEBUG] First attempt failed (' + firstErr.message + '), retrying in 2s...');
+        console.log('💰 [BALANCE DEBUG] No cache, firing background query...');
+        // Fire async query without awaiting - update UI when it completes
+        (async () => {
           try {
-            await new Promise(r => setTimeout(r, 2000));
-            usersRow = await attemptLookup();
-          } catch (retryErr) {
-            console.warn('💰 [BALANCE DEBUG] Retry also failed:', retryErr.message);
+            // Small delay to let Supabase settle
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Try id first with short timeout
+            let result = await Promise.race([
+              supabase.from('users').select('balance, role').eq('id', user.id).maybeSingle(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+            ]);
+            
+            if (result?.data) {
+              usersRow = result.data;
+              console.log('💰 [BALANCE DEBUG] Background query succeeded:', usersRow);
+              
+              // Cache it
+              sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+                userId: usersRow.id || user.id,
+                balance: usersRow.balance,
+                role: usersRow.role
+              }));
+              
+              // Update navbar if balance changed
+              if (balanceBadge) {
+                const bal = parseFloat(usersRow.balance) || 0;
+                const span = balanceBadge.querySelector('span');
+                if (span) {
+                  span.textContent = `€${bal.toFixed(2)}`;
+                  console.log('💰 [BALANCE DEBUG] Updated balance display:', span.textContent);
+                }
+              }
+              return;
+            }
+            
+            // Try email as fallback
+            if (user?.email) {
+              result = await Promise.race([
+                supabase.from('users').select('balance, role').eq('email', user.email).maybeSingle(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+              ]);
+              
+              if (result?.data) {
+                usersRow = result.data;
+                console.log('💰 [BALANCE DEBUG] Background email query succeeded:', usersRow);
+                sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
+                  userId: usersRow.id || user.id,
+                  balance: usersRow.balance,
+                  role: usersRow.role
+                }));
+                
+                if (balanceBadge) {
+                  const bal = parseFloat(usersRow.balance) || 0;
+                  const span = balanceBadge.querySelector('span');
+                  if (span) {
+                    span.textContent = `€${bal.toFixed(2)}`;
+                    console.log('💰 [BALANCE DEBUG] Updated balance display:', span.textContent);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('💰 [BALANCE DEBUG] Background query failed:', err?.message);
           }
-        }
-
-        // Cache the result
-        if (usersRow) {
-          sessionStorage.setItem('vendly_balance_cache', JSON.stringify({
-            userId: user.id,
-            balance: usersRow.balance,
-            role: usersRow.role
-          }));
-        }
+        })();
       }
 
       if (usersRow) {
@@ -400,28 +391,6 @@ export async function updateNavbarAuth(sessionParam) {
       }
     }
     
-    // ============================
-    // THEME ACCOUNT SYNC
-    // ============================
-    // Load the user's saved theme preference from their Supabase account.
-    // This runs once per navbar update (login / page load) so the user
-    // sees the same mode they chose on any device.
-    try {
-      await themeManager.loadFromAccount(supabase, user.id);
-    } catch (themeSyncErr) {
-      console.warn('Theme account sync skipped:', themeSyncErr?.message);
-    }
-
-    // Register a one-time onChange callback so every future toggle
-    // automatically saves the preference to the user's account.
-    if (!themeManager._accountSyncRegistered) {
-      themeManager._accountSyncRegistered = true;
-      themeManager.onChange((newTheme) => {
-        // Fire-and-forget — don't block UI
-        themeManager.saveToAccount(supabase, user.id, newTheme);
-      });
-    }
-
     console.log('Admin button element:', adminBtn);
     console.log('Setting admin button display for role:', userRole);
 
@@ -525,6 +494,36 @@ function initializeAuth() {
     });
   }
 
+  // Delegated logout handler (works if button is added later or listener missed)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest && e.target.closest('#logoutBtn');
+    if (!btn) return;
+    console.log('Logout button (delegated) clicked');
+    try {
+      let res;
+      if (typeof logoutUser === 'function') {
+        res = await logoutUser();
+      } else {
+        res = await supabase.auth.signOut();
+      }
+
+      console.log('Logout result:', res);
+      if (res && res.error) throw res.error;
+
+      try {
+        localStorage.removeItem('vendly_balance');
+        localStorage.removeItem('vendly_fallback_session');
+        localStorage.removeItem('supabase.auth');
+      } catch (e) {}
+
+      await updateNavbarAuth();
+      window.location.href = './index.html';
+    } catch (error) {
+      console.error('Error signing out (delegated):', error);
+      showToast('Error signing out', 'error');
+    }
+  });
+
   if (sellBtn) {
     sellBtn.addEventListener('click', async () => {
       const { data } = await supabase.auth.getUser();
@@ -583,17 +582,125 @@ function initializeAuth() {
   }
 
   // Check for hash-based session recovery (email confirmation)
-  // Handled by onAuthStateChange + detectSessionInUrl: true — no extra code needed.
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    console.log('🔑 Hash detected, recovering session...');
+    setTimeout(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (session) {
+          console.log('✅ Session recovered successfully:', session.user.email);
+          await updateNavbarAuth();
+          window.history.replaceState(null, '', window.location.pathname);
+          showInfoModal('Email Verified Successfully!', 'Email Verified');
+          
+          // Redirect if on login/register page
+          const currentPath = window.location.pathname;
+          if (currentPath.includes('login.html') || currentPath.includes('register.html')) {
+            window.location.href = 'index.html';
+          }
+        } else if (error) {
+          console.warn('Error recovering session:', error.message);
+        }
+      } catch (err) {
+        console.warn('Session recovery failed:', err.message);
+        await updateNavbarAuth();
+      }
+    }, 500);
+  }
 
-  // Initial navbar update — onAuthStateChange fires INITIAL_SESSION, but add a
-  // single fallback in case Supabase is slow to emit it.
+  // Also try to get session on every page load
   (async () => {
+    console.log('🔍 Checking for existing session...');
+    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      await updateNavbarAuth(session);
+      // Wait for Supabase auth to initialize - longer delay for cookie persistence
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // First try getSession which reads from storage/cookies
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.warn('Session error:', sessionError.message);
+      }
+      
+      if (session) {
+        console.log('✅ Existing session found:', session.user.email);
+        console.log('📋 Session access token present:', !!session.access_token);
+        console.log('📋 Session expires at:', session.expires_at ? new Date(session.expires_at * 1000) : 'none');
+      } else {
+        console.log('ℹ️ No session from getSession(), trying getUser()...');
+        
+        // Check for fallback session in localStorage
+        const fallbackSessionStr = localStorage.getItem('vendly_fallback_session');
+        if (fallbackSessionStr) {
+          try {
+            const fallbackSession = JSON.parse(fallbackSessionStr);
+            console.log('📦 Found fallback session for:', fallbackSession.user?.email);
+            
+            // Clear fallback after reading
+            localStorage.removeItem('vendly_fallback_session');
+            
+            // Set the session in Supabase
+            if (fallbackSession.access_token) {
+              // Create a session-like object for the navbar
+              sessionStorage.setItem('supabase.auth', JSON.stringify({
+                session_token: fallbackSession.access_token,
+                user: fallbackSession.user
+              }));
+              
+              console.log('📦 Fallback session restored from localStorage');
+              
+              // Update navbar with fallback user info
+              await updateNavbarAuth();
+              
+              // Log final auth state
+              console.log('👤 Current user (from fallback):', fallbackSession.user?.email || 'none');
+              return; // Skip normal session check
+            }
+          } catch (parseError) {
+            console.warn('Could not parse fallback session:', parseError.message);
+            localStorage.removeItem('vendly_fallback_session');
+          }
+        }
+        
+        // Fallback: try getUser() which can recover session from expired tokens
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.warn('Get user error:', userError.message);
+        }
+        
+        if (userData?.user) {
+          console.log('✅ User recovered from getUser():', userData.user.email);
+        } else {
+          console.log('ℹ️ No user found - user is not logged in');
+          
+          // Check if there are any auth cookies/storage
+          console.log('📋 Checking localStorage for supabase auth...');
+          const supabaseAuth = localStorage.getItem('supabase.auth');
+          if (supabaseAuth) {
+            console.log('📋 Found supabase.auth in localStorage (may be expired or corrupted)');
+          } else {
+            console.log('📋 No supabase.auth found in localStorage');
+          }
+        }
+      }
+      
+      // Update navbar with session info
+      await updateNavbarAuth();
+      
+      // Log final auth state for debugging
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user ? user.email : 'none');
     } catch (err) {
-      console.warn('Initial session check failed:', err.message);
-      try { await updateNavbarAuth(); } catch (_) {}
+      console.warn('Error checking session:', err.message);
+      // Still try to update navbar
+      try {
+        await updateNavbarAuth();
+      } catch (e) {
+        console.error('Failed to update navbar:', e);
+      }
     }
   })();
 }
@@ -851,36 +958,46 @@ async function showUserProfile(userId) {
 
 // Index page functions
 async function initializeIndexPage() {
-  if (!document.querySelector('.product-grid-modern')) {
-    console.log('[IndexPage] product-grid-modern not found, skipping index init');
-    return;
-  }
-  console.log('[IndexPage] Initializing index page...');
+  if (!document.querySelector('.product-grid-modern')) return;
 
 
   // Stats updater
   async function updateStats() {
     try {
-      console.log('[Stats] Fetching stats...');
-
-      // Products count
+      // Products count (use id only for lighter response)
       const productsResp = await supabase.from('products').select('id', { count: 'exact', head: true });
       
-      // Users count
+      // Users count - count rows in users table (use id only)
       const usersResp = await supabase.from('users').select('id', { count: 'exact', head: true });
       
-      // Sellers count - count unique seller_id from products table (manual)
+      // Sellers count - count unique seller_id from products table
+      // Using RPC to count distinct values
+      const { data: sellerData, error: sellerError } = await supabase
+        .rpc('count_unique_sellers');
+      
+      // Fallback: if RPC doesn't exist, count manually
       let sellersCount = 0;
-      const { data: sellerProducts } = await supabase.from('products').select('seller_id');
-      if (sellerProducts) {
-        const uniqueSellers = new Set(sellerProducts.map(p => p.seller_id).filter(Boolean));
-        sellersCount = uniqueSellers.size;
+      if (sellerError || !sellerData) {
+        // Manual count of unique sellers
+        const { data: products } = await supabase.from('products').select('seller_id');
+        if (products) {
+          const uniqueSellers = new Set(products.map(p => p.seller_id));
+          sellersCount = uniqueSellers.size;
+        }
+      } else {
+        sellersCount = sellerData || 0;
       }
 
       const productsCount = productsResp.count || 0;
       const usersCount = usersResp.count || 0;
 
-      console.log('[Stats] Results:', { productsCount, usersCount, sellersCount, productsError: productsResp.error, usersError: usersResp.error });
+      // Debug: log full responses for troubleshooting RLS / permission issues
+      console.log('Stats full responses:', {
+        productsResp,
+        usersResp,
+        sellerData,
+        sellerError
+      });
 
       const statsProductsEl = document.getElementById('statsProducts');
       const statsUsersEl = document.getElementById('statsUsers');
@@ -909,8 +1026,7 @@ async function initializeIndexPage() {
     brand: '',
     color: '',
     date: '',
-    sortBy: 'newest',
-    extraAttrs: {}
+    sortBy: 'newest'
   };
 
   // Load user's favorites for heart icon state
@@ -981,32 +1097,15 @@ async function initializeIndexPage() {
 
   async function loadProducts() {
     try {
-      console.log('[Products] Loading products...');
-
-      // Known-good loading strategy: try join first, then plain query fallback.
-      let data, error;
-      const joinResult = await supabase
+      const { data, error } = await supabase
         .from('products')
         .select('*, users!seller_id(username)')
         .order('created_at', { ascending: false });
 
-      if (joinResult.error) {
-        console.warn('[Products] Join query failed, trying plain query:', joinResult.error.message);
-        const plainResult = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
-        data = plainResult.data;
-        error = plainResult.error;
-      } else {
-        data = joinResult.data;
-        error = null;
-      }
-
       if (error) {
         // 401 errors are expected for unauthenticated users - don't show error toast
-        if (error.status === 401 || (error.message && error.message.includes('401'))) {
-          console.log('[Products] Products require authentication to view');
+        if (error.status === 401 || error.message.includes('401')) {
+          console.log('Products require authentication to view');
           allProducts = [];
           applyFiltersAndRender();
           return;
@@ -1014,13 +1113,8 @@ async function initializeIndexPage() {
         throw error;
       }
       allProducts = Array.isArray(data) ? data : [];
-      console.log('[Products] Loaded', allProducts.length, 'products');
+      await loadUserFavorites();
       applyFiltersAndRender();
-
-      // Favorites are optional for initial paint; refresh cards once loaded.
-      loadUserFavorites()
-        .then(() => applyFiltersAndRender())
-        .catch((favErr) => console.warn('[Products] Favorites load skipped:', favErr?.message || favErr));
       updateStats();
 
       // Check if URL has ?product= param to auto-open a product modal
@@ -1131,20 +1225,6 @@ async function initializeIndexPage() {
       );
     }
 
-    // Extra category-specific attribute filters
-    if (currentFilters.extraAttrs && Object.keys(currentFilters.extraAttrs).length > 0) {
-      filteredProducts = filteredProducts.filter(p => {
-        const { attrs } = parseProductAttrs(p.description);
-        for (const [key, filterVal] of Object.entries(currentFilters.extraAttrs)) {
-          if (!filterVal) continue;
-          const productVal = (attrs[key] || '').toLowerCase();
-          const fv = filterVal.toLowerCase();
-          if (!productVal.includes(fv)) return false;
-        }
-        return true;
-      });
-    }
-
     // Date filter
     if (currentFilters.date) {
       const now = new Date();
@@ -1228,7 +1308,7 @@ async function initializeIndexPage() {
     const { data } = await supabase.auth.getUser();
     const currentUser = data?.user;
     let userRole = 'user';
-
+    
     if (currentUser) {
       try {
         const { data: userData } = await supabase
@@ -1255,10 +1335,6 @@ async function initializeIndexPage() {
       const likesCount = parseInt(product.likes_count || 0);
       const viewsCount = parseInt(product.views_count || 0);
       const isLiked = userFavoritesSet.has(product.id);
-
-      // Parse extra attributes from description
-      const { attrs: productAttrs } = parseProductAttrs(product.description);
-      const attrBadgesHtml = renderAttrBadges(product.category, productAttrs);
 
       // Check if product was sold in the last 5 minutes
       const isSoldRecently = product.sold_at && (Date.now() - new Date(product.sold_at).getTime()) < 5 * 60 * 1000;
@@ -1323,7 +1399,6 @@ async function initializeIndexPage() {
             ${locationText ? `<span style="font-size:0.8rem; color:var(--muted);">\ud83d\udccd ${locationText}</span>` : ''}
             <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
-          ${attrBadgesHtml ? `<div class="product-extra-attrs" style="display:flex; flex-wrap:wrap; gap:0.375rem; margin-top:0.5rem;">${attrBadgesHtml}</div>` : ''}
           <div class="product-footer">
             <div class="product-price">
               ${product.original_price && product.original_price > product.price ?
@@ -1566,10 +1641,6 @@ async function initializeIndexPage() {
     const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
     const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
     const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
-
-    // Parse extra attributes from description
-    const { description: cleanDescription, attrs: modalAttrs } = parseProductAttrs(product.description);
-    const modalAttrBadges = renderAttrBadges(product.category, modalAttrs);
     
     modalBody.innerHTML = `
       <div class="modal-product-grid">
@@ -1599,15 +1670,8 @@ async function initializeIndexPage() {
           
           <div class="modal-description">
             <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">Description</h3>
-            <p>${escapeHtml(cleanDescription) || 'No description provided.'}</p>
+            <p>${escapeHtml(product.description) || 'No description provided.'}</p>
           </div>
-
-          ${modalAttrBadges ? `
-          <div class="modal-extra-attrs" style="margin-top: 1rem;">
-            <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">📋 Details</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">${modalAttrBadges}</div>
-          </div>
-          ` : ''}
           
           <!-- Product Stats -->
           <div class="modal-stats">
@@ -1723,33 +1787,9 @@ async function initializeIndexPage() {
         filterTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentCategory = tab.dataset.category || 'all';
-        updateCategoryExtraFilters(currentCategory);
         applyFiltersAndRender();
       });
     });
-  }
-
-  // Render category-specific browse filters when category changes
-  function updateCategoryExtraFilters(cat) {
-    const container = document.getElementById('categoryExtraFilters');
-    const grid = document.getElementById('extraFiltersGrid');
-    const title = document.getElementById('extraFiltersTitle');
-    if (!container || !grid) return;
-    if (!cat || cat === 'all') {
-      container.style.display = 'none';
-      grid.innerHTML = '';
-      return;
-    }
-    const html = buildBrowseFilters(cat);
-    if (!html) {
-      container.style.display = 'none';
-      grid.innerHTML = '';
-      return;
-    }
-    grid.innerHTML = html;
-    container.style.display = 'block';
-    const catNames = { electronics:'Electronics', clothing:'Clothing', furniture:'Furniture', books:'Books', sports:'Sports', home:'Home', vehicles:'Vehicles', other:'Other' };
-    if (title) title.innerHTML = `📋 <span>${catNames[cat] || cat} Filters</span>`;
   }
 
   // Advanced filters
@@ -1770,24 +1810,6 @@ async function initializeIndexPage() {
       currentFilters.date = document.getElementById('dateFilter')?.value || '';
       currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
 
-      // Also sync category dropdown → tabs
-      const catDropdown = document.getElementById('categoryFilter');
-      if (catDropdown && catDropdown.value) {
-        currentCategory = catDropdown.value;
-        filterTabs.forEach(t => {
-          t.classList.toggle('active', t.dataset.category === currentCategory);
-        });
-        updateCategoryExtraFilters(currentCategory);
-      }
-
-      // Collect extra category-specific filter values
-      currentFilters.extraAttrs = {};
-      const catFields = CATEGORY_FIELDS[currentCategory] || [];
-      catFields.forEach(f => {
-        const el = document.getElementById(`extraFilter_${f.key}`);
-        if (el && el.value) currentFilters.extraAttrs[f.key] = el.value;
-      });
-
       applyFiltersAndRender();
       updateActiveFilters();
       showToast('Filters applied successfully!', 'success');
@@ -1807,8 +1829,7 @@ async function initializeIndexPage() {
         brand: '',
         color: '',
         date: '',
-        sortBy: 'newest',
-        extraAttrs: {}
+        sortBy: 'newest'
       };
 
       // Clear form inputs
@@ -1833,9 +1854,6 @@ async function initializeIndexPage() {
       filterTabs.forEach(t => t.classList.remove('active'));
       const allTab = document.querySelector('[data-category="all"]');
       if (allTab) allTab.classList.add('active');
-
-      // Hide extra category filters
-      updateCategoryExtraFilters('all');
 
       applyFiltersAndRender();
       updateActiveFilters();
@@ -1971,41 +1989,6 @@ async function initializeIndexPage() {
 
   // Show edit product modal
   function showEditProductModal(product) {
-    // Parse existing extra attributes
-    const { description: editCleanDesc, attrs: editAttrs } = parseProductAttrs(product.description);
-    const editCat = (product.category || 'other').toLowerCase();
-    const catFields = CATEGORY_FIELDS[editCat] || [];
-
-    // Build extra fields HTML for edit modal
-    let editExtraFieldsHtml = '';
-    if (catFields.length > 0) {
-      editExtraFieldsHtml = `
-        <div style="border: 1px solid #d1d5db; border-radius: 8px; padding: 1rem; margin-top: 0.5rem;">
-          <h4 style="margin-bottom: 0.75rem; font-size: 0.9375rem; font-weight: 600;">📋 Category Details</h4>
-          <div id="editExtraFieldsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            ${catFields.map(f => {
-              const existingVal = editAttrs[f.key] || '';
-              if (f.type === 'select') {
-                const opts = f.options.map(o => `<option value="${o.value}" ${existingVal === o.value ? 'selected' : ''}>${o.label}</option>`).join('');
-                return `<div>
-                  <label style="display:block;margin-bottom:0.5rem;font-weight:500;">${f.emoji || ''} ${f.label}</label>
-                  <select id="editExtra_${f.key}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:8px;">
-                    <option value="">— Select —</option>
-                    ${opts}
-                  </select>
-                </div>`;
-              }
-              return `<div>
-                <label style="display:block;margin-bottom:0.5rem;font-weight:500;">${f.emoji || ''} ${f.label}</label>
-                <input type="${f.type || 'text'}" id="editExtra_${f.key}" value="${escapeHtml(existingVal)}"
-                  placeholder="${f.placeholder || ''}" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:8px;">
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-      `;
-    }
-
     // Create modal
     const modalHtml = `
       <div id="editProductModal" class="product-modal" style="display: flex;">
@@ -2065,10 +2048,8 @@ async function initializeIndexPage() {
               
               <div>
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
-                <textarea id="editDescription" required rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">${escapeHtml(editCleanDesc || '')}</textarea>
+                <textarea id="editDescription" required rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;">${escapeHtml(product.description || '')}</textarea>
               </div>
-
-              ${editExtraFieldsHtml}
               
               <div>
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Image URL</label>
@@ -2123,34 +2104,16 @@ async function initializeIndexPage() {
         return;
       }
 
-      // Collect extra category attributes from edit form
-      const editCat = document.getElementById('editCategory').value;
-      const editCatFields = CATEGORY_FIELDS[editCat] || [];
-      const editExtraAttrs = {};
-      editCatFields.forEach(f => {
-        const el = document.getElementById('editExtra_' + f.key);
-        if (el && el.value.trim()) editExtraAttrs[f.key] = el.value.trim();
-      });
-
-      let editDesc = document.getElementById('editDescription').value;
-      if (Object.keys(editExtraAttrs).length > 0) {
-        editDesc = editDesc + '\n<!--vendly-attrs:' + JSON.stringify(editExtraAttrs) + '-->';
-      }
-
       const productData = {
         name: document.getElementById('editName').value,
         price: parseFloat(document.getElementById('editPrice').value),
-        category: editCat,
+        category: document.getElementById('editCategory').value,
         condition: document.getElementById('editCondition').value,
         stock: parseInt(document.getElementById('editStock').value),
         location: document.getElementById('editLocation').value,
-        description: editDesc,
+        description: document.getElementById('editDescription').value,
         image_url: document.getElementById('editImageUrl').value
       };
-
-      // Also sync brand/color to top-level columns if available
-      if (editExtraAttrs.brand) productData.brand = editExtraAttrs.brand;
-      if (editExtraAttrs.color) productData.color = editExtraAttrs.color;
 
       const { updateProduct } = await import('./supabase.js');
       await updateProduct(productId, user.id, productData);
@@ -2166,7 +2129,7 @@ async function initializeIndexPage() {
 
   // Load products on page load
   loadProducts();
-
+  
   // Listen for purchase/reserve events from modal
   document.addEventListener('purchaseProduct', async (e) => {
     await handlePurchase(e.detail.productId);
@@ -2587,8 +2550,48 @@ function initializeSettingsPage() {
      });
    }
 
-   // Theme toggle is handled by centralized theme.js + settings.js
-   // (no duplicate handler here to avoid double-toggling)
+   // Theme toggle functionality
+   const userThemeToggle = document.getElementById('userThemeToggle');
+   if (userThemeToggle) {
+     userThemeToggle.addEventListener('click', async () => {
+       const html = document.documentElement;
+       const currentTheme = html.getAttribute('data-theme') || 'light';
+       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+       html.classList.remove('dark', 'light');
+       html.classList.add(newTheme);
+       html.setAttribute('data-theme', newTheme);
+       localStorage.setItem('theme', newTheme);
+
+       // Update button text with proper i18n
+       userThemeToggle.textContent = i18n.t('toggle_theme');
+
+       // Also update navbar theme toggle
+       const navThemeToggle = document.getElementById('themeToggle');
+       if (navThemeToggle) {
+         navThemeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+       }
+
+       // Save theme preference to user profile
+       try {
+         const { data } = await supabase.auth.getUser();
+         const user = data?.user;
+         if (user) {
+           await supabase
+             .from('users')
+             .update({
+               theme: newTheme,
+               updated_at: new Date().toISOString()
+             })
+             .eq('id', user.id);
+         }
+       } catch (error) {
+         console.error('Error saving theme preference:', error);
+       }
+
+       showToast(i18n.t(newTheme === 'dark' ? 'switched_to_dark' : 'switched_to_light'), 'success');
+     });
+   }
 
    // Language change handler
    const userLangSelect = document.getElementById('userLang');
