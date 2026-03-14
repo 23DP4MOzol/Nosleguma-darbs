@@ -109,6 +109,28 @@ export const i18n = {
         select_chat: "Select a chat",
         type_message: "Type a message...",
         send: "Send",
+        unknown: "Unknown",
+        delete: "Delete",
+        chat_failed_load_conversations: "Failed to load conversations.",
+        chat_no_conversations: "No conversations yet.",
+        chat_regarding: "Regarding:",
+        chat_new_conversation: "New conversation",
+        chat_remove_conversation: "Remove conversation",
+        chat_remove_conversation_confirm: "Remove conversation with",
+        chat_this_user: "this user",
+        chat_select_to_start: "Select a conversation to start chatting.",
+        chat_failed_load_messages: "Failed to load messages.",
+        chat_no_messages: "No messages yet. Start the conversation!",
+        chat_you: "You",
+        chat_failed_send_message: "Failed to send message",
+        chat_user_not_found: "User not found",
+        chat_user_not_found_hint: "User not found. They may have changed their username.",
+        chat_could_not_start: "Could not start chat. Please try again.",
+        chat_new_chat: "New Chat",
+        chat_enter_username_start: "Enter recipient username to start chat",
+        chat_start: "Start Chat",
+        chat_failed_start: "Failed to start chat",
+        chat_auth_required: "Authentication Required",
         dashboard: "Dashboard",
         overview: "Overview of marketplace activities",
         registered_users: "Registered Users",
@@ -739,6 +761,28 @@ export const i18n = {
         select_chat: "Izvēlieties čatu",
         type_message: "Ierakstiet ziņojumu...",
         send: "Sūtīt",
+        unknown: "Nezināms",
+        delete: "Dzēst",
+        chat_failed_load_conversations: "Neizdevās ielādēt sarunas.",
+        chat_no_conversations: "Vēl nav sarunu.",
+        chat_regarding: "Par:",
+        chat_new_conversation: "Jauna saruna",
+        chat_remove_conversation: "Dzēst sarunu",
+        chat_remove_conversation_confirm: "Dzēst sarunu ar",
+        chat_this_user: "šo lietotāju",
+        chat_select_to_start: "Izvēlieties sarunu, lai sāktu čatot.",
+        chat_failed_load_messages: "Neizdevās ielādēt ziņas.",
+        chat_no_messages: "Vēl nav ziņu. Sāciet sarunu!",
+        chat_you: "Tu",
+        chat_failed_send_message: "Neizdevās nosūtīt ziņu",
+        chat_user_not_found: "Lietotājs nav atrasts",
+        chat_user_not_found_hint: "Lietotājs nav atrasts. Iespējams, lietotājvārds ir mainīts.",
+        chat_could_not_start: "Neizdevās sākt čatu. Mēģiniet vēlreiz.",
+        chat_new_chat: "Jauns čats",
+        chat_enter_username_start: "Ievadiet saņēmēja lietotājvārdu, lai sāktu čatu",
+        chat_start: "Sākt čatu",
+        chat_failed_start: "Neizdevās sākt čatu",
+        chat_auth_required: "Nepieciešama autentifikācija",
         dashboard: "Panelis",
         overview: "Tirgus aktivitāšu pārskats",
         registered_users: "Reģistrētie lietotāji",
@@ -1304,6 +1348,39 @@ export const i18n = {
         });
       } catch (e) {
         console.warn('Error translating placeholders:', e);
+      }
+
+      // Translate title attributes with data-i18n-title
+      try {
+        const titleElements = document.querySelectorAll('[data-i18n-title]');
+        titleElements.forEach(el => {
+          const key = el.dataset.i18nTitle;
+          el.title = self.t(key);
+        });
+      } catch (e) {
+        console.warn('Error translating title attributes:', e);
+      }
+
+      // Translate aria-label attributes with data-i18n-aria-label
+      try {
+        const ariaElements = document.querySelectorAll('[data-i18n-aria-label]');
+        ariaElements.forEach(el => {
+          const key = el.dataset.i18nAriaLabel;
+          el.setAttribute('aria-label', self.t(key));
+        });
+      } catch (e) {
+        console.warn('Error translating aria-label attributes:', e);
+      }
+
+      // Translate value attributes with data-i18n-value (inputs/buttons)
+      try {
+        const valueElements = document.querySelectorAll('[data-i18n-value]');
+        valueElements.forEach(el => {
+          const key = el.dataset.i18nValue;
+          el.value = self.t(key);
+        });
+      } catch (e) {
+        console.warn('Error translating value attributes:', e);
       }
   
       // Translate dynamic product cards

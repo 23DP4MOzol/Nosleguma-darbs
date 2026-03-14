@@ -1,6 +1,8 @@
 import { supabase, getOrCreateConversation } from '../supabase.js';
 import { i18n } from '../i18n.js';
-import { showInfoModal, showPromptModal } from '../ui/modal.js';
+import { showConfirmModal, showInfoModal } from '../ui/modal.js';
+
+const t = (key) => i18n.t(key);
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -150,30 +152,30 @@ async function loadConversations() {
     }
   } catch (err) {
     console.error('Failed to load conversations', err);
-    chatList.innerHTML = '<div style="padding:1rem;color:var(--muted)">Failed to load conversations.</div>';
+    chatList.innerHTML = `<div style="padding:1rem;color:var(--muted)">${escapeHtml(t('chat_failed_load_conversations'))}</div>`;
   }
 }
 
 function renderConversations(convs) {
   chatList.innerHTML = '';
   if (!convs || convs.length === 0) {
-    chatList.innerHTML = '<div style="padding:1rem;color:var(--muted)">No conversations yet.</div>';
+    chatList.innerHTML = `<div style="padding:1rem;color:var(--muted)">${escapeHtml(t('chat_no_conversations'))}</div>`;
     return;
   }
   convs.forEach(conv => {
     const other = conv.buyer?.id === currentUser.id ? conv.seller : conv.buyer;
     const lastMsgTime = conv.last_message_at ? new Date(conv.last_message_at).toLocaleString() : '';
-    const lastText = conv.last_message || (conv.product?.name ? `Regarding: ${conv.product.name}` : 'New conversation');
+    const lastText = conv.last_message || (conv.product?.name ? `${t('chat_regarding')} ${conv.product.name}` : t('chat_new_conversation'));
     const item = document.createElement('div');
     item.className = 'chat-list-item';
     item.dataset.convId = conv.id;
     item.innerHTML = `
       <div class="chat-avatar avatar-circle-small">${(other?.username||'U').charAt(0).toUpperCase()}</div>
       <div class="chat-preview">
-        <div class="chat-name">${escapeHtml(other?.username || 'Unknown')}</div>
+        <div class="chat-name">${escapeHtml(other?.username || t('unknown'))}</div>
         <div class="chat-last-message">${escapeHtml(lastText)} <span class="chat-time">${lastMsgTime}</span></div>
       </div>
-      <button class="chat-delete-btn" title="Remove conversation" aria-label="Remove conversation">&times;</button>
+      <button class="chat-delete-btn" title="${escapeHtml(t('chat_remove_conversation'))}" aria-label="${escapeHtml(t('chat_remove_conversation'))}">&times;</button>
     `;
     // Click on the contact to open conversation
     item.addEventListener('click', (e) => {
@@ -188,7 +190,12 @@ function renderConversations(convs) {
     const deleteBtn = item.querySelector('.chat-delete-btn');
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const confirmed = confirm(`Remove conversation with ${other?.username || 'this user'}? This will delete all messages.`);
+      const confirmed = await showConfirmModal({
+        title: t('chat_remove_conversation'),
+        message: `${t('chat_remove_conversation_confirm')} ${other?.username || t('chat_this_user')}?`,
+        okText: t('delete'),
+        cancelText: t('cancel')
+      });
       if (!confirmed) return;
       await deleteConversation(conv.id);
     });
@@ -217,7 +224,7 @@ async function deleteConversation(convId) {
     if (activeConversation && activeConversation.id === convId) {
       activeConversation = null;
       knownMessageIds.clear();
-      chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">Select a conversation to start chatting.</div>';
+      chatMessages.innerHTML = `<div style="padding:1rem;color:var(--muted)">${escapeHtml(t('chat_select_to_start'))}</div>`;
       document.getElementById('activeUserAvatar').innerText = '';
       document.getElementById('activeUserName').innerText = '';
       document.getElementById('activeUserStatus').innerText = '';
@@ -227,7 +234,7 @@ async function deleteConversation(convId) {
     await loadConversations();
   } catch (err) {
     console.error('Failed to delete conversation', err);
-    await showInfoModal('Failed to remove conversation: ' + (err.message || err), 'Error');
+    await showInfoModal(`${t('chat_remove_conversation')} - ${t('admin_error')}: ${err.message || err}`, t('admin_error'));
   }
 }
 
@@ -249,9 +256,9 @@ async function openConversation(conv) {
 
   const other = conv.buyer?.id === currentUser.id ? conv.seller : conv.buyer;
   document.getElementById('activeUserAvatar').innerText = (other?.username||'U').charAt(0).toUpperCase();
-  document.getElementById('activeUserName').innerText = other?.username || 'Unknown';
-  document.getElementById('activeUserStatus').innerText = conv.product?.name ? `Regarding: ${conv.product.name}` : '';
-  chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">Loading messages…</div>';
+  document.getElementById('activeUserName').innerText = other?.username || t('unknown');
+  document.getElementById('activeUserStatus').innerText = conv.product?.name ? `${t('chat_regarding')} ${conv.product.name}` : '';
+  chatMessages.innerHTML = `<div style="padding:1rem;color:var(--muted)">${escapeHtml(t('loading'))}</div>`;
   try {
     const { data: messages, error } = await supabase
       .from('messages')
@@ -267,25 +274,25 @@ async function openConversation(conv) {
         try {
           // fetch full message including sender to ensure username is available
           const { data: fullMsg, error: msgErr } = await supabase.from('messages').select('*, sender:users(id,username)').eq('id', newMsg.id).maybeSingle();
-          const messageToAppend = fullMsg || (Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } }));
+          const messageToAppend = fullMsg || (Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? t('chat_you') : t('user') } }));
           appendMessage(messageToAppend);
         } catch (e) {
           console.warn('Error handling per-conversation incoming message', e);
           // fallback: append minimal message
-          appendMessage(Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } }));
+          appendMessage(Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? t('chat_you') : t('user') } }));
         }
       })
       .subscribe();
   } catch (err) {
     console.error('Failed to load messages', err);
-    chatMessages.innerHTML = '<div style="padding:1rem;color:crimson">Failed to load messages.</div>';
+    chatMessages.innerHTML = `<div style="padding:1rem;color:crimson">${escapeHtml(t('chat_failed_load_messages'))}</div>`;
   }
 }
 
 function renderMessages(messages) {
   chatMessages.innerHTML = '';
   if (!messages || messages.length === 0) {
-    chatMessages.innerHTML = '<div style="padding:1rem;color:var(--muted)">No messages yet. Start the conversation!</div>';
+    chatMessages.innerHTML = `<div style="padding:1rem;color:var(--muted)">${escapeHtml(t('chat_no_messages'))}</div>`;
     return;
   }
   messages.forEach(m => appendMessage(m));
@@ -300,7 +307,7 @@ function appendMessage(m) {
   const isSender = m.sender?.id === currentUser?.id || m.sender_id === currentUser?.id;
   const msgDiv = document.createElement('div');
   msgDiv.className = `message-group ${isSender ? 'sender' : 'receiver'}`;
-  const senderName = (m.sender && m.sender.username) ? m.sender.username : (isSender ? 'You' : 'User');
+  const senderName = (m.sender && m.sender.username) ? m.sender.username : (isSender ? t('chat_you') : t('user'));
   msgDiv.innerHTML = `
     <div class="message-avatar avatar-circle">${(senderName||'U').charAt(0).toUpperCase()}</div>
     <div class="messages-stack">
@@ -340,7 +347,7 @@ sendBtn.addEventListener('click', async () => {
     try { await loadConversations(); } catch (e) { /* ignore */ }
   } catch (err) {
     console.error('Failed to send message via RPC', err);
-    await showInfoModal('Failed to send message: ' + (err.message || err), 'Error');
+    await showInfoModal(`${t('chat_failed_send_message')}: ${err.message || err}`, t('admin_error'));
   }
 });
 
@@ -364,7 +371,7 @@ async function ensureGlobalMessageListener() {
 
           // fetch full message with sender info
           const { data: fullMsg, error: msgErr } = await supabase.from('messages').select('*, sender:users(id,username)').eq('id', newMsg.id).maybeSingle();
-          const messageToHandle = fullMsg || Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? 'You' : 'User' } });
+          const messageToHandle = fullMsg || Object.assign({}, newMsg, { sender: { id: newMsg.sender_id, username: newMsg.sender_id === currentUser?.id ? t('chat_you') : t('user') } });
 
           if (activeConversation && messageToHandle.conversation_id === activeConversation.id) {
             appendMessage(messageToHandle);
@@ -409,7 +416,7 @@ async function handleQueryParams() {
           recipientId = userRow.id;
         } else {
           console.warn('User not found with username:', sellerParam);
-          await showInfoModal('User not found. They may have changed their username.', 'User Not Found');
+          await showInfoModal(t('chat_user_not_found_hint'), t('chat_user_not_found'));
           return;
         }
       }
@@ -435,39 +442,136 @@ async function handleQueryParams() {
       }
     } catch (err) {
       console.error('Error handling query params:', err);
-      await showInfoModal('Could not start chat. Please try again.', 'Error');
+      await showInfoModal(t('chat_could_not_start'), t('admin_error'));
     }
   }
 }
 
 // ============================
-// '+' new chat button - Updated to use username
+// '+' new chat button - username suggestions
 // ============================
-const newChatBtn = document.querySelector('.chat-list-header .btn-icon-small');
-if (newChatBtn && !newChatBtn._hasHandler) {
-  newChatBtn.addEventListener('click', async () => {
-    if (!currentUser) { await showInfoModal('Please log in first', 'Authentication Required'); return; }
-    
-    // Ask for username instead of email
-    const username = await showPromptModal('Enter recipient username to start chat:', { title: 'New Chat', placeholder: 'Username' });
-    if (!username) return;
-    
+let newChatDialog = null;
+
+function removeNewChatDialog() {
+  if (newChatDialog) {
+    newChatDialog.remove();
+    newChatDialog = null;
+  }
+}
+
+async function fetchUserSuggestions(query) {
+  if (!query || query.trim().length < 2) return [];
+  const q = query.trim();
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username')
+      .neq('id', currentUser.id)
+      .ilike('username', `${q}%`)
+      .limit(8);
+    if (error) throw error;
+    if (data && data.length) return data;
+
+    const fallback = await supabase
+      .from('users')
+      .select('id, username')
+      .neq('id', currentUser.id)
+      .ilike('username', `%${q}%`)
+      .limit(8);
+    return fallback.data || [];
+  } catch (e) {
+    console.warn('Suggestion query failed:', e?.message || e);
+    return [];
+  }
+}
+
+async function openNewChatDialog() {
+  removeNewChatDialog();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  overlay.innerHTML = `
+    <div style="width:min(560px,100%);background:var(--card-bg);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);padding:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.75rem;">
+        <h3 style="margin:0;color:var(--fg);font-size:1.1rem;">${escapeHtml(t('chat_new_chat'))}</h3>
+        <button type="button" id="newChatClose" class="icon-btn" style="width:36px;height:36px;">×</button>
+      </div>
+      <label style="display:block;margin-bottom:.5rem;color:var(--muted);font-size:.9rem;">${escapeHtml(t('chat_enter_username_start'))}</label>
+      <input id="newChatUsernameInput" class="chat-input-field" style="width:100%;" placeholder="${escapeHtml(t('username'))}">
+      <div id="newChatSuggest" style="margin-top:.6rem;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg);display:none;"></div>
+      <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;">
+        <button type="button" id="newChatCancel" class="btn btn-secondary">${escapeHtml(t('cancel'))}</button>
+        <button type="button" id="newChatStart" class="btn btn-primary">${escapeHtml(t('chat_start'))}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  newChatDialog = overlay;
+
+  const input = overlay.querySelector('#newChatUsernameInput');
+  const suggest = overlay.querySelector('#newChatSuggest');
+  const closeBtn = overlay.querySelector('#newChatClose');
+  const cancelBtn = overlay.querySelector('#newChatCancel');
+  const startBtn = overlay.querySelector('#newChatStart');
+
+  let selectedUser = null;
+  let debounceTimer = null;
+
+  function closeDialog() {
+    removeNewChatDialog();
+  }
+
+  function renderSuggestions(users) {
+    suggest.innerHTML = '';
+    if (!users.length) {
+      suggest.style.display = 'none';
+      return;
+    }
+    suggest.style.display = 'block';
+    users.forEach((u) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.style.cssText = 'display:flex;width:100%;padding:.65rem .75rem;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);text-align:left;cursor:pointer;';
+      item.innerHTML = `👤 ${escapeHtml(u.username)}`;
+      item.addEventListener('click', () => {
+        selectedUser = u;
+        input.value = u.username;
+        suggest.style.display = 'none';
+      });
+      suggest.appendChild(item);
+    });
+  }
+
+  async function doStartChat() {
+    const username = input.value.trim();
+    if (!username) {
+      await showInfoModal(t('chat_enter_username_start'), t('chat_new_chat'));
+      return;
+    }
+
     try {
-      // Look up user by username (case-insensitive)
-      const { data: userRow, error } = await supabase
-        .from('users')
-        .select('id,username,email')
-        .ilike('username', username)
-        .maybeSingle();
-      
-      if (error) throw error;
-      if (!userRow) { await showInfoModal('User "' + username + '" not found. Please check the username and try again.', 'User Not Found'); return; }
-      
+      let userRow = selectedUser;
+      if (!userRow || userRow.username.toLowerCase() !== username.toLowerCase()) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id,username,email')
+          .eq('username', username)
+          .maybeSingle();
+        if (error) throw error;
+        userRow = data;
+      }
+
+      if (!userRow) {
+        await showInfoModal(`${t('chat_user_not_found')}: "${username}"`, t('chat_user_not_found'));
+        return;
+      }
+
       const recipientId = userRow.id;
       const conv = await getOrCreateConversation(null, currentUser.id, recipientId);
       if (conv) {
+        closeDialog();
         await loadConversations();
-        // Highlight the correct item in the sidebar
         const items = chatList.querySelectorAll('.chat-list-item');
         items.forEach(el => {
           el.classList.toggle('active', el.dataset.convId === conv.id);
@@ -476,8 +580,44 @@ if (newChatBtn && !newChatBtn._hasHandler) {
       }
     } catch (err) {
       console.error('Failed to create/open chat', err);
-      await showInfoModal('Failed to start chat: ' + (err.message || err), 'Error');
+      await showInfoModal(`${t('chat_failed_start')}: ${err.message || err}`, t('admin_error'));
     }
+  }
+
+  input.addEventListener('input', () => {
+    selectedUser = null;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const q = input.value.trim();
+      const users = await fetchUserSuggestions(q);
+      renderSuggestions(users);
+    }, 150);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doStartChat();
+    } else if (e.key === 'Escape') {
+      closeDialog();
+    }
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeDialog();
+  });
+  closeBtn.addEventListener('click', closeDialog);
+  cancelBtn.addEventListener('click', closeDialog);
+  startBtn.addEventListener('click', doStartChat);
+
+  setTimeout(() => input.focus(), 30);
+}
+
+const newChatBtn = document.querySelector('.chat-list-header .btn-icon-small');
+if (newChatBtn && !newChatBtn._hasHandler) {
+  newChatBtn.addEventListener('click', async () => {
+    if (!currentUser) { await showInfoModal(t('loginFirst'), t('chat_auth_required')); return; }
+    await openNewChatDialog();
   });
   newChatBtn._hasHandler = true;
 }
