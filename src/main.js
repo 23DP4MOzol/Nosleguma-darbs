@@ -993,24 +993,80 @@ async function initializeIndexPage() {
     try {
       console.log('[Products] Loading products...');
 
-      // Try with join first, fall back to plain query if join fails
-      let data, error;
-      const joinResult = await supabase
-        .from('products')
-        .select('*, users!seller_id(username)')
-        .order('created_at', { ascending: false });
+      // Defensive timeout wrapper to avoid indefinite waiting when network/db stalls.
+      const withTimeout = (promise, ms, label) => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`[Products] ${label} timeout after ${ms}ms`)), ms))
+      ]);
 
-      if (joinResult.error) {
-        console.warn('[Products] Join query failed, trying without join:', joinResult.error.message);
-        const plainResult = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
-        data = plainResult.data;
-        error = plainResult.error;
-      } else {
-        data = joinResult.data;
-        error = joinResult.error;
+      // Resolve current user once (used for fallback query by seller_id).
+      let currentUserId = null;
+      try {
+        const authResp = await withTimeout(supabase.auth.getUser(), 8000, 'auth.getUser');
+        currentUserId = authResp?.data?.user?.id || null;
+      } catch (authErr) {
+        console.warn('[Products] Could not resolve current user before load:', authErr?.message || authErr);
+      }
+
+      // Try multiple query strategies, from richest to simplest.
+      const attempts = [
+        {
+          name: 'join+ordered',
+          run: () => supabase
+            .from('products')
+            .select('*, users!seller_id(username)')
+            .order('created_at', { ascending: false })
+            .limit(200)
+        },
+        {
+          name: 'plain+ordered',
+          run: () => supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(200)
+        },
+        {
+          name: 'plain+unordered',
+          run: () => supabase
+            .from('products')
+            .select('*')
+            .limit(200)
+        },
+        {
+          name: 'seller-only fallback',
+          run: () => {
+            if (!currentUserId) {
+              return Promise.resolve({ data: [], error: null });
+            }
+            return supabase
+              .from('products')
+              .select('*')
+              .eq('seller_id', currentUserId)
+              .order('created_at', { ascending: false })
+              .limit(200);
+          }
+        }
+      ];
+
+      let data = null;
+      let error = null;
+      for (const attempt of attempts) {
+        try {
+          const resp = await withTimeout(attempt.run(), 12000, attempt.name);
+          if (resp?.error) {
+            console.warn(`[Products] ${attempt.name} failed:`, resp.error.message || resp.error);
+            error = resp.error;
+            continue;
+          }
+          data = Array.isArray(resp?.data) ? resp.data : [];
+          error = null;
+          console.log(`[Products] ${attempt.name} succeeded with`, data.length, 'rows');
+          break;
+        } catch (attemptErr) {
+          console.warn(`[Products] ${attempt.name} threw:`, attemptErr?.message || attemptErr);
+          error = attemptErr;
+        }
       }
 
       if (error) {
