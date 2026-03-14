@@ -24,6 +24,11 @@ import { showConfirmModal, showInfoModal } from './ui/modal.js';
 // AI widget disabled - requires Netlify functions setup
 // import './ai-widget.js';
 
+// Keep last auth state locally so product loading does not depend on
+// potentially slow auth.getUser()/getSession() round-trips.
+let vendlyLastAuthSession = null;
+let vendlyLastAuthUser = null;
+
 // ============================
 // UTILITY FUNCTIONS
 // ============================
@@ -173,6 +178,8 @@ export async function updateNavbarAuth(sessionParam) {
 
   let user = null;
   if (sessionParam && sessionParam.user) {
+    vendlyLastAuthSession = sessionParam;
+    vendlyLastAuthUser = sessionParam.user;
     user = sessionParam.user;
     console.log('🔑 Using session passed from onAuthStateChange:', user?.email);
   }
@@ -190,6 +197,10 @@ export async function updateNavbarAuth(sessionParam) {
       }
 
       user = session?.user || null;
+      if (session?.user) {
+        vendlyLastAuthSession = session;
+        vendlyLastAuthUser = session.user;
+      }
       console.log('👤 User from session:', user ? user.email : 'null');
     }
     
@@ -556,6 +567,14 @@ function initializeAuth() {
     supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
 
+      if (session?.user) {
+        vendlyLastAuthSession = session;
+        vendlyLastAuthUser = session.user;
+      } else if (event === 'SIGNED_OUT') {
+        vendlyLastAuthSession = null;
+        vendlyLastAuthUser = null;
+      }
+
       // Broadcast auth state so page modules (e.g., product loader) can react
       // when session restore completes after initial page render.
       try {
@@ -600,6 +619,10 @@ function initializeAuth() {
   (async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        vendlyLastAuthSession = session;
+        vendlyLastAuthUser = session.user;
+      }
       await updateNavbarAuth(session);
     } catch (err) {
       console.warn('Initial session check failed:', err.message);
@@ -993,80 +1016,24 @@ async function initializeIndexPage() {
     try {
       console.log('[Products] Loading products...');
 
-      // Defensive timeout wrapper to avoid indefinite waiting when network/db stalls.
-      const withTimeout = (promise, ms, label) => Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`[Products] ${label} timeout after ${ms}ms`)), ms))
-      ]);
+      // Known-good loading strategy: try join first, then plain query fallback.
+      let data, error;
+      const joinResult = await supabase
+        .from('products')
+        .select('*, users!seller_id(username)')
+        .order('created_at', { ascending: false });
 
-      // Resolve current user once (used for fallback query by seller_id).
-      let currentUserId = null;
-      try {
-        const authResp = await withTimeout(supabase.auth.getUser(), 8000, 'auth.getUser');
-        currentUserId = authResp?.data?.user?.id || null;
-      } catch (authErr) {
-        console.warn('[Products] Could not resolve current user before load:', authErr?.message || authErr);
-      }
-
-      // Try multiple query strategies, from richest to simplest.
-      const attempts = [
-        {
-          name: 'join+ordered',
-          run: () => supabase
-            .from('products')
-            .select('*, users!seller_id(username)')
-            .order('created_at', { ascending: false })
-            .limit(200)
-        },
-        {
-          name: 'plain+ordered',
-          run: () => supabase
-            .from('products')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(200)
-        },
-        {
-          name: 'plain+unordered',
-          run: () => supabase
-            .from('products')
-            .select('*')
-            .limit(200)
-        },
-        {
-          name: 'seller-only fallback',
-          run: () => {
-            if (!currentUserId) {
-              return Promise.resolve({ data: [], error: null });
-            }
-            return supabase
-              .from('products')
-              .select('*')
-              .eq('seller_id', currentUserId)
-              .order('created_at', { ascending: false })
-              .limit(200);
-          }
-        }
-      ];
-
-      let data = null;
-      let error = null;
-      for (const attempt of attempts) {
-        try {
-          const resp = await withTimeout(attempt.run(), 12000, attempt.name);
-          if (resp?.error) {
-            console.warn(`[Products] ${attempt.name} failed:`, resp.error.message || resp.error);
-            error = resp.error;
-            continue;
-          }
-          data = Array.isArray(resp?.data) ? resp.data : [];
-          error = null;
-          console.log(`[Products] ${attempt.name} succeeded with`, data.length, 'rows');
-          break;
-        } catch (attemptErr) {
-          console.warn(`[Products] ${attempt.name} threw:`, attemptErr?.message || attemptErr);
-          error = attemptErr;
-        }
+      if (joinResult.error) {
+        console.warn('[Products] Join query failed, trying plain query:', joinResult.error.message);
+        const plainResult = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+        data = plainResult.data;
+        error = plainResult.error;
+      } else {
+        data = joinResult.data;
+        error = null;
       }
 
       if (error) {
@@ -1082,8 +1049,8 @@ async function initializeIndexPage() {
       allProducts = Array.isArray(data) ? data : [];
       console.log('[Products] Loaded', allProducts.length, 'products');
       applyFiltersAndRender();
-      // Favorites are optional for rendering; load them in background so
-      // listings are shown immediately even if favorites query is slow.
+
+      // Favorites are optional for initial paint; refresh cards once loaded.
       loadUserFavorites()
         .then(() => applyFiltersAndRender())
         .catch((favErr) => console.warn('[Products] Favorites load skipped:', favErr?.message || favErr));
@@ -1290,21 +1257,9 @@ async function initializeIndexPage() {
       return;
     }
 
-    // Get current user info for permission checks (prefer local session cache,
-    // avoid blocking render on network-dependent auth calls).
-    let currentUser = null;
+      // Get current user info for permission checks from cached auth state.
+      let currentUser = vendlyLastAuthUser || null;
     let userRole = 'user';
-
-    try {
-      const withTimeout = (promise, ms, label) => Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
-      ]);
-      const sessionResp = await withTimeout(supabase.auth.getSession(), 2000, 'auth.getSession');
-      currentUser = sessionResp?.data?.session?.user || null;
-    } catch (authErr) {
-      console.warn('[Products] Using guest view (auth/session unavailable):', authErr?.message || authErr);
-    }
 
     // Use cached role from navbar balance cache when possible; this avoids an
     // extra DB call that can delay rendering.
@@ -1346,7 +1301,7 @@ async function initializeIndexPage() {
       };
       
       // Check if user can manage this product
-      const canManage = currentUser && (userRole === 'admin' || product.seller_id === currentUser.id);
+      const canManage = (userRole === 'admin') || (currentUser && product.seller_id === currentUser.id);
 
       // Skip sold products unless sold in last 5 minutes
       if (isSold && !isSoldRecently && !canManage) return;
