@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vendly-static-v3';
+const CACHE_NAME = 'vendly-static-v4';
 
 // No pre-cache list — Vite hashes filenames so static paths would 404.
 // Assets are cached on first fetch instead.
@@ -41,7 +41,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (JS, CSS, images) → cache-first (Vite hashes guarantee freshness)
+  // Scripts/styles → network-first to avoid stale app logic after deploy.
+  if (event.request.destination === 'script' || event.request.destination === 'style') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Other static assets (images/fonts/etc.) → cache-first
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

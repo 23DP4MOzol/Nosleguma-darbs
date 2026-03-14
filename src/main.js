@@ -1081,8 +1081,12 @@ async function initializeIndexPage() {
       }
       allProducts = Array.isArray(data) ? data : [];
       console.log('[Products] Loaded', allProducts.length, 'products');
-      await loadUserFavorites();
       applyFiltersAndRender();
+      // Favorites are optional for rendering; load them in background so
+      // listings are shown immediately even if favorites query is slow.
+      loadUserFavorites()
+        .then(() => applyFiltersAndRender())
+        .catch((favErr) => console.warn('[Products] Favorites load skipped:', favErr?.message || favErr));
       updateStats();
 
       // Check if URL has ?product= param to auto-open a product modal
@@ -1286,22 +1290,29 @@ async function initializeIndexPage() {
       return;
     }
 
-    // Get current user info for permission checks
-    const { data } = await supabase.auth.getUser();
-    const currentUser = data?.user;
+    // Get current user info for permission checks (prefer local session cache,
+    // avoid blocking render on network-dependent auth calls).
+    let currentUser = null;
     let userRole = 'user';
-    
-    if (currentUser) {
-      try {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-        userRole = userData?.role || 'user';
-      } catch (err) {
-        console.error('Error fetching user role:', err);
-      }
+
+    try {
+      const withTimeout = (promise, ms, label) => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
+      ]);
+      const sessionResp = await withTimeout(supabase.auth.getSession(), 2000, 'auth.getSession');
+      currentUser = sessionResp?.data?.session?.user || null;
+    } catch (authErr) {
+      console.warn('[Products] Using guest view (auth/session unavailable):', authErr?.message || authErr);
+    }
+
+    // Use cached role from navbar balance cache when possible; this avoids an
+    // extra DB call that can delay rendering.
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('vendly_balance_cache') || '{}');
+      if (cached?.role) userRole = cached.role;
+    } catch (e) {
+      // ignore malformed cache
     }
 
     grid.innerHTML = '';
