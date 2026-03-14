@@ -455,6 +455,47 @@ function initializeAuth() {
   const sellBtn = document.getElementById('sellBtn');
   const settingsBtn = document.getElementById('settingsBtn');
 
+  const performLogout = async (source = 'unknown') => {
+    console.log(`[Auth] Logout requested from: ${source}`);
+
+    // Best-effort sign out: even if session is already missing/expired,
+    // continue with local cleanup and redirect.
+    try {
+      let res;
+      if (typeof logoutUser === 'function') {
+        res = await logoutUser();
+      } else {
+        res = await supabase.auth.signOut();
+      }
+
+      if (res && res.error) {
+        const msg = (res.error.message || '').toLowerCase();
+        const recoverable = msg.includes('auth session missing') || msg.includes('session') || msg.includes('jwt');
+        if (recoverable) {
+          console.warn('[Auth] signOut returned recoverable error, continuing logout flow:', res.error.message);
+        } else {
+          console.warn('[Auth] signOut returned error, continuing logout flow:', res.error.message);
+        }
+      }
+    } catch (error) {
+      console.warn('[Auth] signOut threw, continuing logout flow:', error?.message || error);
+    }
+
+    try {
+      localStorage.removeItem('vendly_balance');
+      localStorage.removeItem('vendly_fallback_session');
+      localStorage.removeItem('supabase.auth');
+    } catch (e) {}
+
+    try {
+      await updateNavbarAuth();
+    } catch (e) {
+      console.warn('[Auth] updateNavbarAuth after logout failed:', e?.message || e);
+    }
+
+    window.location.href = './index.html';
+  };
+
   if (loginBtn) {
     console.log('Login button found, attaching listener');
     loginBtn.addEventListener('click', () => {
@@ -467,61 +508,16 @@ function initializeAuth() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      try {
-        // Prefer centralized helper which also clears fallback storage
-        let res;
-        if (typeof logoutUser === 'function') {
-          res = await logoutUser();
-        } else {
-          res = await supabase.auth.signOut();
-        }
-
-        if (res && res.error) throw res.error;
-
-        // Ensure app-specific keys cleared
-        try {
-          localStorage.removeItem('vendly_balance');
-          localStorage.removeItem('vendly_fallback_session');
-          localStorage.removeItem('supabase.auth');
-        } catch (e) {}
-
-        await updateNavbarAuth();
-        window.location.href = './index.html';
-      } catch (error) {
-        console.error('Error signing out:', error);
-        showToast('Error signing out', 'error');
-      }
+      await performLogout('navbar-direct');
     });
   }
 
   // Delegated logout handler (works if button is added later or listener missed)
   document.addEventListener('click', async (e) => {
-    const btn = e.target.closest && e.target.closest('#logoutBtn');
+    const btn = e.target.closest && e.target.closest('#logoutBtn, #settingsLogoutBtn');
     if (!btn) return;
-    console.log('Logout button (delegated) clicked');
-    try {
-      let res;
-      if (typeof logoutUser === 'function') {
-        res = await logoutUser();
-      } else {
-        res = await supabase.auth.signOut();
-      }
-
-      console.log('Logout result:', res);
-      if (res && res.error) throw res.error;
-
-      try {
-        localStorage.removeItem('vendly_balance');
-        localStorage.removeItem('vendly_fallback_session');
-        localStorage.removeItem('supabase.auth');
-      } catch (e) {}
-
-      await updateNavbarAuth();
-      window.location.href = './index.html';
-    } catch (error) {
-      console.error('Error signing out (delegated):', error);
-      showToast('Error signing out', 'error');
-    }
+    e.preventDefault();
+    await performLogout(btn.id === 'settingsLogoutBtn' ? 'settings-delegated' : 'navbar-delegated');
   });
 
   if (sellBtn) {

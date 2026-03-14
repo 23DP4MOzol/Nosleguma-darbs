@@ -420,8 +420,16 @@ document.getElementById('userThemeToggle')?.addEventListener('click', () => {
 // ============================
 // Logout from Settings
 // ============================
-document.getElementById('settingsLogoutBtn')?.addEventListener('click', async () => {
-  await logoutUser();
+document.getElementById('settingsLogoutBtn')?.addEventListener('click', async (e) => {
+  if (e) e.preventDefault();
+  try {
+    const res = await logoutUser();
+    if (res?.error) {
+      console.warn('Settings logout returned error, continuing redirect:', res.error.message || res.error);
+    }
+  } catch (err) {
+    console.warn('Settings logout threw, continuing redirect:', err?.message || err);
+  }
   window.location.href = 'index.html';
 });
 
