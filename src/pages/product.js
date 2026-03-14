@@ -75,6 +75,140 @@ logoutBtn.addEventListener('click', async () => {
 let currentFilter = 'all';
 let allProducts = [];
 let userFavorites = new Set();
+let productViewsChannel = null;
+
+function getOrCreateGuestViewerId() {
+  try {
+    let guestId = localStorage.getItem('vendly_guest_viewer_id');
+    if (!guestId) {
+      guestId = (crypto?.randomUUID?.() || `guest_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      localStorage.setItem('vendly_guest_viewer_id', guestId);
+    }
+    return guestId;
+  } catch (e) {
+    return `guest_fallback_${Date.now()}`;
+  }
+}
+
+async function getViewerScopeKey() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) return `user:${user.id}`;
+  } catch (e) {
+    // ignore and fallback to guest
+  }
+  return `guest:${getOrCreateGuestViewerId()}`;
+}
+
+function getViewedStorageKey(viewerScope) {
+  return `vendly_viewed_products_${viewerScope}`;
+}
+
+function hasViewedProduct(viewerScope, productId) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getViewedStorageKey(viewerScope)) || '[]');
+    return Array.isArray(parsed) && parsed.includes(String(productId));
+  } catch (e) {
+    return false;
+  }
+}
+
+function markProductViewed(viewerScope, productId) {
+  try {
+    const key = getViewedStorageKey(viewerScope);
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    const set = new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+    set.add(String(productId));
+    localStorage.setItem(key, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    // ignore storage failures
+  }
+}
+
+function updateProductViewsUI(productId, viewsCount) {
+  const safeCount = Number.isFinite(Number(viewsCount)) ? parseInt(viewsCount) : 0;
+
+  const idx = allProducts.findIndex(p => String(p.id) === String(productId));
+  if (idx !== -1) allProducts[idx].views_count = safeCount;
+
+  document.querySelectorAll(`[data-views-for="${productId}"]`).forEach(el => {
+    el.textContent = `👁️ ${safeCount}`;
+  });
+}
+
+async function fetchAndSyncProductViews(productId) {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, views_count')
+      .eq('id', productId)
+      .single();
+    if (!error && data) {
+      updateProductViewsUI(productId, data.views_count || 0);
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function recordProductView(productId) {
+  try {
+    const viewerScope = await getViewerScopeKey();
+    if (hasViewedProduct(viewerScope, productId)) {
+      return { counted: false };
+    }
+
+    markProductViewed(viewerScope, productId);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      await supabase.from('product_views').upsert(
+        { user_id: user.id, product_id: productId, created_at: new Date().toISOString() },
+        { onConflict: 'user_id,product_id' }
+      );
+    } else {
+      const current = allProducts.find(p => String(p.id) === String(productId));
+      const next = (parseInt(current?.views_count || 0) || 0) + 1;
+      await supabase.from('products').update({ views_count: next }).eq('id', productId);
+    }
+
+    const current = allProducts.find(p => String(p.id) === String(productId));
+    if (current) {
+      updateProductViewsUI(productId, (parseInt(current.views_count || 0) || 0) + 1);
+    }
+    fetchAndSyncProductViews(productId);
+    return { counted: true };
+  } catch (error) {
+    console.warn('recordProductView failed:', error?.message || error);
+    return { counted: false, error };
+  }
+}
+
+function setupProductViewsRealtime() {
+  try {
+    if (productViewsChannel) {
+      supabase.removeChannel(productViewsChannel);
+      productViewsChannel = null;
+    }
+
+    productViewsChannel = supabase
+      .channel('product-page-views-live')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products' },
+        (payload) => {
+          const oldViews = parseInt(payload?.old?.views_count || 0);
+          const newViews = parseInt(payload?.new?.views_count || 0);
+          if (Number.isFinite(newViews) && newViews !== oldViews) {
+            updateProductViewsUI(payload.new.id, newViews);
+          }
+        }
+      )
+      .subscribe();
+  } catch (error) {
+    console.warn('setupProductViewsRealtime failed:', error?.message || error);
+  }
+}
 
 // Load products based on current filter
 async function loadProducts() {
@@ -235,7 +369,7 @@ function displayProducts(products) {
         <h3 class="product-name">${product.name}</h3>
         <div class="product-meta" style="display:flex; gap:1rem; align-items:center; margin-bottom:0.25rem;">
           <span style="font-size:0.8rem; color:var(--muted);" data-likes>❤️ ${likesCount}</span>
-          <span style="font-size:0.8rem; color:var(--muted);">👁️ ${viewsCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);" data-views-for="${product.id}">👁️ ${viewsCount}</span>
           <span style="font-size:0.8rem; color:var(--muted);">📦 ${product.stock || 0}</span>
         </div>
         ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">Sold on ${soldDate}</div>` : ''}
@@ -269,10 +403,11 @@ function displayProducts(products) {
 function attachProductEventListeners() {
   // Product card click - navigate to product listing page
   document.querySelectorAll('.product-card-modern').forEach(card => {
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const productId = card.dataset.productId;
       // Only navigate if clicking on the card itself, not buttons
       if (!e.target.closest('button')) {
+        await recordProductView(productId);
         window.location.href = `index.html?product=${productId}`;
       }
     });
@@ -289,9 +424,10 @@ function attachProductEventListeners() {
 
   // Quick view buttons
   document.querySelectorAll('.btn-quick-view').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const productId = btn.dataset.productId;
+      await recordProductView(productId);
       showProductModal(productId);
     });
   });
@@ -608,6 +744,7 @@ async function initializePage() {
 
   await loadUser();
   await loadProducts();
+  setupProductViewsRealtime();
   setupRealtimeListeners();
 }
 

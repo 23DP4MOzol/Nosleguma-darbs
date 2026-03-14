@@ -1024,6 +1024,7 @@ async function initializeIndexPage() {
 
   // Product rendering and filtering
   let allProducts = [];
+  let productViewsChannel = null;
   let currentCategory = 'all';
   let userFavoritesSet = new Set(); // Track user's liked products
   let currentFilters = {
@@ -1089,20 +1090,147 @@ async function initializeIndexPage() {
     }
   }
 
-  // Record a product view (per user, counted once)
-  async function recordProductView(productId) {
+  function getOrCreateGuestViewerId() {
+    try {
+      let guestId = localStorage.getItem('vendly_guest_viewer_id');
+      if (!guestId) {
+        guestId = (crypto?.randomUUID?.() || `guest_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+        localStorage.setItem('vendly_guest_viewer_id', guestId);
+      }
+      return guestId;
+    } catch (e) {
+      return `guest_fallback_${Date.now()}`;
+    }
+  }
+
+  async function getViewerScopeKey() {
     try {
       const { data: authData } = await supabase.auth.getUser();
-      if (!authData?.user) return;
-      await supabase.from('product_views').upsert(
-        { user_id: authData.user.id, product_id: productId, created_at: new Date().toISOString() },
-        { onConflict: 'user_id,product_id' }
-      );
-      // Update local count
+      if (authData?.user?.id) return `user:${authData.user.id}`;
+    } catch (e) {
+      // ignore and fallback to guest
+    }
+    return `guest:${getOrCreateGuestViewerId()}`;
+  }
+
+  function getViewedStorageKey(viewerScope) {
+    return `vendly_viewed_products_${viewerScope}`;
+  }
+
+  function hasViewedProduct(viewerScope, productId) {
+    try {
+      const key = getViewedStorageKey(viewerScope);
+      const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(parsed) && parsed.includes(String(productId));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function markProductViewed(viewerScope, productId) {
+    try {
+      const key = getViewedStorageKey(viewerScope);
+      const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+      const set = new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+      set.add(String(productId));
+      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }
+
+  function updateProductViewsUI(productId, viewsCount) {
+    const safeCount = Number.isFinite(Number(viewsCount)) ? parseInt(viewsCount) : 0;
+
+    const target = allProducts.find(p => String(p.id) === String(productId));
+    if (target) target.views_count = safeCount;
+
+    document.querySelectorAll(`[data-views-for="${productId}"]`).forEach(el => {
+      el.textContent = `👁 ${safeCount}`;
+    });
+
+    const modal = document.getElementById('productModal');
+    const modalViewsEl = document.getElementById('modalViewsCount');
+    if (modal && modal.dataset.productId && String(modal.dataset.productId) === String(productId) && modalViewsEl) {
+      modalViewsEl.textContent = `👁️ ${safeCount}`;
+    }
+  }
+
+  async function fetchAndSyncProductViews(productId) {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, views_count')
+        .eq('id', productId)
+        .single();
+      if (!error && data) {
+        updateProductViewsUI(productId, data.views_count || 0);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Record a product view once per logged-in user or guest device
+  async function recordProductView(productId) {
+    try {
+      const viewerScope = await getViewerScopeKey();
+      if (hasViewedProduct(viewerScope, productId)) {
+        return { counted: false };
+      }
+
+      markProductViewed(viewerScope, productId);
+
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id || null;
+
+      if (userId) {
+        await supabase.from('product_views').upsert(
+          { user_id: userId, product_id: productId, created_at: new Date().toISOString() },
+          { onConflict: 'user_id,product_id' }
+        );
+      } else {
+        const prod = allProducts.find(p => String(p.id) === String(productId));
+        const next = (parseInt(prod?.views_count || 0) || 0) + 1;
+        await supabase.from('products').update({ views_count: next }).eq('id', productId);
+      }
+
       const prod = allProducts.find(p => String(p.id) === String(productId));
-      if (prod) prod.views_count = (prod.views_count || 0) + 1;
+      if (prod) {
+        updateProductViewsUI(productId, (parseInt(prod.views_count || 0) || 0) + 1);
+      }
+
+      fetchAndSyncProductViews(productId);
+      return { counted: true };
     } catch (e) {
       // Silently fail - view tracking is optional
+      return { counted: false, error: e };
+    }
+  }
+
+  function setupProductViewsRealtime() {
+    try {
+      if (productViewsChannel) {
+        supabase.removeChannel(productViewsChannel);
+        productViewsChannel = null;
+      }
+
+      productViewsChannel = supabase
+        .channel('products-views-live')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'products' },
+          (payload) => {
+            const oldViews = parseInt(payload?.old?.views_count || 0);
+            const newViews = parseInt(payload?.new?.views_count || 0);
+            if (Number.isFinite(newViews) && newViews !== oldViews) {
+              updateProductViewsUI(payload.new.id, newViews);
+            }
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime views subscription failed:', e?.message || e);
     }
   }
 
@@ -1373,8 +1501,8 @@ async function initializeIndexPage() {
       
       // Add click handler to open modal and record view
       card.addEventListener('click', (e) => {
-        // Don't open modal if clicking action buttons or like button
-        if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve') && !e.target.closest('.product-like-btn')) {
+        // Don't open modal if clicking action buttons or like/quick-view button
+        if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve') && !e.target.closest('.product-like-btn') && !e.target.closest('.btn-quick-view')) {
           recordProductView(product.id);
           showProductModal(product);
         }
@@ -1406,7 +1534,7 @@ async function initializeIndexPage() {
           </div>
           <div class="product-meta" style="display:flex; gap:1rem; align-items:center;">
             <span style="font-size:0.8rem; color:var(--muted);">\u2764\ufe0f ${likesCount}</span>
-            <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udc41 ${viewsCount}</span>
+            <span style="font-size:0.8rem; color:var(--muted);" data-views-for="${escapeHtml(product.id)}">\ud83d\udc41 ${viewsCount}</span>
             ${locationText ? `<span style="font-size:0.8rem; color:var(--muted);">\ud83d\udccd ${locationText}</span>` : ''}
             <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
@@ -1522,6 +1650,7 @@ async function initializeIndexPage() {
         const productId = e.currentTarget.dataset.id;
         const product = allProducts.find(p => String(p.id) === String(productId));
         if (product) {
+          recordProductView(product.id);
           showProductModal(product);
         }
       });
@@ -1603,6 +1732,7 @@ async function initializeIndexPage() {
   async function showProductModal(product) {
     const modal = document.getElementById('productModal');
     if (!modal) return;
+    modal.dataset.productId = String(product.id);
     
     const modalBody = modal.querySelector('.modal-body');
     
@@ -1691,7 +1821,7 @@ async function initializeIndexPage() {
               <div class="modal-stat-label">Likes</div>
             </div>
             <div class="modal-stat">
-              <div class="modal-stat-value">👁️ ${productViews}</div>
+              <div class="modal-stat-value" id="modalViewsCount">👁️ ${productViews}</div>
               <div class="modal-stat-label">Views</div>
             </div>
           </div>
@@ -2139,6 +2269,7 @@ async function initializeIndexPage() {
   }
 
   // Load products on page load
+  setupProductViewsRealtime();
   loadProducts();
   
   // Listen for purchase/reserve events from modal
