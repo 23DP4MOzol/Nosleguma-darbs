@@ -106,8 +106,34 @@ async function initNotifications() {
     }
     updateNotifBadge();
 
-    // Read user preferences stored in localStorage (defaults to enabled)
-    const prefs = Object.assign({ orders: true, reviews: true, comments: true }, JSON.parse(localStorage.getItem('vendly_notifications_pref') || '{}'));
+    // Read user notification preferences from server-side users table (defaults to enabled)
+    let prefs = { orders: true, reviews: true, comments: true };
+    try {
+      const { data: userPrefsRow } = await supabase
+        .from('users')
+        .select('notification_preferences, notify_orders, notify_reviews, notify_comments')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (userPrefsRow?.notification_preferences) {
+        const parsed = typeof userPrefsRow.notification_preferences === 'string'
+          ? JSON.parse(userPrefsRow.notification_preferences)
+          : userPrefsRow.notification_preferences;
+        prefs = {
+          orders: parsed?.orders !== false,
+          reviews: parsed?.reviews !== false,
+          comments: parsed?.comments !== false
+        };
+      } else {
+        prefs = {
+          orders: userPrefsRow?.notify_orders !== false,
+          reviews: userPrefsRow?.notify_reviews !== false,
+          comments: userPrefsRow?.notify_comments !== false
+        };
+      }
+    } catch (e) {
+      console.warn('Could not load notification preferences from server, using defaults', e?.message || e);
+    }
 
     // Subscribe to relevant tables via Realtime (Postgres changes)
     // Orders

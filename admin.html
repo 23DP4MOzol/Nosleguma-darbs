@@ -29,7 +29,6 @@
         <div class="dropdown" id="pagesDropdown">
           <button class="dropdown-btn">☰</button>
           <div class="dropdown-menu">
-            <a href="settings.html" class="dropdown-item">Settings</a>
             <a href="admin.html" class="dropdown-item" id="adminBtn">Admin</a>
             <a href="chat.html" class="dropdown-item">Chat</a>
             <a href="product.html" class="dropdown-item">Products</a>
@@ -41,14 +40,16 @@
           <option value="lv">Latviešu</option>
         </select>
 
+        <a href="settings.html" class="icon-btn">⚙️</a>
+
         <!-- Notifications -->
         <button class="icon-btn" id="notificationsBtn" aria-haspopup="true" aria-expanded="false">🔔 <span class="notif-badge" id="notifBadge" style="display:none; font-size:0.75rem; background:var(--primary); color:white; border-radius:999px; padding:0 6px; margin-left:6px;">0</span></button>
-        <div class="notifications-dropdown" id="notificationsDropdown" style="display:none; position:absolute; right:1rem; top:60px; background:var(--card-bg); border-radius:12px; box-shadow:var(--shadow-md); width:320px; max-height:420px; overflow:auto; z-index:9999;">
+        <div class="notifications-dropdown" id="notificationsDropdown" style="display:none;">
           <div style="padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
-            <strong>Notifications</strong>
-            <button id="clearNotifBtn" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
+            <strong data-i18n="notifications_title">Notifications</strong>
+            <button id="clearNotifBtn" data-i18n="notifications_clear" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
           </div>
-          <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;"></ul>
+          <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;" data-i18n="notifications_none"></ul>
         </div>
 
         <button class="icon-btn" id="themeToggle">🌙</button>

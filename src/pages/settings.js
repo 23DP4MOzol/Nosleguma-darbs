@@ -462,14 +462,9 @@ document.getElementById('userThemeToggle')?.addEventListener('click', () => {
 // ============================
 
 function loadNotificationPrefs() {
-  try {
-    const prefs = JSON.parse(localStorage.getItem('vendly_notifications_pref') || '{}');
-    document.getElementById('notifOrders').checked = prefs.orders !== false;
-    document.getElementById('notifReviews').checked = prefs.reviews !== false;
-    document.getElementById('notifComments').checked = prefs.comments !== false;
-  } catch (e) {
-    // defaults are true
-  }
+  document.getElementById('notifOrders').checked = true;
+  document.getElementById('notifReviews').checked = true;
+  document.getElementById('notifComments').checked = true;
 }
 
 async function saveNotificationPrefs() {
@@ -478,7 +473,6 @@ async function saveNotificationPrefs() {
     reviews: !!document.getElementById('notifReviews')?.checked,
     comments: !!document.getElementById('notifComments')?.checked
   };
-  try { localStorage.setItem('vendly_notifications_pref', JSON.stringify(prefs)); } catch (e) {}
 
   // Persist server-side when user is signed in
   try {

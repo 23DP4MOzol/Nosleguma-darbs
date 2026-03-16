@@ -205,6 +205,9 @@ body {
   transition: var(--transition);
 }
 
+/* ensure dropdowns inside navbar-links position relative to the button */
+.navbar .navbar-links { position: relative; }
+
 /* Light mode navbar */
 html[data-theme="light"] .navbar,
 html.light .navbar {
@@ -401,10 +404,17 @@ html[data-theme="dark"] .dropdown-menu {
 
 /* Notifications dropdown styling */
 .notifications-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   border: 1px solid var(--border);
   background: var(--card-bg);
   border-radius: 12px;
   overflow: hidden;
+  width: 320px;
+  max-height: 420px;
+  box-shadow: var(--shadow-md);
+  z-index: 9999;
 }
 
 .notifications-dropdown .notification-item {
