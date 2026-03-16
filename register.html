@@ -401,6 +401,16 @@
         <option value="lv">Latviešu</option>
       </select>
 
+      <!-- Notifications -->
+      <button class="icon-btn" id="notificationsBtn" aria-haspopup="true" aria-expanded="false">🔔 <span class="notif-badge" id="notifBadge" style="display:none; font-size:0.75rem; background:var(--primary); color:white; border-radius:999px; padding:0 6px; margin-left:6px;">0</span></button>
+      <div class="notifications-dropdown" id="notificationsDropdown" style="display:none; position:absolute; right:1rem; top:60px; background:var(--card-bg); border-radius:12px; box-shadow:var(--shadow-md); width:320px; max-height:420px; overflow:auto; z-index:9999;">
+        <div style="padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+          <strong>Notifications</strong>
+          <button id="clearNotifBtn" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
+        </div>
+        <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;"></ul>
+      </div>
+
       <!-- Dark/Light Mode -->
       <button class="icon-btn" id="themeToggle">🌙</button>
 

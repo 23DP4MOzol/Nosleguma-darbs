@@ -399,6 +399,58 @@ html[data-theme="dark"] .dropdown-menu {
   border-color: var(--border);
 }
 
+/* Notifications dropdown styling */
+.notifications-dropdown {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.notifications-dropdown .notification-item {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.notifications-dropdown .notification-item:last-child { border-bottom: none; }
+
+.notifications-dropdown .notification-title {
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.notifications-dropdown .notification-body {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.notifications-dropdown .notification-date {
+  color: var(--muted);
+  font-size: 0.75rem;
+  align-self: flex-end;
+}
+
+.notif-badge {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
+  text-align: center;
+  background: var(--primary);
+  color: white;
+  border-radius: 999px;
+  padding: 0 6px;
+}
+
+/* Make notifications dropdown responsive on small screens */
+@media (max-width: 600px) {
+  .notifications-dropdown { right: 8px !important; left: 8px !important; width: auto !important; }
+}
+
 html.dark .dropdown-item,
 html[data-theme="dark"] .dropdown-item {
   color: var(--fg);

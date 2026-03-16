@@ -44,6 +44,16 @@
         <option value="lv">Latviešu</option>
       </select>
 
+      <!-- Notifications -->
+      <button class="icon-btn" id="notificationsBtn" aria-haspopup="true" aria-expanded="false">🔔 <span class="notif-badge" id="notifBadge" style="display:none; font-size:0.75rem; background:var(--primary); color:white; border-radius:999px; padding:0 6px; margin-left:6px;">0</span></button>
+      <div class="notifications-dropdown" id="notificationsDropdown" style="display:none; position:absolute; right:1rem; top:60px; background:var(--card-bg); border-radius:12px; box-shadow:var(--shadow-md); width:320px; max-height:420px; overflow:auto; z-index:9999;">
+        <div style="padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+          <strong>Notifications</strong>
+          <button id="clearNotifBtn" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
+        </div>
+        <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;"></ul>
+      </div>
+
       <!-- Dark/Light Mode -->
       <button class="icon-btn" id="themeToggle">🌙</button>
 
@@ -163,6 +173,20 @@
         <label style="display: block; margin-bottom: 1rem;">
           <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="theme">Theme</span>
           <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%; padding: 0.75rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;"></button>
+        </label>
+
+        <!-- Notification Preferences -->
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);">Notifications</span>
+          <div style="display:flex; flex-direction: column; gap:0.5rem;">
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifOrders" checked> <span>Orders</span></label>
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifReviews" checked> <span>Reviews</span></label>
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifComments" checked> <span>Comments</span></label>
+            <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+              <button id="requestNotifPermissionBtn" class="btn-secondary" style="flex:1;">Request Browser Permission</button>
+              <button id="testNotifBtn" class="btn-secondary" style="flex:1;">Send Test</button>
+            </div>
+          </div>
         </label>
 
         <!-- Change Password Section -->

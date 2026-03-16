@@ -110,6 +110,30 @@ async function loadUserProfile() {
       whatISellInput.value = resolvedUserData.what_i_sell;
     }
 
+    // Load notification preferences (server-side preferred)
+    try {
+      let prefs = null;
+      if (resolvedUserData && resolvedUserData.notification_preferences) {
+        prefs = typeof resolvedUserData.notification_preferences === 'string' ? JSON.parse(resolvedUserData.notification_preferences) : resolvedUserData.notification_preferences;
+      } else {
+        // fallback to individual columns
+        prefs = {
+          orders: resolvedUserData?.notify_orders !== undefined ? !!resolvedUserData.notify_orders : undefined,
+          reviews: resolvedUserData?.notify_reviews !== undefined ? !!resolvedUserData.notify_reviews : undefined,
+          comments: resolvedUserData?.notify_comments !== undefined ? !!resolvedUserData.notify_comments : undefined
+        };
+      }
+
+      // apply prefs if defined, otherwise fall back to localStorage defaults handled elsewhere
+      if (prefs) {
+        if (typeof prefs.orders !== 'undefined') document.getElementById('notifOrders').checked = !!prefs.orders;
+        if (typeof prefs.reviews !== 'undefined') document.getElementById('notifReviews').checked = !!prefs.reviews;
+        if (typeof prefs.comments !== 'undefined') document.getElementById('notifComments').checked = !!prefs.comments;
+      }
+    } catch (e) {
+      console.warn('Could not load notification prefs from server', e);
+    }
+
     const avatarImg = document.getElementById('userAvatar');
     const avatarText = document.getElementById('userAvatarText');
     const avatarUrlInput = document.getElementById('avatarUrlInput');
@@ -206,6 +230,20 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       avatar_url: avatarUrl,
       updated_at: new Date().toISOString()
     };
+
+    // Include notification preferences (will be removed automatically by save logic if column missing)
+    try {
+      const prefs = {
+        orders: !!document.getElementById('notifOrders')?.checked,
+        reviews: !!document.getElementById('notifReviews')?.checked,
+        comments: !!document.getElementById('notifComments')?.checked
+      };
+      updates.notification_preferences = prefs; // attempt to save JSON/object
+      // also set legacy boolean columns for compatibility
+      updates.notify_orders = prefs.orders;
+      updates.notify_reviews = prefs.reviews;
+      updates.notify_comments = prefs.comments;
+    } catch (e) { /* ignore if DOM missing */ }
 
     // Try adding theme to update — but don't break the save if column doesn't exist
     // Theme is also synced via themeManager.saveToAccount() on every toggle
@@ -418,6 +456,109 @@ document.getElementById('userThemeToggle')?.addEventListener('click', () => {
 });
 
 // ============================
+
+// ============================
+// Notification Preferences
+// ============================
+
+function loadNotificationPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('vendly_notifications_pref') || '{}');
+    document.getElementById('notifOrders').checked = prefs.orders !== false;
+    document.getElementById('notifReviews').checked = prefs.reviews !== false;
+    document.getElementById('notifComments').checked = prefs.comments !== false;
+  } catch (e) {
+    // defaults are true
+  }
+}
+
+async function saveNotificationPrefs() {
+  const prefs = {
+    orders: !!document.getElementById('notifOrders')?.checked,
+    reviews: !!document.getElementById('notifReviews')?.checked,
+    comments: !!document.getElementById('notifComments')?.checked
+  };
+  try { localStorage.setItem('vendly_notifications_pref', JSON.stringify(prefs)); } catch (e) {}
+
+  // Persist server-side when user is signed in
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('users').update({
+      notification_preferences: prefs,
+      notify_orders: prefs.orders,
+      notify_reviews: prefs.reviews,
+      notify_comments: prefs.comments,
+      updated_at: new Date().toISOString()
+    }).eq('id', user.id);
+  } catch (e) {
+    // Ignore server save errors (older schemas may not have columns)
+    console.warn('Could not persist notification prefs to server', e?.message || e);
+  }
+}
+
+document.getElementById('notifOrders')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
+document.getElementById('notifReviews')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
+document.getElementById('notifComments')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
+
+document.getElementById('requestNotifPermissionBtn')?.addEventListener('click', async () => {
+  if (!('Notification' in window)) {
+    await showInfoModal('Browser does not support notifications', 'Unsupported');
+    return;
+  }
+  try {
+    const p = await Notification.requestPermission();
+    if (p === 'granted') {
+      await showInfoModal(i18n.t ? i18n.t('notifications_enabled') : 'Notifications enabled', i18n.t ? i18n.t('notifications_title') : 'Success');
+    } else {
+      await showInfoModal(i18n.t ? i18n.t('notifications_blocked') : 'Notifications blocked or dismissed', i18n.t ? i18n.t('notifications_title') : 'Notice');
+    }
+  } catch (e) {
+    console.warn('Notification permission request failed', e);
+  }
+});
+
+document.getElementById('testNotifBtn')?.addEventListener('click', () => {
+  try {
+    // add an in-page test notification and browser notification if permitted
+    const title = i18n.t ? i18n.t('test_notification') : 'Test notification';
+    const body = i18n.t ? i18n.t('test_notification') : 'This is a test notification from Vendly.';
+    // Add to in-page list
+    try { window.dispatchEvent(new CustomEvent('vendly_test_notification', { detail: { title, body } })); } catch (e) {}
+    if (Notification && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    } else {
+      showInfoModal(i18n.t ? i18n.t('notifications_blocked') : 'Notifications not granted. Use "Request Browser Permission" first.', i18n.t ? i18n.t('notifications_title') : 'Info');
+    }
+  } catch (e) {
+    console.warn('Test notification failed', e);
+  }
+});
+
+// Listen for programmatic test events to add to in-page list (navbar listens for realtime but test uses this)
+window.addEventListener('vendly_test_notification', (e) => {
+  try {
+    const { title, body } = e.detail || {};
+    const list = document.getElementById('notificationsList');
+    if (list) {
+      const li = document.createElement('li');
+      li.className = 'notification-item';
+      li.innerHTML = `<div class="notification-title">${title}</div><div class="notification-body">${body}</div><div class="notification-date">${new Date().toLocaleString()}</div>`;
+      list.prepend(li);
+      // update badge via DOM directly
+      const badge = document.getElementById('notifBadge');
+      if (badge) {
+        const current = parseInt(badge.textContent || '0', 10) || 0;
+        badge.style.display = 'inline-block';
+        badge.textContent = String(current + 1);
+      }
+    }
+  } catch (e) {}
+});
+
+// initialize preferences UI
+loadNotificationPrefs();
+
 // Logout from Settings
 // ============================
 document.getElementById('settingsLogoutBtn')?.addEventListener('click', async (e) => {
