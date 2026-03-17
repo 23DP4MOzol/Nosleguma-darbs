@@ -19,6 +19,11 @@ let selectedCarrier = 'omniva';
 let selectedAddressType = 'address';
 let selectedLocker = null;
 let computedShippingCost = 0;
+let lockerMap = null;
+let lockerMarkers = [];
+let userLocationMarker = null;
+let userCoordinates = null;
+let lockerSearchQuery = '';
 
 // Helper: translate with fallback
 const t = (key) => (i18n && i18n.t ? i18n.t(key) : key);
@@ -201,7 +206,9 @@ async function loadShippingData(destCountry) {
           address: l.address + ', ' + l.city,
           city: l.city,
           country: l.country,
-          postal_code: l.postal_code
+          postal_code: l.postal_code,
+          latitude: l.latitude,
+          longitude: l.longitude
         });
       });
     } else {
@@ -407,7 +414,7 @@ async function initCheckout(productId) {
 }
 
 function renderProductSummary(product) {
-  const img = product.images && product.images[0] ? product.images[0] : 'https://placehold.co/100x100/667eea/white?text=No+Image';
+  const img = getProductImageUrl(product, 'https://placehold.co/100x100/667eea/white?text=No+Image');
   const price = parseFloat(product.price || 0);
   const sellerName = product.seller ? (product.seller.username || product.seller.email) : t('co_unknown_seller');
 
@@ -568,20 +575,71 @@ function showCarrierDetail(carrierKey) {
 function renderLockers() {
   const container = document.getElementById('lockerList');
   if (!container) return;
-  const lockers = PARCEL_LOCKERS[selectedCarrier] || [];
-  selectedLocker = null;
+  const country = getSelectedCountry();
+  const allCarrierLockers = PARCEL_LOCKERS[selectedCarrier] || [];
+  let lockers = allCarrierLockers.filter(function(l) {
+    return !l.country || l.country === country;
+  });
+
+  if (lockerSearchQuery) {
+    const q = lockerSearchQuery.toLowerCase();
+    lockers = lockers.filter(function(l) {
+      return (l.name || '').toLowerCase().includes(q)
+        || (l.address || '').toLowerCase().includes(q)
+        || (l.city || '').toLowerCase().includes(q)
+        || (l.postal_code || '').toLowerCase().includes(q);
+    });
+  }
+
+  if (userCoordinates) {
+    lockers = lockers
+      .map(function(l) {
+        var dist = calculateDistanceKm(userCoordinates.lat, userCoordinates.lng, parseFloat(l.latitude), parseFloat(l.longitude));
+        return Object.assign({}, l, { distanceKm: dist });
+      })
+      .sort(function(a, b) {
+        var da = Number.isFinite(a.distanceKm) ? a.distanceKm : Number.MAX_VALUE;
+        var db = Number.isFinite(b.distanceKm) ? b.distanceKm : Number.MAX_VALUE;
+        return da - db;
+      });
+  }
+
+  if (selectedLocker && !lockers.some(function(l) { return l.id === selectedLocker.id; })) {
+    selectedLocker = null;
+  }
+
+  renderNearestHint(lockers);
+  renderLockerMap(lockers);
+
   let html = '';
   for (const l of lockers) {
-    html += '<div class="parcel-locker-card" data-locker-id="' + l.id + '" data-locker-address="' + esc(l.address) + '">' +
-      '<div class="locker-info"><strong>' + esc(l.name) + '</strong><p>' + esc(l.address) + '</p></div></div>';
+    var distanceLabel = Number.isFinite(l.distanceKm) ? '<small>📍 ' + l.distanceKm.toFixed(1) + ' km</small>' : '';
+    var isSelected = selectedLocker && selectedLocker.id === l.id;
+    html += '<div class="parcel-locker-card ' + (isSelected ? 'selected' : '') + '" data-locker-id="' + l.id + '" data-locker-address="' + esc(l.address) + '">' +
+      '<div class="locker-info"><strong>' + esc(l.name) + '</strong><p>' + esc(l.address) + '</p>' + distanceLabel + '</div></div>';
   }
+
+  if (!lockers.length) {
+    html = '<div class="parcel-locker-empty">No lockers found for selected country/search.</div>';
+  }
+
   container.innerHTML = html;
 
   container.querySelectorAll('.parcel-locker-card').forEach(function(card) {
     card.addEventListener('click', function() {
       container.querySelectorAll('.parcel-locker-card').forEach(function(c) { c.classList.remove('selected'); });
       card.classList.add('selected');
-      selectedLocker = { id: card.dataset.lockerId, address: card.dataset.lockerAddress };
+      var chosen = lockers.find(function(l) { return l.id === card.dataset.lockerId; });
+      selectedLocker = {
+        id: card.dataset.lockerId,
+        address: card.dataset.lockerAddress,
+        name: chosen ? chosen.name : null,
+        city: chosen ? chosen.city : null,
+        country: chosen ? chosen.country : null,
+        latitude: chosen ? chosen.latitude : null,
+        longitude: chosen ? chosen.longitude : null
+      };
+      highlightLockerMarker(selectedLocker.id);
     });
   });
 }
@@ -613,6 +671,8 @@ function setupCheckoutListeners() {
   var tabLocker = document.getElementById('tabLocker');
   var placeBtn = document.getElementById('placeOrderBtn');
   var countrySelect = document.getElementById('shippingCountry');
+  var lockerSearchInput = document.getElementById('lockerSearchInput');
+  var useMyLocationBtn = document.getElementById('useMyLocationBtn');
 
   if (tabMeetup) tabMeetup.addEventListener('click', function() { switchDelivery('meetup'); });
   if (tabShipping) tabShipping.addEventListener('click', function() { switchDelivery('shipping'); });
@@ -624,7 +684,21 @@ function setupCheckoutListeners() {
   if (countrySelect) {
     countrySelect.addEventListener('change', function() {
       renderCarriers();
+      renderLockers();
       updateSummary();
+    });
+  }
+
+  if (lockerSearchInput) {
+    lockerSearchInput.addEventListener('input', function(e) {
+      lockerSearchQuery = (e.target.value || '').trim();
+      renderLockers();
+    });
+  }
+
+  if (useMyLocationBtn) {
+    useMyLocationBtn.addEventListener('click', function() {
+      requestUserLocation();
     });
   }
 
@@ -659,6 +733,14 @@ function switchAddressType(type) {
   document.getElementById('lockerFields').style.display = type === 'locker' ? 'block' : 'none';
   // Recalculate: courier vs parcel_locker rates differ
   renderCarriers();
+  if (type === 'locker') {
+    renderLockers();
+    setTimeout(function() {
+      if (lockerMap && typeof lockerMap.invalidateSize === 'function') {
+        lockerMap.invalidateSize();
+      }
+    }, 50);
+  }
   updateSummary();
 }
 
@@ -835,7 +917,7 @@ async function loadOrders() {
   try {
     var res = await supabase
       .from('orders')
-      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, price, images, category)')
+      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, price, images, image_url, category)')
       .or('buyer_id.eq.' + currentUser.id + ',seller_id.eq.' + currentUser.id)
       .order('created_at', { ascending: false });
 
@@ -887,7 +969,7 @@ function displayOrders(orders) {
 function createOrderCard(order) {
   var isBuyer = order.buyer_id === currentUser.id;
   var otherUser = isBuyer ? order.seller : order.buyer;
-  var productImage = (order.product && order.product.images && order.product.images[0]) ? order.product.images[0] : 'https://placehold.co/150x150/667eea/white?text=No+Image';
+  var productImage = getProductImageUrl(order.product, 'https://placehold.co/150x150/667eea/white?text=No+Image');
   var status = order.status || order.order_status || 'pending';
   var deliveryIcon = order.delivery_method === 'meetup' ? '\uD83E\uDD1D' : '\uD83D\uDCE6';
   var total = parseFloat(order.total_amount || order.unit_price || 0);
@@ -990,7 +1072,7 @@ window.viewOrderDetails = async function(orderId) {
   try {
     var res = await supabase
       .from('orders')
-      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, description, price, images, category)')
+      .select('*, buyer:buyer_id(id, username, email, avatar_url), seller:seller_id(id, username, email, avatar_url), product:product_id(id, name, description, price, images, image_url, category)')
       .eq('id', orderId)
       .single();
 
@@ -1005,7 +1087,7 @@ window.viewOrderDetails = async function(orderId) {
 function displayOrderDetails(order) {
   var isBuyer = order.buyer_id === currentUser.id;
   var otherUser = isBuyer ? order.seller : order.buyer;
-  var productImage = (order.product && order.product.images && order.product.images[0]) ? order.product.images[0] : 'https://placehold.co/400x400/667eea/white?text=No+Image';
+  var productImage = getProductImageUrl(order.product, 'https://placehold.co/400x400/667eea/white?text=No+Image');
   var status = order.status || order.order_status || 'pending';
   var unitPrice = parseFloat(order.unit_price || (order.product ? order.product.price : 0) || 0);
   var qty = order.quantity || 1;
@@ -1537,4 +1619,156 @@ function esc(str) {
   var div = document.createElement('div');
   div.appendChild(document.createTextNode(str));
   return div.innerHTML;
+}
+
+function getProductImageUrl(product, fallback) {
+  if (!product) return fallback;
+  if (Array.isArray(product.images) && product.images.length > 0 && product.images[0]) {
+    return product.images[0];
+  }
+  if (typeof product.images === 'string' && product.images.trim()) {
+    try {
+      var parsed = JSON.parse(product.images);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]) {
+        return parsed[0];
+      }
+    } catch (e) {
+      return product.images;
+    }
+  }
+  if (product.image_url) return product.image_url;
+  return fallback;
+}
+
+function calculateDistanceKm(lat1, lng1, lat2, lng2) {
+  if (![lat1, lng1, lat2, lng2].every(function(v) { return Number.isFinite(v); })) {
+    return Number.NaN;
+  }
+  var toRad = function(d) { return d * Math.PI / 180; };
+  var R = 6371;
+  var dLat = toRad(lat2 - lat1);
+  var dLng = toRad(lng2 - lng1);
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2))
+    * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function renderNearestHint(lockers) {
+  var hintEl = document.getElementById('nearestLockersHint');
+  if (!hintEl) return;
+
+  if (!userCoordinates) {
+    hintEl.style.display = 'none';
+    hintEl.textContent = '';
+    return;
+  }
+
+  var nearest = lockers.filter(function(l) { return Number.isFinite(l.distanceKm); }).slice(0, 3);
+  if (!nearest.length) {
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Location enabled, but no lockers with coordinates were found in this filter.';
+    return;
+  }
+
+  hintEl.style.display = 'block';
+  hintEl.textContent = 'Closest lockers: ' + nearest.map(function(l) {
+    return l.name + ' (' + l.distanceKm.toFixed(1) + ' km)';
+  }).join(', ');
+}
+
+function ensureLockerMap() {
+  if (lockerMap) return lockerMap;
+  var mapEl = document.getElementById('lockerMap');
+  if (!mapEl || typeof window === 'undefined' || !window.L) return null;
+
+  lockerMap = window.L.map(mapEl, { zoomControl: true }).setView([56.95, 24.1], 7);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(lockerMap);
+  return lockerMap;
+}
+
+function renderLockerMap(lockers) {
+  var map = ensureLockerMap();
+  if (!map) return;
+
+  lockerMarkers.forEach(function(m) { map.removeLayer(m); });
+  lockerMarkers = [];
+
+  var points = [];
+  lockers.forEach(function(l) {
+    var lat = parseFloat(l.latitude);
+    var lng = parseFloat(l.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    var marker = window.L.marker([lat, lng]).addTo(map);
+    marker._lockerId = l.id;
+    marker.bindPopup('<strong>' + esc(l.name) + '</strong><br>' + esc(l.address));
+    marker.on('click', function() {
+      var card = document.querySelector('.parcel-locker-card[data-locker-id="' + l.id + '"]');
+      if (card) card.click();
+    });
+    lockerMarkers.push(marker);
+    points.push([lat, lng]);
+  });
+
+  if (userCoordinates) {
+    if (userLocationMarker) {
+      map.removeLayer(userLocationMarker);
+      userLocationMarker = null;
+    }
+    userLocationMarker = window.L.circleMarker([userCoordinates.lat, userCoordinates.lng], {
+      radius: 7,
+      color: '#2563eb',
+      fillColor: '#2563eb',
+      fillOpacity: 0.85
+    }).addTo(map);
+    userLocationMarker.bindPopup('Your location');
+    points.push([userCoordinates.lat, userCoordinates.lng]);
+  }
+
+  if (points.length > 0) {
+    map.fitBounds(points, { padding: [24, 24], maxZoom: 13 });
+  }
+
+  setTimeout(function() {
+    if (lockerMap && typeof lockerMap.invalidateSize === 'function') {
+      lockerMap.invalidateSize();
+    }
+  }, 30);
+}
+
+function highlightLockerMarker(lockerId) {
+  if (!lockerMap || !lockerId) return;
+  var marker = lockerMarkers.find(function(m) { return m._lockerId === lockerId; });
+  if (marker) {
+    lockerMap.setView(marker.getLatLng(), Math.max(lockerMap.getZoom(), 12));
+    marker.openPopup();
+  }
+}
+
+function requestUserLocation() {
+  if (!navigator.geolocation) {
+    toast('Geolocation is not supported in this browser.', 'error');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    userCoordinates = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude
+    };
+    renderLockers();
+    toast('Location detected. Showing closest parcel lockers first.', 'success');
+  }, function(err) {
+    console.warn('Geolocation error:', err);
+    toast('Could not get your location. Please allow location access.', 'error');
+  }, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 300000
+  });
 }

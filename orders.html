@@ -6,6 +6,7 @@
   <title data-i18n="orders_page_title">My Orders - Vendly</title>
   <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 <body>
 
@@ -175,6 +176,12 @@
         <div id="lockerFields" style="display:none;">
           <div class="form-group">
             <label data-i18n="co_select_locker">Select Parcel Locker</label>
+            <div class="locker-tools">
+              <input type="text" id="lockerSearchInput" class="form-input" placeholder="Search locker, address, city...">
+              <button type="button" id="useMyLocationBtn" class="btn btn-secondary">📍 Use my location</button>
+            </div>
+            <div id="nearestLockersHint" class="locker-nearest-hint" style="display:none;"></div>
+            <div id="lockerMap" class="locker-map" aria-label="Parcel locker map"></div>
             <div class="parcel-locker-list" id="lockerList">
               <!-- filled dynamically -->
             </div>
@@ -335,5 +342,6 @@
 
 <script type="module" src="./src/main.js"></script>
 <script type="module" src="./src/pages/orders.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </body>
 </html>

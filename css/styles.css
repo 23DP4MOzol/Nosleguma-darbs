@@ -4258,6 +4258,40 @@ html[data-theme="dark"] .info-box p {
   margin-top: 0.75rem;
 }
 
+.locker-tools {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.locker-nearest-hint {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.locker-map {
+  margin-top: 0.75rem;
+  height: 280px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  overflow: hidden;
+}
+
+.parcel-locker-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--secondary);
+}
+
 .parcel-locker-card {
   padding: 1rem;
   background: var(--card-bg);
@@ -4344,6 +4378,14 @@ html[data-theme="dark"] .info-box p {
 }
 
 @media (max-width: 768px) {
+  .locker-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .locker-map {
+    height: 240px;
+  }
+
   .order-body {
     grid-template-columns: 1fr;
   }
