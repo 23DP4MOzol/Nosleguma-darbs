@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:omniva-lockers": "node scripts/sync-omniva-lockers.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",

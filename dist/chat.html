@@ -6,9 +6,9 @@
   <title data-i18n="chat_title">Vendly - Chat</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/chat-BC6IF3hl.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-DjvhX72V.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-K_7svQ8E.css">
+  <script type="module" crossorigin src="./assets/chat-yuFjLEGC.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-Jlxoy65W.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CtgaJKMO.css">
 </head>
 <body>
 
@@ -33,7 +33,6 @@
       <div class="dropdown" id="pagesDropdown">
         <button class="dropdown-btn">≡</button>
         <div class="dropdown-menu">
-          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
           <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
           <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
           <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
@@ -45,6 +44,18 @@
         <option value="en">English</option>
         <option value="lv">Latviešu</option>
       </select>
+
+      <a href="settings.html" class="icon-btn">⚙️</a>
+
+      <!-- Notifications -->
+      <button class="icon-btn" id="notificationsBtn" aria-haspopup="true" aria-expanded="false">🔔 <span class="notif-badge" id="notifBadge" style="display:none; font-size:0.75rem; background:var(--primary); color:white; border-radius:999px; padding:0 6px; margin-left:6px;">0</span></button>
+      <div class="notifications-dropdown" id="notificationsDropdown" style="display:none;">
+        <div style="padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+          <strong data-i18n="notifications_title">Notifications</strong>
+          <button id="clearNotifBtn" data-i18n="notifications_clear" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
+        </div>
+        <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;" data-i18n="notifications_none"></ul>
+      </div>
 
       <!-- Dark/Light Mode -->
       <button class="icon-btn" id="themeToggle">☀</button>

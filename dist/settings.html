@@ -6,9 +6,9 @@
   <title data-i18n="settings_title">Vendly - Settings</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/settings-DIhGCikD.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-DjvhX72V.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-K_7svQ8E.css">
+  <script type="module" crossorigin src="./assets/settings-DgBn7RwY.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-Jlxoy65W.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-CtgaJKMO.css">
 </head>
 <body>
 
@@ -33,7 +33,6 @@
       <div class="dropdown" id="pagesDropdown">
         <button class="dropdown-btn">☰</button>
         <div class="dropdown-menu">
-          <a href="settings.html" class="dropdown-item" data-i18n="settings">Settings</a>
           <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
           <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
           <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
@@ -45,6 +44,18 @@
         <option value="en">English</option>
         <option value="lv">Latviešu</option>
       </select>
+
+      <a href="settings.html" class="icon-btn">⚙️</a>
+
+      <!-- Notifications -->
+      <button class="icon-btn" id="notificationsBtn" aria-haspopup="true" aria-expanded="false">🔔 <span class="notif-badge" id="notifBadge" style="display:none; font-size:0.75rem; background:var(--primary); color:white; border-radius:999px; padding:0 6px; margin-left:6px;">0</span></button>
+      <div class="notifications-dropdown" id="notificationsDropdown" style="display:none;">
+        <div style="padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+          <strong data-i18n="notifications_title">Notifications</strong>
+          <button id="clearNotifBtn" data-i18n="notifications_clear" style="background:none; border:none; color:var(--muted); cursor:pointer;">Clear</button>
+        </div>
+        <ul id="notificationsList" style="list-style:none; margin:0; padding:0.5rem;" data-i18n="notifications_none"></ul>
+      </div>
 
       <!-- Dark/Light Mode -->
       <button class="icon-btn" id="themeToggle">🌙</button>
@@ -165,6 +176,20 @@
         <label style="display: block; margin-bottom: 1rem;">
           <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="theme">Theme</span>
           <button class="btn-secondary" id="userThemeToggle" data-i18n="toggle_theme" style="width: 100%; padding: 0.75rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;"></button>
+        </label>
+
+        <!-- Notification Preferences -->
+        <label style="display: block; margin-bottom: 1rem;">
+          <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="notifications_title">Notifications</span>
+          <div style="display:flex; flex-direction: column; gap:0.5rem;">
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifOrders" checked> <span data-i18n="notification_orders">Orders</span></label>
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifReviews" checked> <span data-i18n="notification_reviews">Reviews</span></label>
+            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifComments" checked> <span data-i18n="notification_comments">Comments</span></label>
+            <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+              <button id="requestNotifPermissionBtn" class="btn-secondary" style="flex:1;" data-i18n="request_browser_permission">Request Browser Permission</button>
+              <button id="testNotifBtn" class="btn-secondary" style="flex:1;" data-i18n="test_notification">Send Test Notification</button>
+            </div>
+          </div>
         </label>
 
         <!-- Change Password Section -->

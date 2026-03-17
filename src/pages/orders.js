@@ -2,6 +2,7 @@
 import { i18n } from '../i18n.js';
 import { showToast } from '../main.js';
 import { showInfoModal, showConfirmModal } from '../ui/modal.js';
+import { fetchOmnivaBalticLockers } from '../lib/omniva-lockers.js';
 
 // ============================
 // State
@@ -218,6 +219,26 @@ async function loadShippingData(destCountry) {
   } catch (e) {
     console.warn('Could not load parcel lockers, using defaults:', e.message);
     PARCEL_LOCKERS = FALLBACK_LOCKERS;
+  }
+
+  try {
+    var omnivaBalticLockers = await fetchOmnivaBalticLockers({ countries: ['LV', 'LT', 'EE'] });
+    if (omnivaBalticLockers.length > 0) {
+      PARCEL_LOCKERS.omniva = omnivaBalticLockers.map(function(locker) {
+        return {
+          id: locker.locker_id,
+          name: locker.name,
+          address: locker.address,
+          city: locker.city,
+          country: locker.country,
+          postal_code: locker.postal_code,
+          latitude: locker.latitude,
+          longitude: locker.longitude
+        };
+      });
+    }
+  } catch (e) {
+    console.warn('Could not load full Omniva Baltic feed, using DB/fallback lockers:', e.message);
   }
 }
 

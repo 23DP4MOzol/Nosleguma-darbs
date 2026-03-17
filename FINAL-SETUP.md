@@ -5,14 +5,14 @@
 ### 1. ONE SQL FILE - Copy & Paste Ready
 **File:** `COMPLETE-ORDERS-SYSTEM.sql`
 - ✅ All tables (orders, transactions, shipping_rates, parcel_lockers)
-- ✅ **90+ real parcel lockers** (Latvia, Lithuania, Estonia)
+- ✅ **Full Omniva Baltic parcel locker network** (Latvia, Lithuania, Estonia)
 - ✅ **Different escrow logic** for meetup vs shipping
 - ✅ All functions and policies
 - ✅ Fully working system
 
 ### 2. Full Parcel Locker Coverage
 
-#### Latvia (35+ locations)
+#### Latvia (all Omniva parcel lockers)
 **Riga Districts:**
 - Centrs, Āgenskalns, Imanta, Jugla, Purvciems
 - Ziepniekkalns, Mežaparks, Iļģuciems, Teika, Pļavnieki
@@ -22,18 +22,17 @@
 - Daugavpils (3), Liepāja (3), Jelgava (2)
 - Jūrmala (3), Ventspils (2), Rēzekne (1), Valmiera (1)
 
-#### Lithuania (15+ locations)
+#### Lithuania (all Omniva parcel lockers)
 - Vilnius (5) - Akropolis, Panorama, Ozas, Europa, Maxima
 - Kaunas (3) - Mega, Akropolis, Urmas
 - Klaipėda (2), Šiauliai (1), Panevėžys (1)
 
-#### Estonia (15+ locations)
+#### Estonia (all Omniva parcel lockers)
 - Tallinn (6) - Ülemiste, Kristiine, Rocca al Mare, etc.
 - Tartu (3), Narva (1), Pärnu (2)
 
-**Carriers:**
-- Omniva: 60+ locations
-- DPD: 20+ locations
+**Sync command (imports every Omniva parcel locker in LV/LT/EE into `parcel_lockers`):**
+- `npm run sync:omniva-lockers`
 
 ### 3. Escrow System Logic
 
@@ -63,7 +62,7 @@ Payment → SELLER (immediate) → Shipping → Delivery → Complete
 
 **What gets created:**
 - ✅ 5 tables with indexes
-- ✅ 90+ parcel lockers
+- ✅ Full Omniva Baltic parcel locker network
 - ✅ 18 shipping rates
 - ✅ 5 database functions
 - ✅ RLS security policies
@@ -96,7 +95,7 @@ Payment → SELLER (immediate) → Shipping → Delivery → Complete
 ### ✅ Delivery Options
 - [x] Meetup selection (free, with location/date)
 - [x] Shipping with 3 carriers (Omniva, DPD, Latvijas Pasts)
-- [x] Parcel locker search (90+ locations)
+- [x] Parcel locker search (full Omniva Baltic network)
 - [x] Courier address input
 - [x] Real-time shipping cost calculation
 
