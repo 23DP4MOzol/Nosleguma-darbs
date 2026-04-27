@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const catEmojis = { electronics:'📱', clothing:'👕', furniture:'🪑', books:'📚', sports:'⚽', home:'🏠', vehicles:'🚗', other:'📦' };
     if (extraTitle) {
       const emoji = catEmojis[cat] || '📋';
-      extraTitle.innerHTML = `${emoji} <span data-i18n="sell_extra_details_${cat}">${categoryValue} Details</span>`;
+      extraTitle.innerHTML = `${emoji} <span data-i18n="sell_extra_details">Category Details</span>`;
     }
     if (extraGrid) {
       extraGrid.innerHTML = fields.map(f => {

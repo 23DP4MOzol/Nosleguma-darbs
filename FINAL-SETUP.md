@@ -31,8 +31,10 @@
 - Tallinn (6) - Ülemiste, Kristiine, Rocca al Mare, etc.
 - Tartu (3), Narva (1), Pärnu (2)
 
-**Sync command (imports every Omniva parcel locker in LV/LT/EE into `parcel_lockers`):**
-- `npm run sync:omniva-lockers`
+**Sync commands (imports Baltic locker networks into `parcel_lockers`):**
+- `npm run sync:omniva-lockers` (full Omniva LV/LT/EE)
+- `npm run sync:venipak-lockers` (full Venipak LV/LT/EE from official point lists)
+- `npm run sync:baltic-lockers` (runs both)
 
 ### 3. Escrow System Logic
 

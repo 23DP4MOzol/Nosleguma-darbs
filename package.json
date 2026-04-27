@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sync:omniva-lockers": "node scripts/sync-omniva-lockers.mjs"
+    "audit:i18n": "node scripts/audit-i18n.mjs",
+    "sync:omniva-lockers": "node scripts/sync-omniva-lockers.mjs",
+    "sync:venipak-lockers": "node scripts/sync-venipak-lockers.mjs",
+    "sync:baltic-lockers": "npm run sync:omniva-lockers && npm run sync:venipak-lockers"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
