@@ -970,6 +970,11 @@ html.dark .site-footer {
   height: 40px;
   background: rgba(255, 255, 255, 0.3);
 }
+
+html[data-theme="light"] .hero-modern .stat-divider,
+html.light .hero-modern .stat-divider {
+  background: rgba(255, 255, 255, 0.45);
+}
 /* Light-mode overrides for non-hero areas so contrast is improved
    but keep hero section styles (white text) intact on the gradient */
 html[data-theme="light"] .main-container .stat-label,
@@ -1571,6 +1576,17 @@ html.light .btn-hero-secondary {
 .hero-modern .stat-value,
 .hero-modern .stat-label {
   text-shadow: 0 4px 18px rgba(0,0,0,0.5);
+}
+
+html[data-theme="light"] .hero-modern .stat-value,
+html.light .hero-modern .stat-value {
+  color: #ffffff;
+}
+
+html[data-theme="light"] .hero-modern .stat-label,
+html.light .hero-modern .stat-label {
+  color: rgba(255, 255, 255, 0.96);
+  font-weight: 600;
 }
 .chat-last-message {
   display: flex;

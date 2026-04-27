@@ -29,10 +29,6 @@ document.getElementById('langSelect').addEventListener('change', e => {
 // ============================
 // Hamburger Mobile Menu
 // ============================
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
 // ============================
 // Supabase Auth
 // ============================

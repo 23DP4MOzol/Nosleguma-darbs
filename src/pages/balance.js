@@ -37,10 +37,6 @@ initializeLanguage();
 // ============================
 // Hamburger Mobile Menu
 // ============================
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
 // ============================
 // Supabase Auth & Balance
 // ============================

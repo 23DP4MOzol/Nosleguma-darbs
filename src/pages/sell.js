@@ -339,10 +339,6 @@ document.getElementById('langSelect').addEventListener('change', e => {
 
 // Theme toggle is handled by theme.js
 
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
 // Auth handling
 async function updateAuth() {
   const { data } = await supabase.auth.getUser();

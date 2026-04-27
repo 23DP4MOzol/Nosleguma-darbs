@@ -47,10 +47,6 @@ langSelect.addEventListener('change', e => i18n.setLang(e.target.value));
 // ============================
 // Hamburger Menu
 // ============================
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  document.querySelector('.navbar-links').classList.toggle('active');
-});
-
 // ============================
 // Supabase Auth
 // ============================
