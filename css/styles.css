@@ -1332,9 +1332,9 @@ html.light .btn-hero-secondary {
 
 .features-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
-  margin: 6rem 0;
+  margin: 4rem 0;
 }
 
 .feature-card {
@@ -4918,9 +4918,11 @@ html.dark .balance-filter-btns .filter-btn:not(.active) {
 }
 
 /* --- Features Grid Small Screens --- */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .features-section {
     grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+    margin: 2rem 0;
   }
 }
 
