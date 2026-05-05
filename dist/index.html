@@ -744,7 +744,7 @@
 </script>
 
 <style>
-/* Responsive fixes for dropdown and hero */
+/* Responsive fixes for dropdown, hero, features, and product grid */
 @media (max-width: 900px) {
   .hero-modern .hero-content {
     padding: 2rem 1rem;
@@ -758,69 +758,89 @@
     gap: 1rem;
   }
   .features-section {
+    display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    align-items: center;
   }
   .feature-card {
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
+    box-sizing: border-box;
   }
   .product-grid-modern {
     grid-template-columns: 1fr !important;
+  }
+  .hero-modern .stat-divider {
+    display: none !important;
   }
 }
 @media (max-width: 600px) {
   .hero-modern .hero-title {
     font-size: 1.3rem;
+    word-break: break-word;
+  }
+  .hero-modern .hero-content {
+    padding: 1.2rem 0.5rem;
+  }
+  .hero-modern .hero-badge {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.7rem;
+  }
+  .hero-modern .hero-subtitle {
+    font-size: 1rem;
   }
   .features-section {
     flex-direction: column;
     gap: 1rem;
+    align-items: stretch;
+    padding: 0 0.5rem;
   }
   .feature-card {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 1.2rem 0.7rem;
+    font-size: 0.97rem;
+  }
+  .feature-icon {
+    font-size: 2rem !important;
+    width: 48px !important;
+    height: 48px !important;
+    margin: 0 auto 0.5rem auto !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .feature-title {
+    font-size: 1.1rem !important;
+    text-align: center;
+  }
+  .feature-description {
+    font-size: 0.97rem !important;
+    text-align: center;
   }
   .product-grid-modern {
     grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 0 0.5rem;
   }
   .product-card-image, .modal-product-image {
-    height: 160px !important;
+    height: 120px !important;
     max-width: 100%;
     object-fit: cover;
   }
   .section-header, .section-header-centered {
     padding: 0 0.5rem;
+    text-align: center;
   }
-}
-/* Fix for dropdown random line bug */
-#pagesDropdown .dropdown-menu {
-  display: none;
-  position: absolute;
-  background: var(--card-bg, #fff);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  border-radius: 8px;
-  min-width: 160px;
-  z-index: 100;
-  margin-top: 8px;
-  left: 0;
-  right: auto;
-  border: none;
-}
-#pagesDropdown { position: relative; }
-
-/* Responsive product images */
-.product-card-image {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  border-radius: 12px;
-  transition: height 0.2s;
-}
-@media (max-width: 600px) {
-  .product-card-image {
-    height: 120px;
+  .section-title {
+    font-size: 1.2rem !important;
+  }
+  .section-subtitle {
+    font-size: 0.97rem !important;
   }
 }
 </style>
