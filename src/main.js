@@ -1500,14 +1500,26 @@ async function initializeIndexPage() {
       if (isSoldRecently) card.style.opacity = '0.7';
       
       // Add click handler to open modal and record view
-      card.addEventListener('click', (e) => {
+            card.addEventListener('click', (e) => {
         // Don't open modal if clicking action buttons or like/quick-view button
         if (!e.target.closest('.btn-buy-now') && !e.target.closest('.btn-reserve') && !e.target.closest('.product-like-btn') && !e.target.closest('.btn-quick-view')) {
           recordProductView(product.id);
-          showProductModal(product);
+          const img = card.querySelector('.product-image');
+          if (document.startViewTransition && img) {
+             img.style.viewTransitionName = 'active-product';
+             document.startViewTransition(() => {
+                showProductModal(product);
+             }).finished.finally(() => {
+                img.style.viewTransitionName = '';
+                const modalImg = document.querySelector('.modal-product-image');
+                if (modalImg) modalImg.style.viewTransitionName = '';
+             });
+          } else {
+             showProductModal(product);
+          }
         }
       });
-      
+
       card.innerHTML = `
         <div class="product-image-container">
           <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://placehold.co/300x200/667eea/white?text=No+Image'">
@@ -1790,9 +1802,9 @@ async function initializeIndexPage() {
     modalBody.innerHTML = `
       <div class="modal-product-grid">
         <div>
-          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" class="modal-product-image">
+          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" class="modal-product-image" style="view-transition-name: active-product;">
         </div>
-        
+
         <div class="modal-product-info">
           <h1>${escapeHtml(product.name)}</h1>
           <div class="modal-product-price">€${price}</div>
