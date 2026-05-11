@@ -48,6 +48,17 @@
     html.dark #authLoading {
       background: rgba(30, 41, 59, 0.95);
     }
+
+    @media (max-width: 900px) {
+      .navbar-links { flex-direction: column; align-items: flex-start; }
+      .dropdown-menu { min-width: 140px; }
+    }
+    @media (max-width: 600px) {
+      .navbar-container { flex-direction: column; align-items: stretch; }
+      .navbar-logo { margin-bottom: 1rem; }
+      .navbar-links { flex-direction: column; align-items: stretch; }
+      .dropdown-menu { min-width: 120px; }
+    }
   </style>
 </head>
 <body>
@@ -69,14 +80,14 @@
       <button class="btn-sell" id="sellBtn"><span data-i18n="sellItems">Sell Items</span></button>
 
       <!-- Pages Dropdown -->
-      <div class="dropdown" id="pagesDropdown">
-        <button class="dropdown-btn" style="display:flex; align-items:center; gap:4px;"><span data-i18n="pages_menu">Pages</span> ▾</button>
-        <div class="dropdown-menu">
-          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
-          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
-          <a href="product.html" class="dropdown-item" data-i18n="products">Products</a>
-        </div>
-      </div>
+      <button class="dropdown-btn" id="pagesDropdownBtn" style="display:flex; align-items:center; gap:4px; background:none; border:none; cursor:pointer;">
+        <span class="icon-lines horizontal" style="display:inline-block; width:20px; height:20px;">
+          <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect y="3" width="20" height="2" rx="1"/><rect y="9" width="20" height="2" rx="1"/><rect y="15" width="20" height="2" rx="1"/></svg>
+        </span>
+        <span class="icon-lines vertical" style="display:none; width:20px; height:20px;">
+          <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect x="3" width="2" height="20" rx="1"/><rect x="9" width="2" height="20" rx="1"/><rect x="15" width="2" height="20" rx="1"/></svg>
+        </span>
+      </button>
 
       <!-- Language Dropdown -->
       <select id="langSelect" class="category-select">
