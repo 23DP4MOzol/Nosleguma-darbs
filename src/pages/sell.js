@@ -102,20 +102,60 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // File upload preview
+  let cropper = null;
+  const cropperModal = document.getElementById('cropperModal');
+  const cropperImage = document.getElementById('cropperImage');
+  const cancelCropBtn = document.getElementById('cancelCropBtn');
+  const saveCropBtn = document.getElementById('saveCropBtn');
+
   if (productImageFileInput) {
     productImageFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          // Store the data URL for preview
-          productImageFileInput.dataset.previewUrl = e.target.result;
-          // Update preview with the uploaded image
-          updatePreview();
+        reader.onload = (event) => {
+          cropperImage.src = event.target.result;
+          cropperModal.style.display = 'flex';
+          if (cropper) cropper.destroy();
+          cropper = new Cropper(cropperImage, {
+            aspectRatio: 1, // Optional: fixed aspect ratio
+            viewMode: 1
+          });
         };
         reader.readAsDataURL(file);
       } else {
         delete productImageFileInput.dataset.previewUrl;
+        updatePreview();
+      }
+    });
+  }
+
+  if (cancelCropBtn) {
+    cancelCropBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      cropperModal.style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      productImageFileInput.value = '';
+      delete productImageFileInput.dataset.previewUrl;
+      updatePreview();
+    });
+  }
+
+  if (saveCropBtn) {
+    saveCropBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (cropper) {
+        const canvas = cropper.getCroppedCanvas({
+          width: 800,
+          height: 800
+        });
+        productImageFileInput.dataset.previewUrl = canvas.toDataURL(productImageFileInput.files[0].type || 'image/jpeg');
+        cropperModal.style.display = 'none';
+        cropper.destroy();
+        cropper = null;
         updatePreview();
       }
     });

@@ -7,6 +7,8 @@
   <link rel="icon" href="./assets/vendly-logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
 <body>
 
@@ -305,6 +307,20 @@
   background: #e5e7eb;
 }
 </style>
+
+<!-- Cropper Modal -->
+<div id="cropperModal" class="modal" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;">
+  <div class="modal-content" style="background: var(--card-bg); padding: 2rem; border-radius: 12px; max-width: 600px; width: 100%;">
+    <h3 style="margin-bottom: 1rem;">Crop Image</h3>
+    <div style="max-height: 400px; overflow: hidden; margin-bottom: 1rem;">
+      <img id="cropperImage" style="max-width: 100%; display: block;">
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button id="cancelCropBtn" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">Cancel</button>
+      <button id="saveCropBtn" class="btn-primary" style="padding: 0.5rem 1rem; border-radius: 8px; background: var(--primary); color: white;">Crop & Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Load main runtime first, then page script (main.js imports navbar.js) -->
 <script type="module" src="./src/main.js"></script>

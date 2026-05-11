@@ -4424,34 +4424,42 @@ html[data-theme="dark"] .info-box p {
    GLOBAL MODAL STYLES
    ======================================================= */
 
-.modal {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  padding: 1rem;
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+
+@keyframes modalZoomIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    padding: 1rem;
+    animation: modalFadeIn 0.2s ease-out forwards;
+  }
 
 .modal-content {
-  position: relative;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-xl);
-  padding: 2rem;
-  z-index: 10000;
-}
-
-.modal-content h2 {
-  margin: 0 0 1rem 0;
+    position: relative;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    padding: 2rem;
+    z-index: 10000;
+    animation: modalZoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
   font-size: 1.5rem;
   color: var(--fg);
 }
