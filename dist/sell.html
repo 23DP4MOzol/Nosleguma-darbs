@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="sell">Vendly - Sell Item</title>
-  <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
-
+  <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/sell-niVFB_6R.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-CKs5ZIo-.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-Y8xQM4Dq.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script type="module" crossorigin src="./assets/sell-COhtWGE9.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-C5jBT4oq.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-D2U6OzwG.css">
 </head>
 <body>
 
@@ -32,14 +33,7 @@
 
       <!-- Pages Dropdown -->
       <div class="dropdown" id="pagesDropdown">
-        <button class="dropdown-btn" id="pagesDropdownBtn" style="display:flex; align-items:center; gap:4px; background:none; border:none; cursor:pointer;">
-          <span class="icon-lines horizontal" style="display:inline-block; width:20px; height:20px;">
-            <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect y="3" width="20" height="2" rx="1"/><rect y="9" width="20" height="2" rx="1"/><rect y="15" width="20" height="2" rx="1"/></svg>
-          </span>
-          <span class="icon-lines vertical" style="display:none; width:20px; height:20px;">
-            <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect x="3" width="2" height="20" rx="1"/><rect x="9" width="2" height="20" rx="1"/><rect x="15" width="2" height="20" rx="1"/></svg>
-          </span>
-        </button>
+        <button class="dropdown-btn" style="display:flex; align-items:center; gap:4px;"><span data-i18n="pages_menu">Pages</span> ▾</button>
         <div class="dropdown-menu">
           <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
           <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
@@ -314,55 +308,23 @@
 .btn-secondary:hover {
   background: #e5e7eb;
 }
-
-/* Optional: style for dropdown-menu */
-#pagesDropdown .dropdown-menu {
-  display: none;
-  position: absolute;
-  background: var(--card-bg, #fff);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  border-radius: 8px;
-  min-width: 160px;
-  z-index: 100;
-  margin-top: 8px;
-}
-#pagesDropdown .dropdown-menu .dropdown-item {
-  padding: 0.75rem 1.25rem;
-  color: var(--fg, #222);
-  text-decoration: none;
-  display: block;
-}
-#pagesDropdown .dropdown-menu .dropdown-item:hover {
-  background: var(--secondary, #f3f4f6);
-}
-#pagesDropdown { position: relative; }
 </style>
 
-<!-- Load main runtime first, then page script (main.js imports navbar.js) -->
-<script>
-// Dropdown icon toggle logic
-(function() {
-  const dropdown = document.getElementById('pagesDropdown');
-  const btn = document.getElementById('pagesDropdownBtn');
-  const menu = dropdown.querySelector('.dropdown-menu');
-  const iconH = btn.querySelector('.icon-lines.horizontal');
-  const iconV = btn.querySelector('.icon-lines.vertical');
-  btn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    const open = menu.style.display === 'block';
-    menu.style.display = open ? 'none' : 'block';
-    iconH.style.display = open ? 'inline-block' : 'none';
-    iconV.style.display = open ? 'none' : 'inline-block';
-  });
-  document.addEventListener('click', function(e) {
-    if (!dropdown.contains(e.target)) {
-      menu.style.display = 'none';
-      iconH.style.display = 'inline-block';
-      iconV.style.display = 'none';
-    }
-  });
-})();
-</script>
+<!-- Cropper Modal -->
+<div id="cropperModal" class="modal" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;">
+  <div class="modal-content" style="background: var(--card-bg); padding: 2rem; border-radius: 12px; max-width: 600px; width: 100%;">
+    <h3 style="margin-bottom: 1rem;">Crop Image</h3>
+    <div style="max-height: 400px; overflow: hidden; margin-bottom: 1rem;">
+      <img id="cropperImage" style="max-width: 100%; display: block;">
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button id="cancelCropBtn" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">Cancel</button>
+      <button id="saveCropBtn" class="btn-primary" style="padding: 0.5rem 1rem; border-radius: 8px; background: var(--primary); color: white;">Crop & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load main runtime first, then page script (main.js imports navbar.js) -->
 
 </body>
 </html>

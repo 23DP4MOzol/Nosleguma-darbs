@@ -6,11 +6,10 @@
   <title data-i18n="page_title">Vendly - Home</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link rel="manifest" href="./assets/manifest-Bx13-_KX.webmanifest">
-  <meta name="theme-color" content="#0ea5a4">
-
+  <meta name="theme-color" content="#0ea5a4">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/main-CKs5ZIo-.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/styles-Y8xQM4Dq.css">
+  <script type="module" crossorigin src="./assets/main-C5jBT4oq.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/styles-D2U6OzwG.css">
 </head>
 <body>
 
@@ -687,8 +686,7 @@
 }
 </style>
 
-<!-- main.js imports navbar.js; avoid duplicate module script to prevent race conditions -->
-
+<!-- main.js imports navbar.js; avoid duplicate module script to prevent race conditions -->
 
 <!-- SITE FOOTER — placed at the very bottom of the page -->
 <footer class="site-footer">
@@ -741,162 +739,6 @@
 </footer>
 <script>
   try { document.getElementById('footerYear').textContent = new Date().getFullYear(); } catch(e){}
-</script>
-
-<style>
-/* Responsive fixes for dropdown, hero, features, and product grid */
-@media (max-width: 900px) {
-  .hero-modern .hero-content {
-    padding: 2rem 1rem;
-    text-align: center;
-  }
-  .hero-modern .hero-title {
-    font-size: 2rem;
-  }
-  .hero-modern .hero-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .features-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-  }
-  .feature-card {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-  .product-grid-modern {
-    grid-template-columns: 1fr !important;
-  }
-  .hero-modern .stat-divider {
-    display: none !important;
-  }
-}
-@media (max-width: 600px) {
-  .hero-modern .hero-title {
-    font-size: 1.3rem;
-    word-break: break-word;
-  }
-  .hero-modern .hero-content {
-    padding: 1.2rem 0.5rem;
-  }
-  .hero-modern .hero-badge {
-    font-size: 0.9rem;
-    padding: 0.3rem 0.7rem;
-  }
-  .hero-modern .hero-subtitle {
-    font-size: 1rem;
-  }
-  .features-section {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-    padding: 0 0.5rem;
-  }
-  .feature-card {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 1.2rem 0.7rem;
-    font-size: 0.97rem;
-  }
-  .feature-icon {
-    font-size: 2rem !important;
-    width: 48px !important;
-    height: 48px !important;
-    margin: 0 auto 0.5rem auto !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .feature-title {
-    font-size: 1.1rem !important;
-    text-align: center;
-  }
-  .feature-description {
-    font-size: 0.97rem !important;
-    text-align: center;
-  }
-  .product-grid-modern {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-    padding: 0 0.5rem;
-  }
-  .product-card-image, .modal-product-image {
-    height: 120px !important;
-    max-width: 100%;
-    object-fit: cover;
-  }
-  .section-header, .section-header-centered {
-    padding: 0 0.5rem;
-    text-align: center;
-  }
-  .section-title {
-    font-size: 1.2rem !important;
-  }
-  .section-subtitle {
-    font-size: 0.97rem !important;
-  }
-}
-</style>
-<script>
-  // Dropdown icon toggle logic
-  (function() {
-    const dropdown = document.getElementById('pagesDropdown');
-    const btn = document.getElementById('pagesDropdownBtn');
-    const menu = dropdown.querySelector('.dropdown-menu');
-    const iconH = btn.querySelector('.icon-lines.horizontal');
-    const iconV = btn.querySelector('.icon-lines.vertical');
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const open = menu.style.display === 'block';
-      menu.style.display = open ? 'none' : 'block';
-      iconH.style.display = open ? 'inline-block' : 'none';
-      iconV.style.display = open ? 'none' : 'inline-block';
-    });
-    document.addEventListener('click', function(e) {
-      if (!dropdown.contains(e.target)) {
-        menu.style.display = 'none';
-        iconH.style.display = 'inline-block';
-        iconV.style.display = 'none';
-      }
-    });
-  })();
-  // Mobile filter dropdown
-  (function() {
-    const filtersContainer = document.getElementById('advancedFiltersContainer');
-    if (!filtersContainer) return;
-    const mobileBtn = document.createElement('button');
-    mobileBtn.id = 'mobileFiltersBtn';
-    mobileBtn.innerHTML = '🔎 <span>Filters</span>';
-    mobileBtn.style = 'display:none;position:fixed;bottom:16px;right:16px;z-index:1001;background:var(--primary);color:white;padding:0.75rem 1.5rem;border-radius:32px;font-weight:600;font-size:1rem;box-shadow:0 4px 16px rgba(0,0,0,0.12);border:none;cursor:pointer;';
-    document.body.appendChild(mobileBtn);
-    function checkMobile() {
-      if (window.innerWidth < 900) {
-        mobileBtn.style.display = 'block';
-        filtersContainer.style.display = 'none';
-      } else {
-        mobileBtn.style.display = 'none';
-        filtersContainer.style.display = '';
-      }
-    }
-    mobileBtn.addEventListener('click', function() {
-      filtersContainer.style.display = filtersContainer.style.display === 'block' ? 'none' : 'block';
-      filtersContainer.scrollIntoView({behavior:'smooth'});
-    });
-    window.addEventListener('resize', checkMobile);
-    checkMobile();
-  })();
-  // Advanced filters emoji fix
-  (function() {
-    const filterHeader = document.querySelector('.filter-header h3');
-    if (filterHeader) filterHeader.innerHTML = '<span>🔎 </span><span data-i18n="advanced_filters">Advanced Filters</span>';
-  })();
 </script>
 
 </body>
