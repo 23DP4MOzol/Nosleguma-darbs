@@ -1562,8 +1562,8 @@ async function initializeIndexPage() {
               <span class="price-amount">${price}</span>
             </div>
             <div class="product-actions">
-              ${isSoldRecently ? `<span style="color:#ef4444; font-weight:700; font-size:0.875rem;">SOLD</span>` : 
-                `<button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">\ud83d\uded2 Buy Now</button>`}
+              ${isSoldRecently ? `<span style="color:#ef4444; font-weight:700; font-size:0.875rem;">SOLD</span>` :
+                  ((currentUser && product.seller_id === currentUser.id) ? '' : `<button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">\ud83d\uded2 Buy Now</button>`)}
             </div>
           </div>
           ${canManage ? `

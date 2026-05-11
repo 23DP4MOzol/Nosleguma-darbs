@@ -134,14 +134,14 @@ export async function showProductModal(product) {
       <button class="modal-btn modal-btn-secondary" onclick="toggleLikeProduct('${product.id}')">
         ❤️ Like Product
       </button>
-      ${product.stock > 0 && !product.is_reserved ? `
+      ${(product.stock > 0 && !product.is_reserved && (!currentUser || product.seller_id !== currentUser.id)) ? `
         <button class="modal-btn modal-btn-secondary" onclick="handleReserve('${product.id}')">
-          🔖 Reserve (€0.20)
+          🛒 Reserve (€0.20)
         </button>
         <button class="modal-btn modal-btn-primary" onclick="handlePurchase('${product.id}')">
           🛒 Buy Now - €${price}
         </button>
-      ` : ''}
+        ` : ''}
     </div>
   `;
   
