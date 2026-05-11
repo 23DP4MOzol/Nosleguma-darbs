@@ -736,9 +736,9 @@ function initializeNavigation() {
       hamburgerBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
       // Lock body scroll when menu open on small screens
       if (isActive && window.innerWidth <= 768) {
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
       } else {
-        document.body.style.overflow = '';
+        document.body.style.overflow = ''; document.documentElement.style.overflow = '';
       }
     });
   }
@@ -749,7 +749,7 @@ function initializeNavigation() {
       if (!navbarLinks.contains(e.target) && !hamburgerBtn.contains(e.target)) {
         navbarLinks.classList.remove('active');
         hamburgerBtn.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
+        document.body.style.overflow = ''; document.documentElement.style.overflow = '';
       }
     }
   });
@@ -759,7 +759,7 @@ function initializeNavigation() {
     if (window.innerWidth > 768 && navbarLinks) {
       navbarLinks.classList.remove('active');
       if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''; document.documentElement.style.overflow = '';
     }
   });
 }
@@ -911,7 +911,7 @@ async function showUserProfile(userId) {
       btn.addEventListener('click', () => {
         const productId = btn.dataset.productId;
         document.getElementById('userProfileModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
         showProductModal(productId);
       });
     });
@@ -951,7 +951,7 @@ async function showUserProfile(userId) {
             }
             // Refresh profile
             document.getElementById('userProfileModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
             showUserProfile(userId);
           } catch (error) {
             console.error('Error submitting review:', error);
@@ -1883,14 +1883,14 @@ async function initializeIndexPage() {
     
     // Show modal
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
 
     // Add click handler for seller name
     const sellerNameEl = modal.querySelector('.modal-seller-info h3');
     if (sellerNameEl) {
       sellerNameEl.addEventListener('click', () => {
         modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
         showUserProfile(product.seller_id);
       });
     }
@@ -1898,7 +1898,7 @@ async function initializeIndexPage() {
     // Close modal handlers
     const closeModal = () => {
       modal.style.display = 'none';
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
     };
     
     const closeBtn = document.getElementById('modalClose');
@@ -2233,7 +2233,7 @@ async function initializeIndexPage() {
     
     // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
     
     // Add form submit handler
     document.getElementById('editProductForm').addEventListener('submit', async (e) => {
@@ -2247,7 +2247,7 @@ async function initializeIndexPage() {
     const modal = document.getElementById('editProductModal');
     if (modal) {
       modal.remove();
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
     }
   };
   
@@ -2293,14 +2293,14 @@ async function initializeIndexPage() {
     await handlePurchase(e.detail.productId);
     // Close modal
     document.getElementById('productModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
   });
   
   document.addEventListener('reserveProduct', async (e) => {
     await handleReserve(e.detail.productId);
     // Close modal
     document.getElementById('productModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
   });
 }
 
@@ -2892,7 +2892,7 @@ function initializeSettingsPage() {
 
    // Add modal to body
    document.body.insertAdjacentHTML('beforeend', modalHtml);
-   document.body.style.overflow = 'hidden';
+   document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
  }
 
  // Make closeProfilePreview global
@@ -2900,7 +2900,7 @@ function initializeSettingsPage() {
    const modal = document.getElementById('profilePreviewModal');
    if (modal) {
      modal.remove();
-     document.body.style.overflow = 'auto';
+     document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
    }
  };
 

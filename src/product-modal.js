@@ -147,12 +147,12 @@ export async function showProductModal(product) {
   
   // Show modal
   modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
   
   // Close modal handlers
   const closeModal = () => {
     modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = 'auto'; document.documentElement.style.overflow = '';
   };
   
   document.getElementById('modalClose').onclick = closeModal;

@@ -1114,7 +1114,7 @@ html.light .btn-hero-secondary {
 .product-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -4435,6 +4435,7 @@ html[data-theme="dark"] .info-box p {
 }
 
 .modal {
+      overscroll-behavior: contain;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 9999;
@@ -4449,6 +4450,7 @@ html[data-theme="dark"] .info-box p {
   }
 
 .modal-content {
+      overscroll-behavior: contain;
     position: relative;
     background: var(--card-bg);
     border-radius: var(--radius-lg);
