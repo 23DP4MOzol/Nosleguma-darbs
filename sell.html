@@ -123,8 +123,18 @@
             <input type="number" id="productPriceInput" class="form-input" data-i18n-placeholder="sell_enter_price" placeholder="0.00" required min="0" step="0.01">
           </label>
 
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_condition">Condition *</span>
+          
+            <label class="form-field">
+              <span class="form-label" data-i18n="listingDuration">Listing Duration *</span>
+              <select id="productDurationInput" class="form-select" required>
+                <option value="1">1 Month - Base Fee</option>
+                <option value="2">2 Months - +€0.50</option>
+                <option value="3">3 Months - +€1.00</option>
+              </select>
+            </label>
+
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_condition">Condition *</span>
             <select id="productConditionInput" class="form-select" required>
               <option value="" data-i18n="sell_select_condition">Select condition</option>
               <option value="new" data-i18n="condition_new">✨ New</option>

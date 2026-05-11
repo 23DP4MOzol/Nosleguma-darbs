@@ -470,7 +470,8 @@ export async function listProduct(productData, userId) {
     const price = parseFloat(productData.price);
     // Listing fee ranges from €0.50 to €1.00 based on price
     // Linear scale: €0-€100 = €0.50, €100+ = €1.00
-    const listingFee = price >= 100 ? 1.00 : Math.max(0.50, 0.50 + (price / 100) * 0.50);
+    const duration = productData.duration || 1;
+    const listingFee = 0.50 + ((duration - 1) * 0.50);
 
     // Check balance for listing fee
     const currentBalance = await getBalance(userId);
@@ -531,6 +532,7 @@ export async function listProduct(productData, userId) {
       image_url: productData.image_url || '',
       stock: parseInt(productData.stock) || 1,
       listing_fee: listingFee,
+        valid_until: new Date(Date.now() + (duration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
       reserve_fee: parseFloat(productData.reserve_fee) || 0.20,
       is_reserved: false,
       weight_kg: parseFloat(productData.weight_kg) || null,

@@ -185,7 +185,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Calculate and display listing fee (€0.50 to €1.00)
-    const listingFee = price >= 100 ? 1.00 : Math.max(0.50, 0.50 + (price / 100) * 0.50);
+    const duration = parseInt(document.getElementById('productDurationInput')?.value || '1');
+    const baseFee = 0.50;
+    const listingFee = baseFee + ((duration - 1) * 0.50);
     const feeElement = document.getElementById('calculatedFee');
     if (feeElement) {
       feeElement.textContent = `Current fee: €${listingFee.toFixed(2)}`;
@@ -247,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updatePreview();
 
   // Update preview on input changes
-  ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput'].forEach(id => {
+  ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput', 'productDurationInput'].forEach(id => {
     const element = document.getElementById(id);
     if (element) {
       element.addEventListener('input', updatePreview);
