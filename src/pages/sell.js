@@ -118,7 +118,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           cropperModal.style.display = 'flex';
           if (cropper) cropper.destroy();
           cropper = new Cropper(cropperImage, {
-            aspectRatio: 1, // Optional: fixed aspect ratio
             viewMode: 1
           });
         };
