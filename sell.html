@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="./css/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
 <body>
@@ -191,30 +193,58 @@
 
         <!-- Shipping Origin Address -->
         <div style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
-          <h4 style="margin-bottom: 0.75rem; color: var(--fg);">📦 <span data-i18n="sell_shipping_origin">Shipping Origin (your address)</span></h4>
-          <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_shipping_origin_desc">This address is used to calculate shipping costs. It will NOT be shown to buyers.</p>
+          <h4 style="margin-bottom: 0.75rem; color: var(--fg);">🚚 <span data-i18n="sell_shipping_method">Shipping Method</span></h4>
           <div class="form-cols">
             <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_street">Street Address</span>
-              <input type="text" id="sellerStreetInput" class="form-input" data-i18n-placeholder="sell_origin_street_ph" placeholder="Brīvības iela 100">
-            </label>
-            <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_city">City</span>
-              <select id="sellerCityInput" class="form-select">
-                <option value="Rīga">Rīga</option>
-                <option value="Daugavpils">Daugavpils</option>
-                <option value="Liepāja">Liepāja</option>
-                <option value="Jelgava">Jelgava</option>
-                <option value="Jūrmala">Jūrmala</option>
-                <option value="Ventspils">Ventspils</option>
-                <option value="Rēzekne">Rēzekne</option>
-                <option value="Valmiera">Valmiera</option>
+              <span class="form-label" data-i18n="sell_shipping_from">Ship from</span>
+              <select id="shippingMethod" class="form-select">
+                <option value="address" data-i18n="sell_ship_from_address">My Address</option>
+                <option value="locker" data-i18n="sell_ship_from_locker">Parcel Locker</option>
               </select>
             </label>
-            <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_postal">Postal Code</span>
-              <input type="text" id="sellerPostalInput" class="form-input" data-i18n-placeholder="sell_origin_postal_ph" placeholder="LV-1001">
-            </label>
+          </div>
+          
+          <div id="sellerAddressSection">
+            <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_shipping_origin_desc">This address is used to calculate shipping costs. It will NOT be shown to buyers.</p>
+            <div class="form-cols">
+              <label class="form-field">
+                <span class="form-label" data-i18n="sell_origin_street">Street Address</span>
+                <input type="text" id="sellerStreetInput" class="form-input" data-i18n-placeholder="sell_origin_street_ph" placeholder="Brīvības iela 100">
+              </label>
+              <label class="form-field">
+                <span class="form-label" data-i18n="sell_origin_city">City</span>
+                <select id="sellerCityInput" class="form-select">
+                  <option value="Rīga">Rīga</option>
+                  <option value="Daugavpils">Daugavpils</option>
+                  <option value="Liepāja">Liepāja</option>
+                  <option value="Jelgava">Jelgava</option>
+                  <option value="Jūrmala">Jūrmala</option>
+                  <option value="Ventspils">Ventspils</option>
+                  <option value="Rēzekne">Rēzekne</option>
+                  <option value="Valmiera">Valmiera</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span class="form-label" data-i18n="sell_origin_postal">Postal Code</span>
+                <input type="text" id="sellerPostalInput" class="form-input" data-i18n-placeholder="sell_origin_postal_ph" placeholder="LV-1001">
+              </label>
+            </div>
+          </div>
+
+          <div id="parcelLockerSection" style="display: none; margin-top: 1rem;">
+             <div id="map" style="height: 400px; border-radius: 8px; margin-bottom: 1rem;"></div>
+             <div id="carrier-filters" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <button class="carrier-filter-btn active" data-carrier="all">All</button>
+                <button class="carrier-filter-btn" data-carrier="omniva">Omniva</button>
+                <button class="carrier-filter-btn" data-carrier="dpd">DPD</button>
+                <button class="carrier-filter-btn" data-carrier="pasts">Latvijas Pasts</button>
+                <button class="carrier-filter-btn" data-carrier="venipak">Venipak</button>
+             </div>
+             <input type="text" id="lockerSearchInput" class="form-input" placeholder="Search lockers by address or name..." style="margin-bottom: 1rem;">
+             <div id="locker-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem;">
+                <!-- Locker items will be injected here by JS -->
+             </div>
+             <input type="hidden" id="selectedLockerId">
           </div>
         </div>
 
@@ -315,6 +345,41 @@
 
 .btn-secondary:hover {
   background: #e5e7eb;
+}
+
+#map {
+  z-index: 1;
+}
+
+.carrier-filter-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background-color: var(--card-bg);
+  color: var(--fg);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.carrier-filter-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.locker-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.locker-item:hover {
+  background-color: var(--secondary);
+}
+
+.locker-item.selected {
+  background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  border-left: 4px solid var(--primary);
 }
 </style>
 

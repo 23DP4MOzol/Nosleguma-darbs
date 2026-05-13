@@ -160,6 +160,153 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // ============================
+  // Shipping Method & Locker Map
+  // ============================
+  const shippingMethodSelect = document.getElementById('shippingMethod');
+  const sellerAddressSection = document.getElementById('sellerAddressSection');
+  const parcelLockerSection = document.getElementById('parcelLockerSection');
+  const mapElement = document.getElementById('map');
+  const lockerListElement = document.getElementById('locker-list');
+  const carrierFilterButtons = document.querySelectorAll('.carrier-filter-btn');
+  const lockerSearchInput = document.getElementById('lockerSearchInput');
+  const selectedLockerIdInput = document.getElementById('selectedLockerId');
+
+  let map = null;
+  let allLockers = [];
+  let visibleMarkers = [];
+
+  async function initializeLockerMap() {
+    if (!mapElement) return;
+
+    // Initialize map
+    map = L.map(mapElement).setView([56.9496, 24.1052], 8); // Centered on Riga
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Fetch lockers
+    const { data, error } = await supabase.from('parcel_lockers').select('*').eq('active', true);
+    if (error) {
+      console.error('Error fetching lockers:', error);
+      lockerListElement.innerHTML = '<p>Could not load lockers.</p>';
+      return;
+    }
+    allLockers = data;
+    
+    renderLockerList(allLockers);
+    updateMapMarkers(allLockers);
+  }
+
+  function renderLockerList(lockers) {
+    lockerListElement.innerHTML = '';
+    if (lockers.length === 0) {
+      lockerListElement.innerHTML = '<p style="padding: 1rem; text-align: center;">No lockers found.</p>';
+      return;
+    }
+    lockers.forEach(locker => {
+      const item = document.createElement('div');
+      item.className = 'locker-item';
+      item.dataset.lockerId = locker.id;
+      item.innerHTML = `
+        <strong>${locker.name}</strong>
+        <p style="font-size: 0.8rem; color: var(--muted); margin: 0;">${locker.address}, ${locker.city}</p>
+      `;
+      item.addEventListener('click', () => {
+        selectedLockerIdInput.value = locker.id;
+        document.querySelectorAll('.locker-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+        map.setView([locker.latitude, locker.longitude], 15);
+        // Find and open the corresponding marker popup
+        const marker = visibleMarkers.find(m => m.options.lockerId === locker.id);
+        if (marker) {
+            marker.openPopup();
+        }
+      });
+      lockerListElement.appendChild(item);
+    });
+  }
+
+  function updateMapMarkers(lockers) {
+    // Clear existing markers
+    visibleMarkers.forEach(marker => marker.removeFrom(map));
+    visibleMarkers = [];
+
+    const carrierLogos = {
+        omniva: 'https://www.omniva.lv/assets/img/logo.svg',
+        dpd: 'https://www.dpd.com/wp-content/themes/DPD_NoLogin/images/DPD_logo_redgrad_rgb_responsive.svg',
+        pasts: 'https://www.pasts.lv/img/logo.svg',
+        venipak: 'https://venipak.com/wp-content/uploads/2021/09/venipak-logo.svg'
+    };
+
+    lockers.forEach(locker => {
+      if (locker.latitude && locker.longitude) {
+        const iconHtml = `<div style="background-image: url(${carrierLogos[locker.carrier] || ''}); width: 30px; height: 30px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>`;
+        const customIcon = L.divIcon({
+            html: iconHtml,
+            className: 'custom-map-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+        });
+
+        const marker = L.marker([locker.latitude, locker.longitude], { icon: customIcon, lockerId: locker.id })
+          .addTo(map)
+          .bindPopup(`<b>${locker.name}</b><br>${locker.address}`);
+        visibleMarkers.push(marker);
+      }
+    });
+  }
+  
+  function filterLockers() {
+    const activeCarrier = document.querySelector('.carrier-filter-btn.active').dataset.carrier;
+    const searchTerm = lockerSearchInput.value.toLowerCase();
+
+    let filteredLockers = allLockers;
+
+    if (activeCarrier !== 'all') {
+      filteredLockers = filteredLockers.filter(locker => locker.carrier === activeCarrier);
+    }
+
+    if (searchTerm) {
+      filteredLockers = filteredLockers.filter(locker => 
+        locker.name.toLowerCase().includes(searchTerm) || 
+        locker.address.toLowerCase().includes(searchTerm) ||
+        locker.city.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    renderLockerList(filteredLockers);
+    updateMapMarkers(filteredLockers);
+  }
+
+  shippingMethodSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'locker') {
+      sellerAddressSection.style.display = 'none';
+      parcelLockerSection.style.display = 'block';
+      if (!map) {
+        initializeLockerMap();
+      } else {
+        // Invalidate map size if it was hidden
+        setTimeout(() => map.invalidateSize(), 10);
+      }
+    } else {
+      sellerAddressSection.style.display = 'block';
+      parcelLockerSection.style.display = 'none';
+    }
+  });
+
+  carrierFilterButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      carrierFilterButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      filterLockers();
+    });
+  });
+
+  lockerSearchInput.addEventListener('input', filterLockers);
+
+
   // Real-time preview update
   function updatePreview() {
     const name = document.getElementById('productNameInput').value || 'Product Name';
@@ -307,7 +454,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         weight_kg: parseFloat(document.getElementById('productWeightInput')?.value) || null,
         seller_street: document.getElementById('sellerStreetInput')?.value || '',
         seller_city: document.getElementById('sellerCityInput')?.value || '',
-        seller_postal_code: document.getElementById('sellerPostalInput')?.value || ''
+        seller_postal_code: document.getElementById('sellerPostalInput')?.value || '',
+        shipping_from_locker: document.getElementById('shippingMethod').value === 'locker' ? document.getElementById('selectedLockerId').value : null
       };
 
       // Collect category-specific extra attributes
