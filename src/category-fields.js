@@ -5,6 +5,159 @@
 // Used by: sell page (form inputs), index page (browse filters),
 // product modal (detail display), and edit modal.
 
+export const CATEGORY_TREE = [
+  {
+    id: 'job_business',
+    emoji: '💼',
+    label: { lv: 'Darbs un bizness', en: 'Jobs and Business' },
+    children: [
+      { id: 'job_business/vacancies', label: { lv: 'Vakances', en: 'Vacancies' } },
+      { id: 'job_business/looking_for_job', label: { lv: 'Mekle darbu', en: 'Looking for a job' } },
+      { id: 'job_business/courses_education', label: { lv: 'Kursi, izglitiba', en: 'Courses, education' } },
+      { id: 'job_business/business_contacts', label: { lv: 'Biznesa kontakti', en: 'Business contacts' } },
+      { id: 'job_business/legal_services', label: { lv: 'Juridiskie pakalpojumi', en: 'Legal services' } },
+      { id: 'job_business/financial_services', label: { lv: 'Finansu pakalpojumi', en: 'Financial services' } },
+      { id: 'job_business/text_translations', label: { lv: 'Tekstu tulkosana', en: 'Text translations' } },
+      { id: 'job_business/internet_services', label: { lv: 'Interneta pakalpojumi', en: 'Internet services' } },
+      { id: 'job_business/other', label: { lv: 'Cits', en: 'Other' } }
+    ]
+  },
+  {
+    id: 'transport',
+    emoji: '🚗',
+    label: { lv: 'Transports', en: 'Transport' },
+    children: [
+      { id: 'transport/cars', label: { lv: 'Vieglie auto', en: 'Cars' } },
+      { id: 'transport/cargo_cars', label: { lv: 'Kravas automasinas', en: 'Cargo cars' } },
+      { id: 'transport/moto', label: { lv: 'Moto transports', en: 'Moto transport' } },
+      { id: 'transport/bicycles_scooters', label: { lv: 'Velosipedi, skuteri', en: 'Bicycles, scooters' } },
+      { id: 'transport/car_exchange', label: { lv: 'Vieglo auto maina', en: 'Car exchange' } },
+      { id: 'transport/repair_parts', label: { lv: 'Remonts un rezerves dalas', en: 'Repair and spare parts' } },
+      { id: 'transport/transport_services', label: { lv: 'Kravu un pasazieru parvadajumi', en: 'Transportation of goods and people' } },
+      { id: 'transport/rent', label: { lv: 'Transporta noma', en: 'Transport rent' } },
+      { id: 'transport/other', label: { lv: 'Cits...', en: 'Other...' } }
+    ]
+  },
+  {
+    id: 'real_estate',
+    emoji: '🏠',
+    label: { lv: 'Nekustamais ipasums', en: 'Real estate' },
+    children: [
+      { id: 'real_estate/flats', label: { lv: 'Dzivokli', en: 'Flats' } },
+      { id: 'real_estate/houses', label: { lv: 'Majas, vasarnicas', en: 'Houses, cottages' } },
+      { id: 'real_estate/farms', label: { lv: 'Saimniecibas, muizas', en: 'Farms, estates' } },
+      { id: 'real_estate/premises', label: { lv: 'Telpas', en: 'Premises' } },
+      { id: 'real_estate/offices', label: { lv: 'Biroji', en: 'Offices' } },
+      { id: 'real_estate/land', label: { lv: 'Zeme un zemesgabali', en: 'Land and plots' } },
+      { id: 'real_estate/forest', label: { lv: 'Mezs', en: 'Forest' } },
+      { id: 'real_estate/brokers', label: { lv: 'Brokeru pakalpojumi', en: 'Brokers services' } },
+      { id: 'real_estate/other', label: { lv: 'Cits...', en: 'Other...' } }
+    ]
+  },
+  {
+    id: 'construction',
+    emoji: '🏗️',
+    label: { lv: 'Buvnieciba', en: 'Construction' },
+    children: [
+      { id: 'construction/materials', label: { lv: 'Buvmateriali', en: 'Building materials' } },
+      { id: 'construction/works', label: { lv: 'Buvdarbi', en: 'Construction works' } },
+      { id: 'construction/tools', label: { lv: 'Instrumenti un tehnika', en: 'Tools and technics' } },
+      { id: 'construction/tools_rent', label: { lv: 'Instrumentu un tehnikas noma', en: 'Hire of tools and technics' } },
+      { id: 'construction/plumbing', label: { lv: 'Santehnika', en: 'Plumbing' } },
+      { id: 'construction/garden_technics', label: { lv: 'Darza tehnika', en: 'Garden technics' } },
+      { id: 'construction/projects_design', label: { lv: 'Projekti, dizains', en: 'Projects, design' } },
+      { id: 'construction/transport_loading', label: { lv: 'Transportesana un krausana', en: 'Transportation and loading' } },
+      { id: 'construction/other', label: { lv: 'Cits', en: 'Other' } }
+    ]
+  },
+  {
+    id: 'electronics',
+    emoji: '💻',
+    label: { lv: 'Elektronika', en: 'Electronics' },
+    children: [
+      { id: 'electronics/phones', label: { lv: 'Telefoni', en: 'Phones' } },
+      { id: 'electronics/home_appliances', label: { lv: 'Sadzives tehnika', en: 'Home appliances' } },
+      { id: 'electronics/computers_office', label: { lv: 'Datori, biroja tehnika', en: 'Computers, office equipment' } },
+      { id: 'electronics/audio_video', label: { lv: 'Audio, video, DVD, SAT', en: 'Audio, Video, DVD, SAT' } },
+      { id: 'electronics/batteries', label: { lv: 'Baterijas', en: 'Batteries' } },
+      { id: 'electronics/tv', label: { lv: 'Televizori', en: 'Televisions set' } },
+      { id: 'electronics/photo_optics', label: { lv: 'Foto un optika', en: 'Photo and optics' } },
+      { id: 'electronics/gps', label: { lv: 'GPS navigatori', en: 'GPS navigators' } },
+      { id: 'electronics/other', label: { lv: 'Cits un remonts', en: 'Other and repair' } }
+    ]
+  },
+  {
+    id: 'clothing',
+    emoji: '👕',
+    label: { lv: 'Apgerbs, apavi', en: 'Clothes, footwear' },
+    children: [
+      { id: 'clothing/women', label: { lv: 'Sieviesu apgerbs', en: "Women's clothes" } },
+      { id: 'clothing/men', label: { lv: 'Viriesu apgerbs', en: "Men's clothes" } },
+      { id: 'clothing/kids', label: { lv: 'Bernu apgerbs, apavi', en: "Children's clothing, shoes" } },
+      { id: 'clothing/footwear', label: { lv: 'Apavi', en: 'Footwear' } },
+      { id: 'clothing/accessories', label: { lv: 'Brilles, jostas, somas', en: 'Glasses, belts, handbags' } },
+      { id: 'clothing/jewelry', label: { lv: 'Aksesuari, rotas', en: 'Accessories, jewelry' } },
+      { id: 'clothing/workwear', label: { lv: 'Darba apgerbs', en: 'Unionalls' } },
+      { id: 'clothing/sewing', label: { lv: 'Susanas pakalpojumi un atelje', en: 'Sewing services and atelier' } },
+      { id: 'clothing/other', label: { lv: 'Cits', en: 'Other' } }
+    ]
+  },
+  {
+    id: 'home',
+    emoji: '🛋️',
+    label: { lv: 'Majai', en: 'For home' },
+    children: [
+      { id: 'home/furniture', label: { lv: 'Mebeles, interjers', en: 'Furniture, interior' } },
+      { id: 'home/health_beauty', label: { lv: 'Veseliba, skaistumkopsana', en: 'Health, beauty' } },
+      { id: 'home/jewellery', label: { lv: 'Juvelierizstradajumi, dargakmeni', en: 'Jewellery, gems' } },
+      { id: 'home/gifts', label: { lv: 'Davanas, suveniri', en: 'Gifts, souvenirs' } },
+      { id: 'home/handmade', label: { lv: 'Rokdarbi', en: 'Handmade products' } },
+      { id: 'home/antiques', label: { lv: 'Antikvariats, gleznas', en: 'Antiques, canvas' } },
+      { id: 'home/plants', label: { lv: 'Telpaugi', en: 'Home plants' } },
+      { id: 'home/other', label: { lv: 'Cits...', en: 'Other...' } }
+    ]
+  },
+  {
+    id: 'searches',
+    emoji: '🧭',
+    label: { lv: 'Meklejumi, atradumi', en: 'Searches, finds' },
+    children: []
+  },
+  {
+    id: 'production_work',
+    emoji: '🏭',
+    label: { lv: 'Razoshana, darbs', en: 'Production, work' },
+    children: [
+      { id: 'production_work/equipment', label: { lv: 'Iekartas', en: 'Equipment' } },
+      { id: 'production_work/orders', label: { lv: 'Razoshana, pasutijumi', en: 'Production, orders' } },
+      { id: 'production_work/household', label: { lv: 'Saimniecibas darbi', en: 'Household work' } },
+      { id: 'production_work/construction_repair', label: { lv: 'Buvnieciba un remonts', en: 'Construction and repair' } },
+      { id: 'production_work/transport_loading', label: { lv: 'Transportesana un krausana', en: 'Transportation and loading' } },
+      { id: 'production_work/business_contacts', label: { lv: 'Biznesa kontakti', en: 'Business contacts' } },
+      { id: 'production_work/foodstuffs', label: { lv: 'Partikas produkti', en: 'Foodstuffs' } },
+      { id: 'production_work/firewood', label: { lv: 'Malka, briketes, granulas', en: 'Firewood, briquettes, pellets' } },
+      { id: 'production_work/other', label: { lv: 'Cits...', en: 'Other...' } }
+    ]
+  },
+  {
+    id: 'children',
+    emoji: '🧸',
+    label: { lv: 'Berniem', en: 'For children' },
+    children: [
+      { id: 'children/school', label: { lv: 'Viss skolai', en: 'All for school' } },
+      { id: 'children/clothing', label: { lv: 'Bernu apgerbs, apavi', en: "Children's clothing, shoes" } },
+      { id: 'children/toys', label: { lv: 'Rotalietas, supoles', en: 'Toys, swings' } },
+      { id: 'children/carriages', label: { lv: 'Ratinji', en: 'Carriages' } },
+      { id: 'children/furniture', label: { lv: 'Bernu mebeles', en: 'Children furniture' } },
+      { id: 'children/car_seats', label: { lv: 'Auto sedeklisi, parnesajamas somas', en: 'Car seats, bags carrying' } },
+      { id: 'children/accessories_food', label: { lv: 'Aksesuari un partika', en: 'Accessories and food' } },
+      { id: 'children/activities', label: { lv: 'Pulcini, bernudarzi, sekcijas', en: 'Mugs, kindergartens, sections' } },
+      { id: 'children/child_activities', label: { lv: 'Bernu aktivitates', en: "Children's activities" } },
+      { id: 'children/other', label: { lv: 'Cits', en: 'Other' } }
+    ]
+  }
+];
+
 export const CATEGORY_FIELDS = {
   electronics: [
     { key: 'brand', label: 'Brand', emoji: '🏷️', type: 'text', placeholder: 'e.g. Apple, Samsung', required: false },
@@ -149,6 +302,72 @@ export const CATEGORY_FIELDS = {
     { key: 'color', label: 'Color', emoji: '🎨', type: 'text', placeholder: 'Enter color', required: false }
   ]
 };
+
+const CATEGORY_FIELD_MAP = {
+  electronics: 'electronics',
+  clothing: 'clothing',
+  furniture: 'furniture',
+  books: 'books',
+  sports: 'sports',
+  home: 'home',
+  vehicles: 'vehicles',
+  transport: 'vehicles',
+  clothing_accessories: 'clothing'
+};
+
+function getBaseCategoryId(categoryId) {
+  if (!categoryId) return '';
+  const raw = String(categoryId).toLowerCase();
+  if (CATEGORY_FIELD_MAP[raw]) return CATEGORY_FIELD_MAP[raw];
+  const root = raw.split('/')[0];
+  return CATEGORY_FIELD_MAP[root] || root;
+}
+
+export function getCategoryFieldsFor(categoryId) {
+  const key = getBaseCategoryId(categoryId);
+  return CATEGORY_FIELDS[key] || [];
+}
+
+export function getCategoryLabelById(categoryId, lang = 'en') {
+  if (!categoryId) return '';
+  for (const group of CATEGORY_TREE) {
+    if (group.id === categoryId) return group.label?.[lang] || group.label?.en || group.label?.lv || group.id;
+    if (group.children && group.children.length) {
+      const hit = group.children.find(child => child.id === categoryId);
+      if (hit) return hit.label?.[lang] || hit.label?.en || hit.label?.lv || hit.id;
+    }
+  }
+  return categoryId;
+}
+
+export function buildCategoryOptions(lang = 'en', includeTopOption = true) {
+  return CATEGORY_TREE.map(group => {
+    const groupLabel = group.label?.[lang] || group.label?.en || group.label?.lv || group.id;
+    const topOption = includeTopOption ? `<option value="${group.id}">${groupLabel}</option>` : '';
+    const childOptions = (group.children || [])
+      .map(child => `<option value="${child.id}">${child.label?.[lang] || child.label?.en || child.label?.lv || child.id}</option>`)
+      .join('');
+    return `<optgroup label="${groupLabel}">${topOption}${childOptions}</optgroup>`;
+  }).join('');
+}
+
+export function buildCategoryTabs(lang = 'en') {
+  return CATEGORY_TREE.map(group => {
+    const label = group.label?.[lang] || group.label?.en || group.label?.lv || group.id;
+    return `<button class="filter-tab" data-category="${group.id}">${group.emoji ? `${group.emoji} ` : ''}${label}</button>`;
+  }).join('');
+}
+
+export function isCategoryMatch(productCategory, filterCategory) {
+  if (!filterCategory || filterCategory === 'all') return true;
+  const productValue = (productCategory || '').toLowerCase();
+  const filterValue = String(filterCategory).toLowerCase();
+  if (!productValue) return false;
+  if (productValue === filterValue) return true;
+  if (productValue.startsWith(`${filterValue}/`)) return true;
+  if (filterValue === 'transport' && productValue === 'vehicles') return true;
+  return false;
+}
 
 // ============================
 // Utility: Parse extra attributes from product description
