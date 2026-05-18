@@ -1029,6 +1029,7 @@ async function initializeIndexPage() {
   let userFavoritesSet = new Set(); // Track user's liked products
   let currentFilters = {
     search: '',
+    category: '',
     minPrice: '',
     maxPrice: '',
     location: '',
@@ -1061,7 +1062,7 @@ async function initializeIndexPage() {
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData?.user) {
-        showToast('Please log in to like products', 'error');
+        showToast(i18n.t ? i18n.t('login_to_like') : 'Please log in to like products', 'error');
         return;
       }
       const userId = authData.user.id;
@@ -1086,7 +1087,7 @@ async function initializeIndexPage() {
       }
     } catch (e) {
       console.error('Error toggling favorite:', e);
-      showToast('Failed to update favorite', 'error');
+      showToast(i18n.t ? i18n.t('favorite_update_failed') : 'Failed to update favorite', 'error');
     }
   }
 
@@ -1437,7 +1438,7 @@ async function initializeIndexPage() {
       grid.innerHTML = `<div style="padding:40px;text-align:center;grid-column:1/-1;color:var(--muted);">
         <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
         <span data-i18n="no_products">No products found</span>
-        <p style="margin-top: 0.5rem; font-size: 0.875rem;">Try adjusting your filters or search terms</p>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem;" data-i18n="no_products_hint">Try adjusting your filters or search terms</p>
       </div>`;
       if (i18n && typeof i18n.setLang === 'function') i18n.setLang(i18n.lang || 'en');
       return;
@@ -1528,7 +1529,7 @@ async function initializeIndexPage() {
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path>
             </svg>
           </button>
-          ${isSoldRecently ? `<span class="product-badge-new" style="background: #ef4444;">SOLD</span>` : ''}
+          ${isSoldRecently ? `<span class="product-badge-new" style="background: #ef4444;" data-i18n="sold_label">${i18n.t ? i18n.t('sold_label') : 'SOLD'}</span>` : ''}
           ${!isSoldRecently && product.is_reserved ? `<span class="product-badge-new" data-i18n="reserved">Reserved</span>` : ''}
           <div class="product-overlay">
             <button class="btn-quick-view" data-id="${escapeHtml(product.id)}" data-i18n="quickView">\ud83d\udc41 Quick View</button>
@@ -1545,7 +1546,7 @@ async function initializeIndexPage() {
               \ud83d\udc64
             </div>
             <span class="seller-name" style="font-size:0.875rem; color:var(--muted); cursor:pointer;" onclick="event.stopPropagation(); showUserProfile('${product.seller_id}')">
-              ${escapeHtml(product.users?.username || 'Unknown')}
+              ${escapeHtml(product.users?.username || (i18n.t ? i18n.t('unknown_seller') : 'Unknown'))}
             </span>
           </div>
           <div class="product-meta" style="display:flex; gap:1rem; align-items:center;">
@@ -1595,7 +1596,12 @@ async function initializeIndexPage() {
         if (deleteBtn) {
           deleteBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            const confirmed = await showConfirmModal({ title: 'Delete Product', message: `Are you sure you want to delete "${product.name}"?`, okText: 'Delete', cancelText: 'Cancel' });
+            const confirmed = await showConfirmModal({
+              title: i18n.t ? i18n.t('delete_product_title') : 'Delete Product',
+              message: `${i18n.t ? i18n.t('delete_product_confirm') : 'Are you sure you want to delete'} "${product.name}"?`,
+              okText: i18n.t ? i18n.t('delete') : 'Delete',
+              cancelText: i18n.t ? i18n.t('btn_cancel') : 'Cancel'
+            });
             if (confirmed) {
               await handleDeleteProduct(product.id);
             }
@@ -1690,7 +1696,7 @@ async function initializeIndexPage() {
       window.location.href = `orders.html?${params.toString()}`;
     } catch (error) {
       console.error('Purchase error:', error);
-      showToast(error.message || 'Purchase failed', 'error');
+      showToast(error.message || (i18n.t ? i18n.t('purchase_failed') : 'Purchase failed'), 'error');
     }
   }
 
@@ -1733,7 +1739,7 @@ async function initializeIndexPage() {
       const mod = await import('./supabase.js');
       if (mod && typeof mod.removeReserve === 'function') {
         await mod.removeReserve(productId, user.id);
-        showToast('Reservation removed successfully!', 'success');
+        showToast(i18n.t ? i18n.t('reservation_removed') : 'Reservation removed successfully!', 'success');
         await loadProducts();
         await updateNavbarAuth();
       } else {
@@ -1741,7 +1747,7 @@ async function initializeIndexPage() {
       }
     } catch (error) {
       console.error('Remove reserve error:', error);
-      showToast(error.message || 'Failed to remove reservation', 'error');
+      showToast(error.message || (i18n.t ? i18n.t('reservation_remove_failed') : 'Failed to remove reservation'), 'error');
     }
   }
 
@@ -1814,31 +1820,31 @@ async function initializeIndexPage() {
               ${conditionEmoji[product.condition] || '📦'} ${escapeHtml(conditionText)}
             </span>
             <span class="modal-badge" style="background: #fef3c7; color: #92400e;">
-              📍 ${escapeHtml(product.location) || 'Not specified'}
+              📍 ${escapeHtml(product.location) || (i18n.t ? i18n.t('not_specified') : 'Not specified')}
             </span>
             <span class="modal-badge" style="background: #f3e8ff; color: #6b21a8;">
               📦 ${escapeHtml(product.category) || 'other'}
             </span>
             ${product.stock > 0 
-              ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} in stock</span>`
-              : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ Out of stock</span>`
+              ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} ${i18n.t ? i18n.t('in_stock_label') : 'in stock'}</span>`
+              : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ ${i18n.t ? i18n.t('out_of_stock_label') : 'Out of stock'}</span>`
             }
           </div>
           
           <div class="modal-description">
-            <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">Description</h3>
-            <p>${escapeHtml(product.description) || 'No description provided.'}</p>
+            <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">${i18n.t ? i18n.t('modal_description') : 'Description'}</h3>
+            <p>${escapeHtml(product.description) || (i18n.t ? i18n.t('no_description') : 'No description available.')}</p>
           </div>
           
           <!-- Product Stats -->
           <div class="modal-stats">
             <div class="modal-stat">
               <div class="modal-stat-value">❤️ ${productLikes}</div>
-              <div class="modal-stat-label">Likes</div>
+              <div class="modal-stat-label">${i18n.t ? i18n.t('modal_likes') : 'Likes'}</div>
             </div>
             <div class="modal-stat">
               <div class="modal-stat-value" id="modalViewsCount">👁️ ${productViews}</div>
-              <div class="modal-stat-label">Views</div>
+              <div class="modal-stat-label">${i18n.t ? i18n.t('modal_views') : 'Views'}</div>
             </div>
           </div>
         </div>
@@ -1851,19 +1857,19 @@ async function initializeIndexPage() {
             ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
           </div>
           <div class="modal-seller-info">
-            <h3 style="cursor:pointer; color:#3b82f6;">${escapeHtml(sellerData?.username) || 'Unknown Seller'}</h3>
+            <h3 style="cursor:pointer; color:#3b82f6;">${escapeHtml(sellerData?.username) || (i18n.t ? i18n.t('unknown_seller') : 'Unknown Seller')}</h3>
             <div class="modal-seller-rating">
               ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
             </div>
             <div style="font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem;">
-              Member since ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
+              ${i18n.t ? i18n.t('modal_member_since') : 'Member since'} ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
             </div>
           </div>
         </div>
         
         ${sellerData ? `
           <button class="modal-btn modal-btn-secondary" style="width: 100%; margin-top: 1rem;" id="chatSellerBtn" data-seller="${product.seller_id}" data-product="${product.id}">
-            💬 Chat with Seller
+            💬 ${i18n.t ? i18n.t('modal_chat_seller') : 'Chat with Seller'}
           </button>
         ` : ''}
       </div>
@@ -1871,11 +1877,11 @@ async function initializeIndexPage() {
       <!-- Action Buttons -->
       <div class="modal-actions">
         <button class="modal-btn modal-btn-secondary" id="likeProductBtn">
-          ❤️ Like Product
+          ❤️ ${i18n.t ? i18n.t('modal_like_product') : 'Like Product'}
         </button>
         ${product.stock > 0 ? `
           <button class="modal-btn modal-btn-primary" id="modalBuyBtn" data-id="${product.id}">
-            🛒 Buy Now - €${price}
+            🛒 ${i18n.t ? i18n.t('buyNow') : 'Buy Now'} - €${price}
           </button>
         ` : ''}
       </div>
@@ -1918,12 +1924,21 @@ async function initializeIndexPage() {
     const likeBtn = document.getElementById('likeProductBtn');
     if (likeBtn) {
       const isCurrentlyLiked = userFavoritesSet.has(product.id);
-      likeBtn.textContent = isCurrentlyLiked ? '💔 Unlike' : '❤️ Like Product';
+      likeBtn.textContent = isCurrentlyLiked
+        ? `💔 ${i18n.t ? i18n.t('modal_unlike_product') : 'Unlike'}`
+        : `❤️ ${i18n.t ? i18n.t('modal_like_product') : 'Like Product'}`;
       likeBtn.onclick = async () => {
         await toggleFavoriteIndex(product.id);
         const nowLiked = userFavoritesSet.has(product.id);
-        likeBtn.textContent = nowLiked ? '💔 Unlike' : '❤️ Like Product';
-        showToast(nowLiked ? 'Product liked!' : 'Product unliked', 'success');
+        likeBtn.textContent = nowLiked
+          ? `💔 ${i18n.t ? i18n.t('modal_unlike_product') : 'Unlike'}`
+          : `❤️ ${i18n.t ? i18n.t('modal_like_product') : 'Like Product'}`;
+        showToast(
+          nowLiked
+            ? (i18n.t ? i18n.t('product_liked') : 'Product liked!')
+            : (i18n.t ? i18n.t('product_unliked') : 'Product unliked'),
+          'success'
+        );
       };
     }
 
@@ -1938,13 +1953,30 @@ async function initializeIndexPage() {
 
   // Filter tabs
   const filterTabs = document.querySelectorAll('.filter-tab');
+  const categoryFilterSelect = document.getElementById('categoryFilter');
+  const setActiveCategoryTab = (category) => {
+    const target = category || 'all';
+    filterTabs.forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`[data-category="${target}"]`);
+    if (activeTab) activeTab.classList.add('active');
+  };
+
+  const syncCategoryFilter = (category) => {
+    currentFilters.category = category && category !== 'all' ? category : '';
+    currentCategory = currentFilters.category || 'all';
+    if (categoryFilterSelect) {
+      categoryFilterSelect.value = currentFilters.category;
+    }
+    setActiveCategoryTab(currentCategory);
+  };
+
   if (filterTabs && filterTabs.length) {
     filterTabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
-        filterTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        currentCategory = tab.dataset.category || 'all';
+        const nextCategory = tab.dataset.category || 'all';
+        syncCategoryFilter(nextCategory);
         applyFiltersAndRender();
+        updateActiveFilters();
       });
     });
   }
@@ -1953,23 +1985,31 @@ async function initializeIndexPage() {
   const applyFiltersBtn = document.getElementById('applyFilters');
   const clearFiltersBtn = document.getElementById('clearFilters');
 
+  const applyFiltersFromInputs = (showToastMsg = false) => {
+    currentFilters.search = document.getElementById('searchInput')?.value || '';
+    currentFilters.minPrice = document.getElementById('minPrice')?.value || '';
+    currentFilters.maxPrice = document.getElementById('maxPrice')?.value || '';
+    currentFilters.location = document.getElementById('locationFilter')?.value || '';
+    currentFilters.condition = document.getElementById('conditionFilter')?.value || '';
+    currentFilters.stock = document.getElementById('stockFilter')?.value || '';
+    currentFilters.availability = document.getElementById('availabilityFilter')?.value || '';
+    currentFilters.brand = document.getElementById('brandFilter')?.value || '';
+    currentFilters.color = document.getElementById('colorFilter')?.value || '';
+    currentFilters.date = document.getElementById('dateFilter')?.value || '';
+    currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
+    const selectedCategory = document.getElementById('categoryFilter')?.value || '';
+    syncCategoryFilter(selectedCategory || 'all');
+
+    applyFiltersAndRender();
+    updateActiveFilters();
+    if (showToastMsg) {
+      showToast(i18n.t ? i18n.t('filters_applied') : 'Filters applied successfully!', 'success');
+    }
+  };
+
   if (applyFiltersBtn) {
     applyFiltersBtn.addEventListener('click', () => {
-      currentFilters.search = document.getElementById('searchInput')?.value || '';
-      currentFilters.minPrice = document.getElementById('minPrice')?.value || '';
-      currentFilters.maxPrice = document.getElementById('maxPrice')?.value || '';
-      currentFilters.location = document.getElementById('locationFilter')?.value || '';
-      currentFilters.condition = document.getElementById('conditionFilter')?.value || '';
-      currentFilters.stock = document.getElementById('stockFilter')?.value || '';
-      currentFilters.availability = document.getElementById('availabilityFilter')?.value || '';
-      currentFilters.brand = document.getElementById('brandFilter')?.value || '';
-      currentFilters.color = document.getElementById('colorFilter')?.value || '';
-      currentFilters.date = document.getElementById('dateFilter')?.value || '';
-      currentFilters.sortBy = document.getElementById('sortFilter')?.value || 'newest';
-
-      applyFiltersAndRender();
-      updateActiveFilters();
-      showToast('Filters applied successfully!', 'success');
+      applyFiltersFromInputs(true);
     });
   }
 
@@ -1977,6 +2017,7 @@ async function initializeIndexPage() {
     clearFiltersBtn.addEventListener('click', () => {
       currentFilters = {
         search: '',
+        category: '',
         minPrice: '',
         maxPrice: '',
         location: '',
@@ -1996,25 +2037,18 @@ async function initializeIndexPage() {
         if (el) el.value = '';
       });
 
-      const selects = ['locationFilter', 'conditionFilter', 'stockFilter', 'availabilityFilter', 'dateFilter', 'sortFilter'];
+      const selects = ['locationFilter', 'conditionFilter', 'stockFilter', 'availabilityFilter', 'dateFilter', 'sortFilter', 'categoryFilter'];
       selects.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = id === 'sortFilter' ? 'newest' : '';
       });
 
-      // Clear category filter
-      const catFilter = document.getElementById('categoryFilter');
-      if (catFilter) catFilter.value = '';
-
       // Reset category to all
-      currentCategory = 'all';
-      filterTabs.forEach(t => t.classList.remove('active'));
-      const allTab = document.querySelector('[data-category="all"]');
-      if (allTab) allTab.classList.add('active');
+      syncCategoryFilter('all');
 
       applyFiltersAndRender();
       updateActiveFilters();
-      showToast('Filters cleared!', 'success');
+      showToast(i18n.t ? i18n.t('filters_cleared') : 'Filters cleared!', 'success');
     });
   }
 
@@ -2028,17 +2062,18 @@ async function initializeIndexPage() {
     let hasFilters = false;
 
     const filterLabels = {
-      search: '🔍 Search',
-      minPrice: '💰 Min',
-      maxPrice: '💸 Max',
-      location: '📍 Location',
-      condition: '⭐ Condition',
-      stock: '📊 Stock',
-      availability: '🔖 Status',
-      brand: '🏷️ Brand',
-      color: '🎨 Color',
-      date: '📅 Date',
-      sortBy: '🔄 Sort'
+      search: i18n.t ? i18n.t('filter_search') : '🔍 Search',
+      category: i18n.t ? i18n.t('filter_category') : '📦 Category',
+      minPrice: i18n.t ? i18n.t('min_price') : '💰 Min',
+      maxPrice: i18n.t ? i18n.t('max_price') : '💸 Max',
+      location: i18n.t ? i18n.t('filter_location') : '📍 Location',
+      condition: i18n.t ? i18n.t('filter_condition') : '⭐ Condition',
+      stock: i18n.t ? i18n.t('filter_stock') : '📊 Stock',
+      availability: i18n.t ? i18n.t('filter_availability') : '🔖 Status',
+      brand: i18n.t ? i18n.t('filter_brand') : '🏷️ Brand',
+      color: i18n.t ? i18n.t('filter_color') : '🎨 Color',
+      date: i18n.t ? i18n.t('filter_date') : '📅 Date',
+      sortBy: i18n.t ? i18n.t('filter_sort') : '🔄 Sort'
     };
 
     Object.keys(currentFilters).forEach(key => {
@@ -2054,6 +2089,7 @@ async function initializeIndexPage() {
           currentFilters[key] = key === 'sortBy' ? 'newest' : '';
           const inputId = {
             search: 'searchInput',
+            category: 'categoryFilter',
             minPrice: 'minPrice',
             maxPrice: 'maxPrice',
             location: 'locationFilter',
@@ -2067,6 +2103,9 @@ async function initializeIndexPage() {
           }[key];
           const el = document.getElementById(inputId);
           if (el) el.value = key === 'sortBy' ? 'newest' : '';
+          if (key === 'category') {
+            syncCategoryFilter('all');
+          }
           applyFiltersAndRender();
           updateActiveFilters();
         };
@@ -2086,9 +2125,30 @@ async function initializeIndexPage() {
       searchTimeout = setTimeout(() => {
         currentFilters.search = searchInput.value;
         applyFiltersAndRender();
+        updateActiveFilters();
       }, 300);
     });
   }
+
+  const filterInputs = ['minPrice', 'maxPrice', 'brandFilter', 'colorFilter'];
+  filterInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => applyFiltersFromInputs());
+  });
+
+  const filterSelects = [
+    'categoryFilter',
+    'locationFilter',
+    'conditionFilter',
+    'stockFilter',
+    'availabilityFilter',
+    'dateFilter',
+    'sortFilter'
+  ];
+  filterSelects.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => applyFiltersFromInputs());
+  });
 
   // Toggle advanced filters
   const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
@@ -2136,11 +2196,11 @@ async function initializeIndexPage() {
       const { deleteProduct } = await import('./supabase.js');
       await deleteProduct(productId, user.id);
       
-      showToast('Product deleted successfully!', 'success');
+      showToast(i18n.t ? i18n.t('product_deleted') : 'Product deleted successfully!', 'success');
       loadProducts(); // Reload products
     } catch (error) {
       console.error('Error deleting product:', error);
-      showToast(error.message || 'Failed to delete product', 'error');
+      showToast(error.message || (i18n.t ? i18n.t('product_delete_failed') : 'Failed to delete product'), 'error');
     }
   }
 

@@ -72,6 +72,156 @@ let currentFilter = 'all';
 let allProducts = [];
 let userFavorites = new Set();
 let productViewsChannel = null;
+let currentFilters = {
+  search: '',
+  category: '',
+  minPrice: '',
+  maxPrice: '',
+  condition: '',
+  stock: '',
+  sortBy: 'newest'
+};
+
+const filterControls = {
+  searchInput: document.getElementById('productSearchInput'),
+  categorySelect: document.getElementById('productCategoryFilter'),
+  minPriceInput: document.getElementById('productMinPrice'),
+  maxPriceInput: document.getElementById('productMaxPrice'),
+  conditionSelect: document.getElementById('productConditionFilter'),
+  stockSelect: document.getElementById('productStockFilter'),
+  sortSelect: document.getElementById('productSortFilter'),
+  applyButton: document.getElementById('productApplyFilters'),
+  clearButton: document.getElementById('productClearFilters')
+};
+
+function syncFiltersFromUI() {
+  currentFilters = {
+    search: filterControls.searchInput?.value?.trim() || '',
+    category: filterControls.categorySelect?.value || '',
+    minPrice: filterControls.minPriceInput?.value || '',
+    maxPrice: filterControls.maxPriceInput?.value || '',
+    condition: filterControls.conditionSelect?.value || '',
+    stock: filterControls.stockSelect?.value || '',
+    sortBy: filterControls.sortSelect?.value || 'newest'
+  };
+}
+
+function resetFiltersUI() {
+  if (filterControls.searchInput) filterControls.searchInput.value = '';
+  if (filterControls.categorySelect) filterControls.categorySelect.value = '';
+  if (filterControls.minPriceInput) filterControls.minPriceInput.value = '';
+  if (filterControls.maxPriceInput) filterControls.maxPriceInput.value = '';
+  if (filterControls.conditionSelect) filterControls.conditionSelect.value = '';
+  if (filterControls.stockSelect) filterControls.stockSelect.value = '';
+  if (filterControls.sortSelect) filterControls.sortSelect.value = 'newest';
+  syncFiltersFromUI();
+}
+
+function applyFiltersAndDisplay() {
+  let filteredProducts = [...allProducts];
+
+  if (currentFilters.search) {
+    const term = currentFilters.search.toLowerCase();
+    filteredProducts = filteredProducts.filter(p =>
+      (p.name || '').toLowerCase().includes(term) ||
+      (p.description || '').toLowerCase().includes(term) ||
+      (p.category || '').toLowerCase().includes(term)
+    );
+  }
+
+  if (currentFilters.category) {
+    filteredProducts = filteredProducts.filter(p =>
+      (p.category || '').toLowerCase() === currentFilters.category.toLowerCase()
+    );
+  }
+
+  if (currentFilters.minPrice) {
+    const minPrice = parseFloat(currentFilters.minPrice);
+    if (!Number.isNaN(minPrice)) {
+      filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) >= minPrice);
+    }
+  }
+
+  if (currentFilters.maxPrice) {
+    const maxPrice = parseFloat(currentFilters.maxPrice);
+    if (!Number.isNaN(maxPrice)) {
+      filteredProducts = filteredProducts.filter(p => parseFloat(p.price || 0) <= maxPrice);
+    }
+  }
+
+  if (currentFilters.condition) {
+    filteredProducts = filteredProducts.filter(p => (p.condition || '') === currentFilters.condition);
+  }
+
+  if (currentFilters.stock) {
+    filteredProducts = filteredProducts.filter(p => {
+      const stock = parseInt(p.stock || 0);
+      switch (currentFilters.stock) {
+        case 'in_stock':
+          return stock > 0;
+        case 'low_stock':
+          return stock >= 1 && stock <= 5;
+        case 'high_stock':
+          return stock >= 10;
+        case 'out_of_stock':
+          return stock === 0;
+        default:
+          return true;
+      }
+    });
+  }
+
+  switch (currentFilters.sortBy) {
+    case 'oldest':
+      filteredProducts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      break;
+    case 'price_low':
+      filteredProducts.sort((a, b) => parseFloat(a.price || 0) - parseFloat(b.price || 0));
+      break;
+    case 'price_high':
+      filteredProducts.sort((a, b) => parseFloat(b.price || 0) - parseFloat(a.price || 0));
+      break;
+    case 'name':
+      filteredProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      break;
+    case 'name_desc':
+      filteredProducts.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+      break;
+    default:
+      filteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      break;
+  }
+
+  displayProducts(filteredProducts);
+}
+
+function bindFilterControls() {
+  const onFilterChange = () => {
+    syncFiltersFromUI();
+    applyFiltersAndDisplay();
+  };
+
+  [
+    filterControls.searchInput,
+    filterControls.minPriceInput,
+    filterControls.maxPriceInput
+  ].forEach(el => el?.addEventListener('input', onFilterChange));
+
+  [
+    filterControls.categorySelect,
+    filterControls.conditionSelect,
+    filterControls.stockSelect,
+    filterControls.sortSelect
+  ].forEach(el => el?.addEventListener('change', onFilterChange));
+
+  filterControls.applyButton?.addEventListener('click', onFilterChange);
+  filterControls.clearButton?.addEventListener('click', () => {
+    resetFiltersUI();
+    applyFiltersAndDisplay();
+  });
+}
+
+bindFilterControls();
 
 function getOrCreateGuestViewerId() {
   try {
@@ -263,7 +413,8 @@ async function loadProducts() {
     }
 
     allProducts = products;
-    displayProducts(products);
+    syncFiltersFromUI();
+    applyFiltersAndDisplay();
 
     // Load user's favorites for heart icons
     if (currentUser) {
