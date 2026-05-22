@@ -1502,7 +1502,7 @@ async function initializeIndexPage() {
       const likesCount = parseInt(product.likes_count || 0);
       const viewsCount = parseInt(product.views_count || 0);
       const isLiked = userFavoritesSet.has(product.id);
-      const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
+      const { description: cleanDescription } = parseProductAttrs(product.description || '');
       const expiryBadge = renderExpiryBadge(product);
 
       // Check if product was sold in the last 5 minutes

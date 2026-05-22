@@ -1221,10 +1221,27 @@ html.light .btn-hero-secondary {
 
 .product-info {
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .product-name,
 .product-description {
+  overflow-wrap: anywhere;
+}
+
+.product-results {
+  min-width: 0;
+}
+
+.product-seller {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.seller-name {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
@@ -1412,7 +1429,13 @@ html.light .btn-hero-secondary {
 .product-meta {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
   margin-bottom: 1.25rem;
+}
+
+.product-meta > * {
+  min-width: 0;
 }
 
 .product-rating,
@@ -1433,6 +1456,8 @@ html.light .btn-hero-secondary {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
 }
@@ -1441,6 +1466,8 @@ html.light .btn-hero-secondary {
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .price-currency {
@@ -1467,6 +1494,8 @@ html.light .btn-hero-secondary {
 .product-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn-add-cart {
@@ -1502,6 +1531,8 @@ html.light .btn-hero-secondary {
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
   line-height: 1.1;
+  min-height: 42px;
+  max-width: 100%;
 }
 
 .btn-buy-now:hover {
@@ -2052,6 +2083,8 @@ html.light .hero-modern .stat-label {
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
+  min-height: 42px;
+  max-width: 100%;
 }
 
 .btn-send:hover {
@@ -2074,10 +2107,12 @@ html.light .hero-modern .stat-label {
 
   .product-page-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
   }
 
   .product-filters {
     position: static;
+    top: auto;
   }
 
   .chat-modern {
@@ -2129,8 +2164,20 @@ html.light .hero-modern .stat-label {
   }
 
   .product-grid-modern {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.5rem;
+  }
+
+  .product-filters {
+    padding: 1.25rem;
+  }
+
+  .product-filters-actions {
+    flex-direction: column;
+  }
+
+  .product-filters-actions > * {
+    width: 100%;
   }
 
   .filter-range {
@@ -5215,6 +5262,15 @@ html.dark .balance-filter-btns .filter-btn:not(.active) {
 
 /* --- Product Grid Small Screens --- */
 @media (max-width: 480px) {
+  .product-page-layout {
+    gap: 1rem;
+  }
+
+  .product-filters {
+    padding: 1rem;
+    border-radius: var(--radius);
+  }
+
   .product-grid-modern {
     grid-template-columns: 1fr;
     gap: 0.75rem;
@@ -5225,21 +5281,99 @@ html.dark .balance-filter-btns .filter-btn:not(.active) {
   }
 
   .product-image-container {
-    height: 180px;
+    height: 220px;
   }
 
-  .product-details {
-    padding: 0.75rem;
+  .product-info {
+    padding: 1rem;
+    gap: 0.625rem;
   }
 
   .product-name {
-    font-size: 0.875rem;
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+
+  .product-meta {
+    gap: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .product-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .product-price {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .price-amount {
+    font-size: 1.5rem;
+  }
+
+  .price-original {
+    font-size: 1rem;
+  }
+
+  .product-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .product-actions > * {
+    flex: 1 1 0;
+  }
+
+  .btn-add-cart,
+  .btn-edit,
+  .btn-delete {
+    min-width: 44px;
+  }
+
+  .btn-buy-now,
+  .btn-renew-listing {
+    width: 100%;
+  }
+
+  .product-like-btn {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 36px;
+    height: 36px;
+  }
+
+  .product-badge-new {
+    top: 0.75rem;
+    left: 0.75rem;
+    max-width: calc(100% - 4rem);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .product-overlay {
+    padding: 1rem;
+  }
+
+  .btn-quick-view {
+    width: 100%;
+    justify-content: center;
   }
 }
 
 @media (max-width: 360px) {
   .product-grid-modern {
     grid-template-columns: 1fr;
+  }
+
+  .product-image-container {
+    height: 190px;
+  }
+
+  .product-meta {
+    gap: 0.5rem;
   }
 }
 

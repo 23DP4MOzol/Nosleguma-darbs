@@ -523,7 +523,7 @@ function displayProducts(products) {
     const viewsCount = parseInt(product.views_count || 0);
     const isSold = product.stock === 0;
     const soldDate = product.sold_at ? new Date(product.sold_at).toLocaleDateString() : '';
-    const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
+    const { description: cleanDescription } = parseProductAttrs(product.description || '');
     const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
     const isExpired = isListingExpired(product);
     const expiryBadge = getExpiryBadgeHtml(product);
