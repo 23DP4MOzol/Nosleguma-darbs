@@ -359,14 +359,16 @@ window.viewUserDetails = async function(userId) {
       conversationsResult,
       orders,
       productsCountResult,
-      conversationsCountResult
+      conversationsCountResult,
+      auditLogs
     ] = await Promise.all([
       supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false }).limit(PAGE_SIZES.userOrders),
       supabase.from('user_transactions').select('id, amount, transaction_type, description, reference_id, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(PAGE_SIZES.userTransactions),
       supabase.from('conversations').select('*').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order('last_message_at', { ascending: false }).limit(10),
       fetchOrdersForUser(userId),
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', userId),
-      supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`),
+      fetchAuditLogs({ days: 14, limit: 50, actorUserId: userId }).catch(() => [])
     ]);
 
     if (productsResult.error) throw productsResult.error;
@@ -409,7 +411,8 @@ window.viewUserDetails = async function(userId) {
       products, 
       orders: enrichedOrders,
       purchaseOrders,
-      conversations: enrichedConversations
+      conversations: enrichedConversations,
+      auditLogs: auditLogs || []
     });
     
   } catch (error) {
@@ -500,6 +503,7 @@ function showUserDetailModal(user, stats) {
       <button class="tab-btn" data-tab="udt-purchases" onclick="switchUserTab('udt-purchases')" style="padding:0.75rem 1.5rem;border:none;background:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:500;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">🛍️ Purchase History (${stats.purchaseOrders?.length || 0})</button>
       <button class="tab-btn" data-tab="udt-products" onclick="switchUserTab('udt-products')" style="padding:0.75rem 1.5rem;border:none;background:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:500;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">📦 Products (${stats.products?.length || 0})</button>
       <button class="tab-btn" data-tab="udt-chats" onclick="switchUserTab('udt-chats')" style="padding:0.75rem 1.5rem;border:none;background:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:500;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">💬 Conversations (${stats.conversations?.length || 0})</button>
+      <button class="tab-btn" data-tab="udt-audit" onclick="switchUserTab('udt-audit')" style="padding:0.75rem 1.5rem;border:none;background:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:500;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">🕵️ Audit (${stats.auditLogs?.length || 0})</button>
     </div>
     
     <!-- Transactions Tab -->
@@ -594,6 +598,35 @@ function showUserDetailModal(user, stats) {
           `).join('')}
         </div>
       ` : '<p style="text-align:center;color:var(--muted);">No conversations</p>'}
+    </div>
+
+    <div id="udt-audit" class="tab-content">
+      ${stats.auditLogs && stats.auditLogs.length > 0 ? `
+        <table class="admin-table" style="width:100%;border-collapse:collapse;">
+          <thead style="background:var(--bg-secondary);">
+            <tr>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Date</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Event</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Page</th>
+              <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stats.auditLogs.map(log => {
+              const data = log.event_data ? JSON.stringify(log.event_data) : '';
+              const shortData = data.length > 140 ? `${data.slice(0, 140)}...` : data;
+              return `
+                <tr style="border-bottom:1px solid var(--border);">
+                  <td style="padding:0.75rem;">${formatDate(log.created_at)}</td>
+                  <td style="padding:0.75rem;"><span class="badge">${escapeHtml(log.event_type || 'unknown')}</span></td>
+                  <td style="padding:0.75rem;">${escapeHtml(log.page_path || '-')}</td>
+                  <td style="padding:0.75rem;max-width:320px;word-break:break-word;">${escapeHtml(shortData || '-')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : '<p style="text-align:center;color:var(--muted);">No audit entries in the last 14 days</p>'}
     </div>
   `;
   

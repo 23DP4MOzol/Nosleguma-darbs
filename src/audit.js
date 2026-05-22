@@ -37,14 +37,20 @@ export async function logAuditEvent(eventType, eventData = {}, extra = {}) {
   }
 }
 
-export async function fetchAuditLogs({ days = 14, limit = 200 } = {}) {
+export async function fetchAuditLogs({ days = 14, limit = 200, actorUserId = null } = {}) {
   const since = new Date(Date.now() - (days * 24 * 60 * 60 * 1000)).toISOString();
-  const { data, error } = await supabase
+  let query = supabase
     .from(AUDIT_TABLE)
     .select('id, created_at, event_type, actor_email, actor_user_id, page_path, event_data')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (actorUserId) {
+    query = query.eq('actor_user_id', actorUserId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];
