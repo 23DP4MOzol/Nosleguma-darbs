@@ -2,7 +2,7 @@
 import { supabase } from './supabase.js';
 import { showInfoModal } from './ui/modal.js';
 import { i18n } from './i18n.js';
-import { parseProductAttrs, getCategoryDisplayName } from './category-fields.js';
+import { parseProductAttrs, getCategoryDisplayName, renderAttrBadges } from './category-fields.js';
 import { formatListingPrice, getListingExpiryInfo } from './listing-utils.js';
 
 export async function showProductModal(product) {
@@ -59,9 +59,10 @@ export async function showProductModal(product) {
   const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
   const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
   const price = formatListingPrice(product.price);
-  const { description: cleanDescription } = parseProductAttrs(product.description || '');
+  const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
   const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
   const expiry = getListingExpiryInfo(product.valid_until);
+  const attrBadges = renderAttrBadges(product.category, attrs);
   
   modalBody.innerHTML = `
     <div class="modal-product-grid">
@@ -91,6 +92,7 @@ export async function showProductModal(product) {
         
         <div class="modal-description">
           ${expiry.hasExpiry ? `<p style="margin:0 0 0.75rem 0; font-size:0.875rem; font-weight:700; color:${expiry.isExpired ? '#ef4444' : '#3b82f6'};">${expiry.isExpired ? i18n.t('listing_expired') : `${i18n.t('listing_time_remaining')}: ${expiry.shortLabel}`}</p>` : ''}
+          ${attrBadges ? `<div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin:0 0 0.75rem 0;">${attrBadges}</div>` : ''}
           <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">${i18n.t('modal_description')}</h3>
           <p>${cleanDescription || i18n.t('no_description')}</p>
         </div>

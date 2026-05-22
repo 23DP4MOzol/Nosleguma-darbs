@@ -1108,10 +1108,10 @@ html.light .btn-hero-secondary {
   transition: var(--transition);
   cursor: pointer;
   min-width: 0;
+  will-change: box-shadow, border-color;
 }
 
 .product-card-modern:hover {
-  transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
   border-color: transparent;
 }
@@ -1159,7 +1159,7 @@ html.light .btn-hero-secondary {
 .product-like-btn:hover {
   background: var(--card-bg);
   color: #ef4444;
-  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
 }
 
 .product-badge-new {
@@ -1212,7 +1212,7 @@ html.light .btn-hero-secondary {
 .btn-quick-view:hover {
   background: var(--card-bg);
   color: var(--fg);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .product-info {
@@ -1483,7 +1483,7 @@ html.light .btn-hero-secondary {
   background: var(--secondary);
   border-color: var(--primary);
   color: var(--primary);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-buy-now {
@@ -1501,7 +1501,6 @@ html.light .btn-hero-secondary {
 }
 
 .btn-buy-now:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 

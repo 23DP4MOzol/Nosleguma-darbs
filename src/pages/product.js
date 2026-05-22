@@ -1,7 +1,7 @@
 import { supabase, addToFavorites, removeFromFavorites, getUserFavorites, renewProductListing } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
-import { parseProductAttrs, getCategoryDisplayName } from '../category-fields.js';
+import { parseProductAttrs, getCategoryDisplayName, renderAttrBadges } from '../category-fields.js';
 import { formatListingPrice, getListingExpiryInfo, isListingExpired } from '../listing-utils.js';
 
 // ============================
@@ -523,10 +523,11 @@ function displayProducts(products) {
     const viewsCount = parseInt(product.views_count || 0);
     const isSold = product.stock === 0;
     const soldDate = product.sold_at ? new Date(product.sold_at).toLocaleDateString() : '';
-    const { description: cleanDescription } = parseProductAttrs(product.description || '');
+    const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
     const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
     const isExpired = isListingExpired(product);
     const expiryBadge = getExpiryBadgeHtml(product);
+    const attrBadges = renderAttrBadges(product.category, attrs);
 
     return `
     <div class="product-card-modern" data-product-id="${product.id}" ${isSold || isExpired ? 'style="opacity:0.75;"' : ''}>
@@ -559,6 +560,7 @@ function displayProducts(products) {
           <span style="font-size:0.8rem; color:var(--muted);">📦 ${product.stock || 0}</span>
         </div>
         ${expiryBadge ? `<div style="margin:0.5rem 0 0.75rem 0;">${expiryBadge}</div>` : ''}
+        ${attrBadges ? `<div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin:0 0 0.75rem 0;">${attrBadges}</div>` : ''}
         ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">${i18n.t('sold_on')} ${soldDate}</div>` : ''}
         <p class="product-description">${cleanDescription || i18n.t('no_description')}</p>
         <div class="product-footer">
