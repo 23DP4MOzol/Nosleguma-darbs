@@ -4,7 +4,14 @@ import { showInfoModal } from './ui/modal.js';
 
 export async function showProductModal(product) {
   const modal = document.getElementById('productModal');
+  if (!modal) {
+    console.warn('productModal element not found');
+    return;
+  }
   const modalBody = modal.querySelector('.modal-body');
+  const activeUser =
+    window.currentUser ||
+    (await supabase.auth.getUser().then(({ data }) => data?.user).catch(() => null));
   
   // Get seller information
   let sellerData = null;
@@ -134,7 +141,7 @@ export async function showProductModal(product) {
       <button class="modal-btn modal-btn-secondary" onclick="toggleLikeProduct('${product.id}')">
         ❤️ Like Product
       </button>
-      ${(product.stock > 0 && !product.is_reserved && (!currentUser || product.seller_id !== currentUser.id)) ? `
+      ${(product.stock > 0 && !product.is_reserved && (!activeUser || product.seller_id !== activeUser.id)) ? `
         <button class="modal-btn modal-btn-secondary" onclick="handleReserve('${product.id}')">
           🛒 Reserve (€0.20)
         </button>

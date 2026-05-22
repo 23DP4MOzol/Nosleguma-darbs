@@ -503,7 +503,7 @@
   <!-- User Detail Modal -->
   <div id="userDetailModal" class="product-modal" style="display: none;">
     <div class="modal-overlay" id="userDetailModalOverlay"></div>
-    <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-content admin-quickview-modal">
       <button class="modal-close" id="userDetailModalClose">×</button>
       <div class="modal-body" id="userDetailContent">
         <!-- Content loaded dynamically -->
@@ -513,7 +513,7 @@
 
   <div id="adminDataModal" class="product-modal" style="display: none;">
     <div class="modal-overlay" id="adminDataModalOverlay"></div>
-    <div class="modal-content admin-detail-modal-content">
+    <div class="modal-content admin-quickview-modal admin-detail-modal-content">
       <button class="modal-close" id="adminDataModalClose">×</button>
       <div class="modal-body" id="adminDataModalContent"></div>
     </div>
@@ -538,6 +538,68 @@
 
   <style>
     /* Admin Panel Styles */
+    .product-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .product-modal .modal-content {
+      position: relative;
+      background: var(--card-bg);
+      border-radius: 24px;
+      max-width: 1200px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+    }
+
+    .product-modal .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.1);
+      border: none;
+      font-size: 2rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--fg);
+      z-index: 10001;
+      transition: all 0.2s;
+    }
+
+    .product-modal .modal-close:hover {
+      background: rgba(0, 0, 0, 0.2);
+      transform: rotate(90deg);
+    }
+
+    .product-modal .modal-body {
+      padding: 2rem;
+    }
+
+    .admin-quickview-modal {
+      max-width: 1000px !important;
+    }
+
     .admin-sidebar {
       position: fixed;
       left: 0;
@@ -899,8 +961,8 @@
     }
 
     .admin-detail-modal-content {
-      max-width: 920px;
-      width: min(920px, calc(100vw - 32px));
+      max-width: 920px !important;
+      width: 100%;
       max-height: 88vh;
       overflow: hidden;
       display: flex;
@@ -911,7 +973,7 @@
       overflow-y: auto;
       overscroll-behavior: contain;
       max-height: calc(88vh - 48px);
-      padding-right: 0.25rem;
+      padding: 2rem;
     }
 
     .admin-detail-layout {
