@@ -767,13 +767,16 @@ function showProductModal(productId) {
 
 // Handle product actions
 function handleProductAction(productId, action) {
-  if (action === 'buy') {
-    // Redirect to orders page to complete purchase
-    window.location.href = `orders.html?buy=${productId}`;
-  } else {
-    // Add to cart - redirect to orders page
-    window.location.href = `orders.html?buy=${productId}`;
-  }
+  try {
+    const platform = (typeof window !== 'undefined' && window.vendlyPlatformSettings) ? window.vendlyPlatformSettings : null;
+    if (platform?.disable_buying) {
+      showInfoModal('Buying is currently disabled by admin. Please try again later.', 'Unavailable');
+      return;
+    }
+  } catch (e) {}
+
+  // Orders page expects ?product=<id> for checkout
+  window.location.href = `orders.html?product=${productId}`;
 }
 
 // Expose functions to window for inline onclick handlers

@@ -83,7 +83,7 @@
     <!-- FORM SECTION -->
     <div class="sell-form-section">
       <form id="sellForm" class="sell-form-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 0.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
+        <h3 style="margin-bottom: 0.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;" data-i18n="sell_product_details">Product Details</h3>
         
         <!-- Listing Fee Info -->
         <div style="background: color-mix(in srgb, #f59e0b 15%, var(--card-bg)); border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
@@ -94,7 +94,7 @@
           <p style="margin: 0; font-size: 0.875rem; color: var(--fg);">
             <span data-i18n="listing_fee_description">Listing fee: €0.50 - €1.00 (based on price)</span>
           </p>
-          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #f59e0b;">
+          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #f59e0b;" data-i18n="sell_current_fee">
             Current fee: €0.50
           </p>
         </div>
@@ -198,40 +198,11 @@
             <label class="form-field">
               <span class="form-label" data-i18n="sell_shipping_from">Ship from</span>
               <select id="shippingMethod" class="form-select">
-                <option value="address" data-i18n="sell_ship_from_address">My Address</option>
                 <option value="locker" data-i18n="sell_ship_from_locker">Parcel Locker</option>
               </select>
             </label>
           </div>
-          
-          <div id="sellerAddressSection">
-            <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_shipping_origin_desc">This address is used to calculate shipping costs. It will NOT be shown to buyers.</p>
-            <div class="form-cols">
-              <label class="form-field">
-                <span class="form-label" data-i18n="sell_origin_street">Street Address</span>
-                <input type="text" id="sellerStreetInput" class="form-input" data-i18n-placeholder="sell_origin_street_ph" placeholder="Brīvības iela 100">
-              </label>
-              <label class="form-field">
-                <span class="form-label" data-i18n="sell_origin_city">City</span>
-                <select id="sellerCityInput" class="form-select">
-                  <option value="Rīga">Rīga</option>
-                  <option value="Daugavpils">Daugavpils</option>
-                  <option value="Liepāja">Liepāja</option>
-                  <option value="Jelgava">Jelgava</option>
-                  <option value="Jūrmala">Jūrmala</option>
-                  <option value="Ventspils">Ventspils</option>
-                  <option value="Rēzekne">Rēzekne</option>
-                  <option value="Valmiera">Valmiera</option>
-                </select>
-              </label>
-              <label class="form-field">
-                <span class="form-label" data-i18n="sell_origin_postal">Postal Code</span>
-                <input type="text" id="sellerPostalInput" class="form-input" data-i18n-placeholder="sell_origin_postal_ph" placeholder="LV-1001">
-              </label>
-            </div>
-          </div>
-
-          <div id="parcelLockerSection" style="display: none; margin-top: 1rem;">
+          <div id="parcelLockerSection" style="margin-top: 1rem;">
              <div id="map" style="height: 400px; border-radius: 8px; margin-bottom: 1rem;"></div>
              <div id="carrier-filters" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
                 <button class="carrier-filter-btn active" data-carrier="all">All</button>
@@ -240,7 +211,7 @@
                 <button class="carrier-filter-btn" data-carrier="pasts">Latvijas Pasts</button>
                 <button class="carrier-filter-btn" data-carrier="venipak">Venipak</button>
              </div>
-             <input type="text" id="lockerSearchInput" class="form-input" placeholder="Search lockers by address or name..." style="margin-bottom: 1rem;">
+             <input type="text" id="lockerSearchInput" class="form-input" data-i18n-placeholder="sell_locker_search" placeholder="Search lockers by address or name..." style="margin-bottom: 1rem;">
              <div id="locker-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem;">
                 <!-- Locker items will be injected here by JS -->
              </div>
@@ -271,7 +242,7 @@
 
         <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
           <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
-            📤 List Product
+            <span data-i18n="sell_list_product">📤 List Product</span>
           </button>
           <!-- Preview button removed (live preview updates automatically) -->
         </div>
@@ -281,7 +252,7 @@
     <!-- PREVIEW SECTION -->
     <div class="sell-preview-section">
       <div class="preview-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); position: sticky; top: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;">Live Preview</h3>
+        <h3 style="margin-bottom: 1.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;" data-i18n="sell_live_preview">Live Preview</h3>
 
         <div class="product-preview-card" id="productPreview" style="border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; background: var(--bg);">
           <div class="preview-placeholder" style="text-align: center; color: var(--muted); padding: 2rem;">

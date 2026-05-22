@@ -4,6 +4,10 @@ import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
 import { CATEGORY_FIELDS } from '../category-fields.js';
+import { getPlatformSettings } from '../platform-settings.js';
+import { logAuditEvent } from '../audit.js';
+
+let listingDisabledByAdmin = false;
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -24,6 +28,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check auth first
   const user = await checkAuth();
   if (!user) return;
+
+  try {
+    const platform = await getPlatformSettings({ useCache: true });
+    listingDisabledByAdmin = !!platform?.disable_listing;
+    if (listingDisabledByAdmin) {
+      await logAuditEvent('listing_blocked_admin_disabled', { page: 'sell' });
+      await showInfoModal('Listing is currently disabled by admin. Please try again later.', 'Unavailable');
+
+      const submitBtn = document.querySelector('#sellForm button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Listing Disabled';
+      }
+    }
+  } catch (e) {
+    listingDisabledByAdmin = false;
+  }
 
   const form = document.getElementById('sellForm');
   const productPreview = document.getElementById('productPreview');
@@ -176,6 +197,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   let allLockers = [];
   let visibleMarkers = [];
 
+  function normalizeCarrier(rawCarrier) {
+    const value = String(rawCarrier || '').trim().toLowerCase();
+    if (!value) return '';
+    if (value.includes('omniva')) return 'omniva';
+    if (value.includes('venipak')) return 'venipak';
+    if (value.includes('dpd')) return 'dpd';
+    if (value.includes('pasts') || value.includes('latvijas pasts') || value.includes('pasts')) return 'pasts';
+    return value;
+  }
+
+  function resolveLockerCoords(locker) {
+    const lat = parseFloat(locker.latitude ?? locker.lat ?? locker.y);
+    const lng = parseFloat(locker.longitude ?? locker.lng ?? locker.lon ?? locker.x);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return [lat, lng];
+  }
+
   async function initializeLockerMap() {
     if (!mapElement) return;
 
@@ -192,7 +230,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       lockerListElement.innerHTML = '<p>Could not load lockers.</p>';
       return;
     }
-    allLockers = data;
+    allLockers = (data || []).map((locker) => ({
+      ...locker,
+      normalizedCarrier: normalizeCarrier(locker.carrier)
+    }));
     
     renderLockerList(allLockers);
     updateMapMarkers(allLockers);
@@ -232,16 +273,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     visibleMarkers.forEach(marker => marker.removeFrom(map));
     visibleMarkers = [];
 
-    const carrierLogos = {
-        omniva: 'https://www.omniva.lv/assets/img/logo.svg',
-        dpd: 'https://www.dpd.com/wp-content/themes/DPD_NoLogin/images/DPD_logo_redgrad_rgb_responsive.svg',
-        pasts: 'https://www.pasts.lv/img/logo.svg',
-        venipak: 'https://venipak.com/wp-content/uploads/2021/09/venipak-logo.svg'
+    const carrierMeta = {
+      omniva: { label: 'OM', color: '#f59e0b' },
+      dpd: { label: 'DPD', color: '#dc2626' },
+      pasts: { label: 'LP', color: '#2563eb' },
+      venipak: { label: 'VP', color: '#16a34a' }
     };
 
     lockers.forEach(locker => {
-      if (locker.latitude && locker.longitude) {
-        const iconHtml = `<div style="background-image: url(${carrierLogos[locker.carrier] || ''}); width: 30px; height: 30px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>`;
+      const coords = resolveLockerCoords(locker);
+      if (coords) {
+        const meta = carrierMeta[locker.normalizedCarrier] || { label: 'PK', color: '#6b7280' };
+        const iconHtml = `<div style="width: 30px; height: 30px; border-radius: 999px; background: ${meta.color}; color: #fff; display:flex; align-items:center; justify-content:center; font-size: 10px; font-weight: 700;">${meta.label}</div>`;
         const customIcon = L.divIcon({
             html: iconHtml,
             className: 'custom-map-icon',
@@ -250,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             popupAnchor: [0, -15]
         });
 
-        const marker = L.marker([locker.latitude, locker.longitude], { icon: customIcon, lockerId: locker.id })
+        const marker = L.marker(coords, { icon: customIcon, lockerId: locker.id })
           .addTo(map)
           .bindPopup(`<b>${locker.name}</b><br>${locker.address}`);
         visibleMarkers.push(marker);
@@ -259,13 +302,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   function filterLockers() {
-    const activeCarrier = document.querySelector('.carrier-filter-btn.active').dataset.carrier;
+    const activeCarrier = document.querySelector('.carrier-filter-btn.active')?.dataset.carrier || 'all';
     const searchTerm = lockerSearchInput.value.toLowerCase();
 
     let filteredLockers = allLockers;
 
     if (activeCarrier !== 'all') {
-      filteredLockers = filteredLockers.filter(locker => locker.carrier === activeCarrier);
+      filteredLockers = filteredLockers.filter(locker => locker.normalizedCarrier === activeCarrier);
     }
 
     if (searchTerm) {
@@ -280,21 +323,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMapMarkers(filteredLockers);
   }
 
-  shippingMethodSelect.addEventListener('change', (e) => {
-    if (e.target.value === 'locker') {
-      sellerAddressSection.style.display = 'none';
-      parcelLockerSection.style.display = 'block';
-      if (!map) {
-        initializeLockerMap();
-      } else {
-        // Invalidate map size if it was hidden
-        setTimeout(() => map.invalidateSize(), 10);
-      }
-    } else {
-      sellerAddressSection.style.display = 'block';
-      parcelLockerSection.style.display = 'none';
-    }
-  });
+  if (shippingMethodSelect) {
+    shippingMethodSelect.value = 'locker';
+  }
+  if (sellerAddressSection) {
+    sellerAddressSection.style.display = 'none';
+  }
+  if (parcelLockerSection) {
+    parcelLockerSection.style.display = 'block';
+  }
+  initializeLockerMap();
 
   carrierFilterButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -336,7 +374,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const listingFee = baseFee + ((duration - 1) * 0.50);
     const feeElement = document.getElementById('calculatedFee');
     if (feeElement) {
-      feeElement.textContent = `Current fee: €${listingFee.toFixed(2)}`;
+      const feePrefix = i18n.t ? i18n.t('sell_current_fee_prefix') : 'Current fee:';
+      feeElement.textContent = `${feePrefix} €${listingFee.toFixed(2)}`;
     }
 
     const conditionEmoji = {
@@ -412,6 +451,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    if (listingDisabledByAdmin) {
+      await showInfoModal('Listing is currently disabled by admin. Please try again later.', 'Unavailable');
+      return;
+    }
+
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.textContent = '⏳ Listing...';
@@ -424,6 +468,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await showInfoModal('Please log in first', 'Authentication Required');
         return;
       }
+
+      // Re-check server-side setting (best-effort) in case it changed while the page was open
+      try {
+        const platform = await getPlatformSettings({ useCache: false });
+        if (platform?.disable_listing) {
+          listingDisabledByAdmin = true;
+          await showInfoModal('Listing is currently disabled by admin. Please try again later.', 'Unavailable');
+          return;
+        }
+      } catch (e) {}
 
       let imageUrl = null;
 
@@ -452,11 +506,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         brand: document.getElementById('productBrandInput')?.value || '',
         color: document.getElementById('productColorInput')?.value || '',
         weight_kg: parseFloat(document.getElementById('productWeightInput')?.value) || null,
-        seller_street: document.getElementById('sellerStreetInput')?.value || '',
-        seller_city: document.getElementById('sellerCityInput')?.value || '',
-        seller_postal_code: document.getElementById('sellerPostalInput')?.value || '',
-        shipping_from_locker: document.getElementById('shippingMethod').value === 'locker' ? document.getElementById('selectedLockerId').value : null
+        seller_street: '',
+        seller_city: '',
+        seller_postal_code: '',
+        shipping_from_locker: document.getElementById('selectedLockerId').value || null
       };
+
+      if (!productData.shipping_from_locker) {
+        await showInfoModal(i18n.t('co_err_select_locker'), 'Missing Parcel Locker');
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        return;
+      }
 
       // Collect category-specific extra attributes
       const cat = productData.category;
@@ -492,8 +553,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('Error listing product:', error);
       await showInfoModal('Error listing product: ' + error.message, 'Error');
     } finally {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
+      if (listingDisabledByAdmin) {
+        submitBtn.textContent = 'Listing Disabled';
+        submitBtn.disabled = true;
+      } else {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
     }
   });
 });

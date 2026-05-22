@@ -3,6 +3,8 @@ import { i18n } from '../i18n.js';
 import { showToast } from '../main.js';
 import { showInfoModal, showConfirmModal } from '../ui/modal.js';
 import { fetchOmnivaBalticLockers } from '../lib/omniva-lockers.js';
+import { getPlatformSettings } from '../platform-settings.js';
+import { logAuditEvent } from '../audit.js';
 
 // ============================
 // State
@@ -341,6 +343,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('product');
+
+    // Admin toggle: disable buying/checkout
+    try {
+      const platform = await getPlatformSettings({ useCache: true });
+      if (platform?.disable_buying && productId) {
+        await logAuditEvent('checkout_blocked_admin_disabled', { productId });
+        await showInfoModal('Buying is currently disabled by admin. Please try again later.', 'Unavailable');
+        window.location.href = 'orders.html';
+        return;
+      }
+    } catch (e) {
+      // ignore
+    }
 
     if (productId) {
       await initCheckout(productId);

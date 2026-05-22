@@ -2,6 +2,7 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
+import { logAuditEvent } from '../audit.js';
 
 // ============================
 // Terms Content (English)
@@ -409,6 +410,19 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       // Success - user fully registered
       await showInfoModal('Please check your email inbox for the verification link.\n\nIMPORTANT: You must verify your email address before you can log in.\n\nCheck your spam folder if you dont see the email.', 'Success');
     }
+
+    // Store verification-start timestamp locally so the login page can
+    // show a resend option after 15 minutes (as requested).
+    try {
+      localStorage.setItem('vendly_verify_email_state', JSON.stringify({
+        email,
+        startedAt: Date.now()
+      }));
+    } catch (e) {
+      // ignore storage errors
+    }
+
+    try { logAuditEvent('auth_signup', { email }); } catch (e) {}
     
     // Instead of redirecting to login, redirect to login with verify_required reason
     // which will show the resend verification form

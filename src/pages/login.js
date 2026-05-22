@@ -1,8 +1,51 @@
 import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showInfoModal } from '../ui/modal.js';
+import { logAuditEvent } from '../audit.js';
 
 console.log('login.js module loaded');
+
+const VERIFY_RESEND_UNLOCK_MS = 15 * 60 * 1000; // 15 minutes
+const VERIFY_STATE_STORAGE_KEY = 'vendly_verify_email_state';
+
+function clearFallbackSession() {
+  try { localStorage.removeItem('vendly_fallback_session'); } catch (e) {}
+}
+
+function isEmailVerified(user) {
+  return !!(user && user.email_confirmed_at);
+}
+
+function readVerifyState() {
+  try {
+    const raw = localStorage.getItem(VERIFY_STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed.email || !parsed.startedAt) return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+function computeResendUnlockRemainingMs(email) {
+  const state = readVerifyState();
+  if (!state) return 0;
+  if (String(state.email).toLowerCase() !== String(email || '').toLowerCase()) return 0;
+  const startedAtMs = typeof state.startedAt === 'number' ? state.startedAt : Date.parse(state.startedAt);
+  if (!Number.isFinite(startedAtMs)) return 0;
+  const elapsed = Date.now() - startedAtMs;
+  const remaining = VERIFY_RESEND_UNLOCK_MS - elapsed;
+  return remaining > 0 ? remaining : 0;
+}
+
+function formatMmSs(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const ss = String(totalSeconds % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
 
 // ============================
 // Check if already logged in - redirect to home
@@ -12,8 +55,17 @@ console.log('login.js module loaded');
   const { data: { session } } = await supabase.auth.getSession();
   if (session && session.user) {
     console.log('Already logged in as:', session.user.email);
-    // Redirect to index without further checks
-    window.location.href = 'index.html';
+    // Only allow verified users to remain logged in
+    if (isEmailVerified(session.user)) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    console.warn('Unverified user had a session; signing out and requiring verification');
+    try { logAuditEvent('auth_session_unverified_logout', { email: session.user.email || null }); } catch (e) {}
+    await supabase.auth.signOut();
+    clearFallbackSession();
+    window.location.href = 'login.html?reason=verify_required&blocked=1&email=' + encodeURIComponent(session.user.email || '');
     return;
   }
   console.log('Not logged in, showing login form');
@@ -52,13 +104,27 @@ if (togglePassword && passwordInput) {
     if (redirectEmail) {
       document.getElementById('verificationEmailInput').value = decodeURIComponent(redirectEmail);
     }
-    
-    // Start the cooldown timer
-    startResendCooldown();
+
+    // Gate resending for 15 minutes after registration when we have a timestamp
+    try {
+      const email = (document.getElementById('verificationEmailInput')?.value || '').trim();
+      if (email) {
+        const remainingMs = computeResendUnlockRemainingMs(email);
+        setResendUnlockRemainingMs(remainingMs);
+      } else {
+        setResendUnlockRemainingMs(0);
+      }
+    } catch (e) {
+      setResendUnlockRemainingMs(0);
+    }
     
     // Show the message after a short delay
     setTimeout(async () => {
-      await showInfoModal('Please verify your email address to log in.\n\nEnter your email and click "Resend Verification Email" if you need a new verification link.', 'Email Verification Required');
+      const blocked = urlParams.get('blocked') === '1';
+      const msg = blocked
+        ? 'You must verify your email address before you can log in.\n\nPlease check your inbox (and spam folder) for the verification link.'
+        : 'Please verify your email address to log in.\n\nIf you have not received the email after 15 minutes, you will be able to resend a new verification link.';
+      await showInfoModal(msg, 'Email Verification Required');
     }, 500);
     return;
   }
@@ -100,17 +166,40 @@ async function showLoginError(message, error) {
 // Resend Verification Email with Countdown
 // ============================
 let resendCooldown = 0;
+let resendUnlockRemainingMs = 0;
+let resendUnlockInterval = null;
+
+function setResendUnlockRemainingMs(ms) {
+  resendUnlockRemainingMs = Math.max(0, ms || 0);
+  if (resendUnlockInterval) {
+    clearInterval(resendUnlockInterval);
+    resendUnlockInterval = null;
+  }
+
+  // If locked, start ticking down
+  if (resendUnlockRemainingMs > 0) {
+    resendUnlockInterval = setInterval(() => {
+      resendUnlockRemainingMs = Math.max(0, resendUnlockRemainingMs - 1000);
+      updateResendUi();
+      if (resendUnlockRemainingMs <= 0) {
+        clearInterval(resendUnlockInterval);
+        resendUnlockInterval = null;
+      }
+    }, 1000);
+  }
+  updateResendUi();
+}
 
 function startResendCooldown() {
   const resendLink = document.getElementById('resendVerificationLink');
   if (!resendLink) return;
   
   resendCooldown = 60;
-  updateResendButton();
+  updateResendUi();
   
   const interval = setInterval(() => {
     resendCooldown--;
-    updateResendButton();
+    updateResendUi();
     
     if (resendCooldown <= 0) {
       clearInterval(interval);
@@ -135,23 +224,41 @@ function updateResendButton() {
   }
 }
 
+function updateResendUi() {
+  // Update both the inline link (if present) and the main resend button
+  updateResendButton();
+
+  const btn = document.getElementById('resendVerificationBtn');
+  if (!btn) return;
+
+  const locked = resendUnlockRemainingMs > 0;
+  const cooling = resendCooldown > 0;
+
+  if (locked) {
+    btn.disabled = true;
+    btn.textContent = `Resend available in ${formatMmSs(resendUnlockRemainingMs)}`;
+    return;
+  }
+
+  if (cooling) {
+    btn.disabled = true;
+    btn.textContent = `Resend in ${resendCooldown}s`;
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Resend Verification Email';
+}
+
 // Initialize cooldown on page load if coming from verify_required
 (function initResendCooldown() {
   const urlParams = new URLSearchParams(window.location.search);
   const reason = urlParams.get('reason');
   
   if (reason === 'verify_required') {
-    // Start the cooldown timer automatically
-    setTimeout(() => {
-      const email = document.getElementById('emailInput')?.value.trim();
-      if (!email) {
-        // If email not entered yet, enable immediately
-        resendCooldown = 0;
-        updateResendButton();
-      } else {
-        startResendCooldown();
-      }
-    }, 1000);
+    // Don't auto-start cooldown; only start after an actual resend.
+    // Just ensure UI reflects current lock/cooldown states.
+    setTimeout(() => updateResendUi(), 250);
   }
 })();
 
@@ -165,6 +272,11 @@ document.getElementById('resendVerificationBtn')?.addEventListener('click', asyn
     return;
   }
   
+  if (resendUnlockRemainingMs > 0) {
+    await showInfoModal(`For security reasons, you can request a new verification email in ${formatMmSs(resendUnlockRemainingMs)}.\n\nPlease also check your spam folder.`, 'Info');
+    return;
+  }
+
   if (resendCooldown > 0) {
     await showInfoModal(`Please wait ${resendCooldown} seconds before requesting another verification email.`, 'Info');
     return;
@@ -184,14 +296,26 @@ document.getElementById('resendVerificationBtn')?.addEventListener('click', asyn
     if (error) {
       await showInfoModal('Error resending verification email.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
     } else {
+      try { logAuditEvent('auth_resend_verification', { email }); } catch (e) {}
       await showInfoModal('Please check your email inbox and click the verification link.\n\nIf you don\'t see the email, check your spam folder.\n\nYou can request another email in 60 seconds.', 'Verification Email Sent');
       startResendCooldown();
     }
   } catch (error) {
     await showInfoModal('Error resending verification email.\n\n' + (error.message || 'Unknown error') + '\n\nPlease try again.', 'Error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Resend Verification Email';
+    // Button enabled/disabled depends on cooldown + unlock timer
+    updateResendUi();
+  }
+});
+
+// If user edits the email on the verify screen, recompute the 15-min unlock window
+document.getElementById('verificationEmailInput')?.addEventListener('input', () => {
+  try {
+    const email = (document.getElementById('verificationEmailInput')?.value || '').trim();
+    const remainingMs = computeResendUnlockRemainingMs(email);
+    setResendUnlockRemainingMs(remainingMs);
+  } catch (e) {
+    setResendUnlockRemainingMs(0);
   }
 });
 
@@ -206,8 +330,10 @@ document.getElementById('resendVerificationLink')?.addEventListener('click', (e)
   const email = document.getElementById('emailInput')?.value.trim();
   if (email) document.getElementById('verificationEmailInput').value = email;
 
-  // Start cooldown immediately to prevent spamming
-  startResendCooldown();
+  // Apply 15-minute unlock gating if we have a timestamp
+  const remainingMs = computeResendUnlockRemainingMs(email);
+  setResendUnlockRemainingMs(remainingMs);
+  updateResendUi();
 });
 
 // ============================
@@ -284,8 +410,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (session && session.user) {
     console.log('Already logged in as:', session.user.email);
-    loginHandled = true;
-    window.location.href = 'index.html';
+    if (isEmailVerified(session.user)) {
+      loginHandled = true;
+      window.location.href = 'index.html';
+      return;
+    }
+
+    await supabase.auth.signOut();
+    clearFallbackSession();
+    window.location.href = 'login.html?reason=verify_required&blocked=1&email=' + encodeURIComponent(session.user.email || '');
     return;
   }
   
@@ -331,6 +464,23 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     
     if (data.session) {
       console.log('✅ Login successful for:', data.session.user.email);
+
+      // Block unverified accounts from proceeding
+      if (!isEmailVerified(data.session.user)) {
+        console.warn('Login blocked: email not verified');
+        try { logAuditEvent('auth_login_blocked_unverified', { email }); } catch (e) {}
+        try { await supabase.auth.signOut(); } catch (e) {}
+        clearFallbackSession();
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Login';
+        }
+        loginHandled = false;
+        window.location.href = 'login.html?reason=verify_required&blocked=1&email=' + encodeURIComponent(email);
+        return;
+      }
+
+      try { logAuditEvent('auth_login_success', { email }); } catch (e) {}
       
       // Store session in localStorage as a fallback
       // This helps on static hosting where cookies might not persist immediately

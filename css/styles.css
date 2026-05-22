@@ -37,6 +37,17 @@
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Global admin-configured warning banner (injected by JS) */
+.platform-warning-banner {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  background: var(--card-bg);
+  color: var(--fg);
+  border-bottom: 1px solid var(--warning);
+  font-weight: 600;
+}
+
 /* Light mode explicit styling */
 html[data-theme="light"],
 html.light {

@@ -1,6 +1,8 @@
 import { supabase, getCurrentUser } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
+import { getPlatformSettings, applyPlatformSettingsToWindow, renderPlatformWarningBanner } from '../platform-settings.js';
+import { fetchAuditLogs, purgeAuditLogsOlderThan, logAuditEvent } from '../audit.js';
 
 // ============================
 // State Management
@@ -1036,14 +1038,15 @@ window.viewConversation = async function(conversationId) {
       return;
     }
     
-    const chatHtml = messages.map(m => `
-      <div style="margin-bottom:0.5rem;">
-        <strong>${m.sender?.username}:</strong> ${m.content}
-        <span style="color:var(--muted);font-size:0.75rem;">(${formatDate(m.created_at)})</span>
-      </div>
-    `).join('');
-    
-    await showInfoModal(`Conversation Messages:\n\n${chatHtml}`, 'Messages');
+    // showInfoModal renders message via innerText (not HTML). Build a readable plain-text view.
+    const chatText = messages.map(m => {
+      const who = m.sender?.username || 'Unknown';
+      const when = formatDate(m.created_at);
+      const content = (m.content == null ? '' : String(m.content));
+      return `[${when}] ${who}: ${content}`;
+    }).join('\n\n');
+
+    await showInfoModal(chatText || 'No messages in this conversation', 'Messages');
   } catch (error) {
     await showInfoModal('Error loading messages: ' + error.message, 'Error');
   }
@@ -1191,18 +1194,173 @@ async function loadAnalytics() {
 // Site Settings
 // ============================
 async function loadSiteSettings() {
-  document.getElementById('site-settings-form').innerHTML = `
+  const container = document.getElementById('site-settings-form');
+  if (!container) return;
+
+  let settings = null;
+  try {
+    settings = await getPlatformSettings({ useCache: false });
+  } catch (e) {
+    settings = null;
+  }
+
+  const s = settings || {
+    warning_enabled: false,
+    warning_text: '',
+    disable_buying: false,
+    disable_listing: false
+  };
+
+  container.innerHTML = `
     <h3>⚙️ Platform Settings</h3>
-    <p style="color:var(--muted);">Settings are managed through Supabase database. Future enhancement: Add platform_settings table.</p>
-    
-    <h3 style="margin-top:2rem;">🗄️ Database Stats</h3>
-    <button class="btn btn-primary" data-action="refresh-stats">Refresh All Stats</button>
-    
-    <h3 style="margin-top:2rem;">🔧 Quick Actions</h3>
-    <div class="settings-section">
-      <button class="btn btn-warning" data-action="clear-data">Archive Old Data</button>
+    <p style="color:var(--muted);margin-top:0.25rem;">These settings are read by the website automatically (banner + feature toggles).</p>
+
+    <div class="settings-section" style="margin-top:1rem;">
+      <h4>⚠️ Website Warning Banner</h4>
+      <label style="display:flex;align-items:center;gap:0.5rem;">
+        <input type="checkbox" id="ps_warning_enabled" ${s.warning_enabled ? 'checked' : ''}>
+        Enable warning banner
+      </label>
+      <textarea id="ps_warning_text" rows="3" style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);color:var(--fg);margin-top:0.75rem;" placeholder="Type the warning text that should appear on every page...">${String(s.warning_text || '').replace(/</g,'&lt;')}</textarea>
+    </div>
+
+    <div class="settings-section" style="margin-top:1rem;">
+      <h4>🛑 Feature Toggles</h4>
+      <label style="display:flex;align-items:center;gap:0.5rem;">
+        <input type="checkbox" id="ps_disable_buying" ${s.disable_buying ? 'checked' : ''}>
+        Disable buying (checkout)
+      </label>
+      <label style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem;">
+        <input type="checkbox" id="ps_disable_listing" ${s.disable_listing ? 'checked' : ''}>
+        Disable listing (selling)
+      </label>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;">
+      <button class="btn btn-primary" data-action="save-platform-settings">Save Platform Settings</button>
+      <button class="btn btn-secondary" data-action="refresh-platform-settings">Reload</button>
+    </div>
+
+    <h3 style="margin-top:2rem;">🕵️ Audit Logs (last 14 days)</h3>
+    <p style="color:var(--muted);margin-top:0.25rem;">Tracks page views, admin setting changes, and auth-related events (best-effort).</p>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.75rem;">
+      <button class="btn btn-primary" data-action="refresh-audit">Refresh Audit Logs</button>
+      <button class="btn btn-warning" data-action="purge-audit">Delete Logs Older Than 14 Days</button>
+    </div>
+    <div id="audit-logs-container" style="margin-top:0.75rem;">
+      <p style="color:var(--muted);">Loading audit logs...</p>
     </div>
   `;
+
+  try {
+    await loadAuditLogs();
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    await logAuditEvent('admin_view_settings', { tab: 'settings' });
+  } catch (e) {}
+}
+
+async function savePlatformSettingsFromForm() {
+  const warningEnabled = !!document.getElementById('ps_warning_enabled')?.checked;
+  const warningText = String(document.getElementById('ps_warning_text')?.value || '').trim();
+  const disableBuying = !!document.getElementById('ps_disable_buying')?.checked;
+  const disableListing = !!document.getElementById('ps_disable_listing')?.checked;
+
+  const next = {
+    id: 1,
+    warning_enabled: warningEnabled,
+    warning_text: warningText,
+    disable_buying: disableBuying,
+    disable_listing: disableListing,
+    updated_at: new Date().toISOString()
+  };
+
+  const confirmed = await showConfirmModal({
+    title: 'Save Platform Settings',
+    message: 'Apply these settings to the website now?',
+    okText: 'Save',
+    cancelText: 'Cancel'
+  });
+  if (!confirmed) return;
+
+  const { error } = await supabase
+    .from('platform_settings')
+    .upsert(next, { onConflict: 'id' });
+
+  if (error) throw error;
+
+  // Update client-side cache so the banner/toggles apply immediately on this page.
+  try { localStorage.setItem('vendly_platform_settings_cache', JSON.stringify(next)); } catch (e) {}
+  try { applyPlatformSettingsToWindow(next); } catch (e) {}
+  try { renderPlatformWarningBanner(next); } catch (e) {}
+
+  try {
+    await logAuditEvent('admin_update_platform_settings', {
+      warning_enabled: warningEnabled,
+      warning_text_len: warningText.length,
+      disable_buying: disableBuying,
+      disable_listing: disableListing
+    });
+  } catch (e) {}
+
+  await showInfoModal('Platform settings saved. The website will pick these up automatically.', 'Saved');
+}
+
+async function loadAuditLogs() {
+  const container = document.getElementById('audit-logs-container');
+  if (!container) return;
+
+  try {
+    const rows = await fetchAuditLogs({ days: 14, limit: 250 });
+    if (!rows.length) {
+      container.innerHTML = '<p style="color:var(--muted);">No audit logs found for the last 14 days.</p>';
+      return;
+    }
+
+    const safe = (v) => {
+      const s = v == null ? '' : String(v);
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    container.innerHTML = `
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Actor</th>
+            <th>Event</th>
+            <th>Page</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => {
+            const data = r.event_data ? JSON.stringify(r.event_data) : '';
+            const dataShort = data.length > 140 ? data.slice(0, 140) + '…' : data;
+            return `
+              <tr>
+                <td>${safe(formatDate(r.created_at))}</td>
+                <td>${safe(r.actor_email || r.actor_user_id || '-') }</td>
+                <td><span class="badge">${safe(r.event_type)}</span></td>
+                <td>${safe(r.page_path || '-')}</td>
+                <td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${safe(dataShort)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--error);">Error loading audit logs: ${e.message || e}</p>`;
+  }
 }
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
@@ -1252,6 +1410,36 @@ async function initialize() {
       case 'delete-product': deleteProduct(id); break;
       case 'view-conversation': viewConversation(id); break;
       case 'resolve-ticket': resolveTicket(id); break;
+      case 'save-platform-settings':
+        try {
+          await savePlatformSettingsFromForm();
+        } catch (err) {
+          await showInfoModal('Error saving platform settings: ' + (err.message || err), 'Error');
+        }
+        break;
+      case 'refresh-platform-settings':
+        await loadSiteSettings();
+        break;
+      case 'refresh-audit':
+        await loadAuditLogs();
+        break;
+      case 'purge-audit':
+        try {
+          const ok = await showConfirmModal({
+            title: 'Delete Old Audit Logs',
+            message: 'Delete audit logs older than 14 days?',
+            okText: 'Delete',
+            cancelText: 'Cancel'
+          });
+          if (!ok) break;
+          await purgeAuditLogsOlderThan({ days: 14 });
+          await logAuditEvent('admin_purge_audit_logs', { days: 14 });
+          await loadAuditLogs();
+          await showInfoModal('Old audit logs deleted (older than 14 days).', 'Done');
+        } catch (err) {
+          await showInfoModal('Error deleting audit logs: ' + (err.message || err), 'Error');
+        }
+        break;
       case 'refresh-stats': 
         loadDashboard(); 
         await showInfoModal('Stats refreshed!', 'Info');

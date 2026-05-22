@@ -122,8 +122,23 @@
       <button class="filter-tab" data-category="books" data-i18n="books">📚 Books</button>
       <button class="filter-tab" data-category="sports" data-i18n="sports">⚽ Sports</button>
       <button class="filter-tab" data-category="home" data-i18n="home">🏠 Home</button>
-      <button class="filter-tab" data-category="vehicles" data-i18n="vehicles">🚗 Vehicles</button>
+      <button class="filter-tab" data-category="vehicles" data-i18n="auto_cars">🚗 Auto/Cars</button>
       <button class="filter-tab" data-category="other" data-i18n="other">📦 Other</button>
+    </div>
+  </div>
+
+  <div id="vehiclesDrilldown" style="display:none; margin: 0.5rem 0 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg);">
+    <h3 style="margin: 0 0 0.75rem; font-size: 1rem; color: var(--fg);" data-i18n="auto_subcategories_title">Auto/Cars Categories</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+      <button class="vehicle-subcat-btn" data-subcategory="Vieglie auto">Vieglie auto</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Auto ar defektu">Auto ar defektu</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Preču auto">Preču auto</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Kemperi">Kemperi</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Piekabes">Piekabes</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Riepas">Riepas</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Diski">Diski</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Rezerves daļas">Rezerves daļas</button>
+      <button class="vehicle-subcat-btn" data-subcategory="Dažādi">Dažādi</button>
     </div>
   </div>
 
@@ -573,6 +588,22 @@
   font-size: 0.875rem;
   color: var(--muted);
   margin-top: 0.25rem;
+}
+
+.vehicle-subcat-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.vehicle-subcat-btn:hover,
+.vehicle-subcat-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 @media (max-width: 768px) {

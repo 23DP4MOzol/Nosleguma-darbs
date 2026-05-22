@@ -22,6 +22,8 @@ try {
 }
 import { i18n } from './i18n.js';
 import { themeManager } from './theme.js';
+import { loadAndApplyPlatformSettings } from './platform-settings.js';
+import { logAuditEvent } from './audit.js';
 import './navbar.js';
 import './app.js';
 import './product-modal.js';
@@ -400,8 +402,10 @@ export async function updateNavbarAuth(sessionParam) {
     console.log('Setting admin button display for role:', userRole);
 
     if (sellBtn) {
-      sellBtn.style.opacity = '1';
-      sellBtn.style.pointerEvents = 'auto';
+      const platform = (typeof window !== 'undefined' && window.vendlyPlatformSettings) ? window.vendlyPlatformSettings : null;
+      const listingDisabled = !!platform?.disable_listing;
+      sellBtn.style.opacity = listingDisabled ? '0.6' : '1';
+      sellBtn.style.pointerEvents = listingDisabled ? 'none' : 'auto';
     }
     if (settingsBtn) {
       settingsBtn.style.display = 'inline-block';
@@ -537,6 +541,13 @@ function initializeAuth() {
 
   if (sellBtn) {
     sellBtn.addEventListener('click', async () => {
+      try {
+        const platform = (typeof window !== 'undefined' && window.vendlyPlatformSettings) ? window.vendlyPlatformSettings : null;
+        if (platform?.disable_listing) {
+          await showInfoModal(i18n.t ? i18n.t('listing_disabled') || 'Listing is currently disabled by admin.' : 'Listing is currently disabled by admin.', 'Unavailable');
+          return;
+        }
+      } catch (e) {}
       const { data } = await supabase.auth.getUser();
       const user = data ? data.user : null;
       if (user) {
@@ -1688,6 +1699,15 @@ async function initializeIndexPage() {
         setTimeout(() => (window.location.href = 'login.html'), 1500);
         return;
       }
+
+      try {
+        if (window?.vendlyPlatformSettings?.disable_buying) {
+          logAuditEvent('purchase_blocked_admin_disabled', { productId });
+          showToast('Buying is currently disabled by admin.', 'error');
+          return;
+        }
+      } catch (e) {}
+
       // Instead of performing the purchase immediately, redirect the user
       // to the Orders page so they can finish the order there.
       const params = new URLSearchParams();
@@ -1709,6 +1729,14 @@ async function initializeIndexPage() {
         setTimeout(() => (window.location.href = './login.html'), 1500);
         return;
       }
+
+      try {
+        if (window?.vendlyPlatformSettings?.disable_buying) {
+          logAuditEvent('reserve_blocked_admin_disabled', { productId });
+          showToast('Buying is currently disabled by admin.', 'error');
+          return;
+        }
+      } catch (e) {}
 
       const mod = await import('./supabase.js');
       if (mod && typeof mod.reserveProduct === 'function') {
@@ -1954,6 +1982,19 @@ async function initializeIndexPage() {
   // Filter tabs
   const filterTabs = document.querySelectorAll('.filter-tab');
   const categoryFilterSelect = document.getElementById('categoryFilter');
+  const vehiclesDrilldown = document.getElementById('vehiclesDrilldown');
+  const vehicleSubcategoryButtons = document.querySelectorAll('.vehicle-subcat-btn');
+  const searchInputElement = document.getElementById('searchInput');
+
+  const setVehiclesDrilldownVisible = (category) => {
+    if (!vehiclesDrilldown) return;
+    const isVehicles = (category || '').toLowerCase() === 'vehicles';
+    vehiclesDrilldown.style.display = isVehicles ? 'block' : 'none';
+    if (!isVehicles) {
+      vehicleSubcategoryButtons.forEach((btn) => btn.classList.remove('active'));
+    }
+  };
+
   const setActiveCategoryTab = (category) => {
     const target = category || 'all';
     filterTabs.forEach(t => t.classList.remove('active'));
@@ -1968,6 +2009,7 @@ async function initializeIndexPage() {
       categoryFilterSelect.value = currentFilters.category;
     }
     setActiveCategoryTab(currentCategory);
+    setVehiclesDrilldownVisible(currentCategory);
   };
 
   if (filterTabs && filterTabs.length) {
@@ -1975,6 +2017,25 @@ async function initializeIndexPage() {
       tab.addEventListener('click', (e) => {
         const nextCategory = tab.dataset.category || 'all';
         syncCategoryFilter(nextCategory);
+        applyFiltersAndRender();
+        updateActiveFilters();
+      });
+    });
+  }
+
+  setVehiclesDrilldownVisible(currentCategory);
+
+  if (vehicleSubcategoryButtons && vehicleSubcategoryButtons.length) {
+    vehicleSubcategoryButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const subcategory = button.dataset.subcategory || '';
+        vehicleSubcategoryButtons.forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        syncCategoryFilter('vehicles');
+        currentFilters.search = subcategory;
+        if (searchInputElement) searchInputElement.value = subcategory;
+
         applyFiltersAndRender();
         updateActiveFilters();
       });
@@ -3118,7 +3179,22 @@ function initializeBalancePage() {
 // INITIALIZATION
 // ============================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load global platform settings first (banner + feature toggles)
+  try {
+    await loadAndApplyPlatformSettings();
+  } catch (e) {
+    // Non-blocking
+  }
+
+  // Audit: page view (best-effort)
+  try {
+    logAuditEvent('page_view', {
+      href: typeof window !== 'undefined' ? window.location.href : null,
+      referrer: typeof document !== 'undefined' ? (document.referrer || null) : null
+    });
+  } catch (e) {}
+
   // Initialize common functionality
   initializeNavigation();
   initializeAuth();
