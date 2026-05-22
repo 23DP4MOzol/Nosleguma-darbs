@@ -3,11 +3,22 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
-import { CATEGORY_FIELDS } from '../category-fields.js';
+import { CATEGORY_FIELDS, getCategoryDisplayName } from '../category-fields.js';
 import { getPlatformSettings } from '../platform-settings.js';
 import { logAuditEvent } from '../audit.js';
 
 let listingDisabledByAdmin = false;
+
+const SELL_CATEGORY_OPTIONS = [
+  { value: 'Electronics', key: 'electronics', emoji: '📱' },
+  { value: 'Clothing', key: 'clothing', emoji: '👕' },
+  { value: 'Furniture', key: 'furniture', emoji: '🪑' },
+  { value: 'Books', key: 'books', emoji: '📚' },
+  { value: 'Sports', key: 'sports', emoji: '⚽' },
+  { value: 'Home', key: 'home', emoji: '🏠' },
+  { value: 'Vehicles', key: 'vehicles', emoji: '🚗' },
+  { value: 'Other', key: 'other', emoji: '📦' }
+];
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -186,6 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ============================
   const shippingMethodSelect = document.getElementById('shippingMethod');
   const sellerAddressSection = document.getElementById('sellerAddressSection');
+  const meetupCityInput = document.getElementById('meetupCityInput');
   const parcelLockerSection = document.getElementById('parcelLockerSection');
   const mapElement = document.getElementById('map');
   const lockerListElement = document.getElementById('locker-list');
@@ -196,6 +208,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   let map = null;
   let allLockers = [];
   let visibleMarkers = [];
+
+  function renderCategorySelectOptions() {
+    if (!categorySelect) return;
+    const currentValue = categorySelect.value;
+    const placeholder = i18n.t('sell_select_category');
+    categorySelect.innerHTML = [
+      `<option value="">${placeholder}</option>`,
+      ...SELL_CATEGORY_OPTIONS.map(option => (
+        `<option value="${option.value}">${option.emoji} ${i18n.t(option.key)}</option>`
+      ))
+    ].join('');
+    categorySelect.value = currentValue;
+  }
+
+  function updateShippingMethodUI() {
+    if (!shippingMethodSelect) return;
+    const isMeetup = shippingMethodSelect.value === 'meetup';
+    if (sellerAddressSection) sellerAddressSection.style.display = isMeetup ? 'block' : 'none';
+    if (parcelLockerSection) parcelLockerSection.style.display = isMeetup ? 'none' : 'block';
+    if (meetupCityInput) {
+      meetupCityInput.required = isMeetup;
+      if (!isMeetup) meetupCityInput.value = '';
+    }
+    if (selectedLockerIdInput && isMeetup) {
+      selectedLockerIdInput.value = '';
+    }
+  }
 
   function normalizeCarrier(rawCarrier) {
     const value = String(rawCarrier || '').trim().toLowerCase();
@@ -323,15 +362,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMapMarkers(filteredLockers);
   }
 
+  renderCategorySelectOptions();
+
   if (shippingMethodSelect) {
     shippingMethodSelect.value = 'locker';
+    shippingMethodSelect.addEventListener('change', updateShippingMethodUI);
   }
-  if (sellerAddressSection) {
-    sellerAddressSection.style.display = 'none';
-  }
-  if (parcelLockerSection) {
-    parcelLockerSection.style.display = 'block';
-  }
+  updateShippingMethodUI();
   initializeLockerMap();
 
   carrierFilterButtons.forEach(button => {
@@ -349,6 +386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updatePreview() {
     const name = document.getElementById('productNameInput').value || 'Product Name';
     const category = document.getElementById('productCategoryInput').value || 'Category';
+    const categoryLabel = getCategoryDisplayName(category, i18n.lang);
     const price = parseFloat(document.getElementById('productPriceInput').value) || 0;
     const condition = document.getElementById('productConditionInput').value || '';
     const stock = parseInt(document.getElementById('productStockInput').value) || 1;
@@ -405,13 +443,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div>
           <div style="display: inline-block; background: var(--secondary); color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
-            ${categoryEmoji[category] || '📦'} ${category}
+            ${categoryEmoji[category] || '📦'} ${categoryLabel}
           </div>
           <h4 style="margin: 0 0 1rem 0; color: var(--fg); font-size: 1.25rem; font-weight: 700;">${name}</h4>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-            ${condition ? `<span style="background: #dbeafe; color: #1e40af; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600;">${conditionEmoji[condition]} ${condition.replace('_', ' ')}</span>` : ''}
+            ${condition ? `<span style="background: #dbeafe; color: #1e40af; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600;">${conditionEmoji[condition]} ${i18n.t(`condition_${condition}_text`)}</span>` : ''}
             ${location ? `<span style="color: var(--muted); font-size: 0.875rem;">📍 ${location}</span>` : ''}
-            <span style="color: var(--muted); font-size: 0.875rem;">📦 ${stock} in stock</span>
+            <span style="color: var(--muted); font-size: 0.875rem;">📦 ${stock} ${i18n.t('in_stock_label')}</span>
           </div>
           <div style="padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
             <div style="display: flex; align-items: baseline; gap: 0.25rem;">
@@ -432,6 +470,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Trigger initial preview
   updatePreview();
+
+  window.addEventListener('vendly:languagechange', () => {
+    renderCategorySelectOptions();
+    renderCategoryFields(categorySelect?.value || '');
+    updatePreview();
+  });
 
   // Update preview on input changes
   ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput', 'productDurationInput'].forEach(id => {
@@ -503,16 +547,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         stock: parseInt(document.getElementById('productStockInput').value),
         condition: document.getElementById('productConditionInput').value,
         location: document.getElementById('productLocationInput').value,
-        brand: document.getElementById('productBrandInput')?.value || '',
-        color: document.getElementById('productColorInput')?.value || '',
-        weight_kg: parseFloat(document.getElementById('productWeightInput')?.value) || null,
+        brand: '',
+        color: '',
+        weight_kg: null,
         seller_street: '',
-        seller_city: '',
+        seller_city: shippingMethodSelect?.value === 'meetup' ? (meetupCityInput?.value || '').trim() : '',
         seller_postal_code: '',
         shipping_from_locker: document.getElementById('selectedLockerId').value || null
       };
 
-      if (!productData.shipping_from_locker) {
+      if (shippingMethodSelect?.value === 'meetup' && !productData.seller_city) {
+        await showInfoModal(i18n.t('sell_meetup_city_required'), i18n.t('sell_meetup_city'));
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        return;
+      }
+
+      if (shippingMethodSelect?.value !== 'meetup' && !productData.shipping_from_locker) {
         await showInfoModal(i18n.t('co_err_select_locker'), 'Missing Parcel Locker');
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;

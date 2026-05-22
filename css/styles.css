@@ -1139,17 +1139,18 @@ html.light .btn-hero-secondary {
   position: absolute;
   top: 1rem;
   right: 1rem;
+  z-index: 3;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  color: var(--fg);
+  color: #475569;
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
@@ -1486,16 +1487,17 @@ html.light .btn-hero-secondary {
 }
 
 .btn-buy-now {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.05rem;
   border: none;
   border-radius: 10px;
   background: var(--gradient-primary);
   color: white;
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
+  line-height: 1.1;
 }
 
 .btn-buy-now:hover {
@@ -2389,6 +2391,19 @@ html.light .hero-modern .stat-label {
    color: #ef4444;
    background: rgba(239, 68, 68, 0.1);
  }
+
+html[data-theme="dark"] .product-like-btn,
+html.dark .product-like-btn {
+  background: rgba(15, 23, 42, 0.88);
+  color: #e5e7eb;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+html[data-theme="dark"] .product-like-btn:hover,
+html.dark .product-like-btn:hover {
+  background: rgba(30, 41, 59, 0.98);
+  color: #ffffff;
+}
  
  .product-like-btn:hover {
    transform: scale(1.1);

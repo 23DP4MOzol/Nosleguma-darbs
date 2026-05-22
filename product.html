@@ -98,15 +98,15 @@
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--primary);" id="totalSold">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Products Sold</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="products_sold_stat">Products Sold</div>
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--accent);" id="totalActive">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Active Listings</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="active_listings_stat">Active Listings</div>
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--error);" id="totalLikes">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Total Likes</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="total_likes_stat">Total Likes</div>
       </div>
     </div>
   </div>
@@ -231,8 +231,10 @@
         <button class="filter-tab active" data-filter="all" data-i18n="allProducts">All Products</button>
         <button class="filter-tab" data-filter="active" data-i18n="activeProducts">Active</button>
         <button class="filter-tab" data-filter="sold" data-i18n="soldProducts">Sold</button>
+        <button class="filter-tab" data-filter="expired" data-i18n="renewalProducts">Needs Renewal</button>
         <button class="filter-tab" data-filter="favorites" data-i18n="favorites" id="favoritesTab" style="display: none;">❤️ Favorites</button>
       </div>
+      <div id="renewalSectionNote" style="display:none; margin-bottom:1rem; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:12px; background:var(--card-bg); color:var(--muted);" data-i18n="renewalProductsSubtitle">Expired listings that you can renew or extend</div>
 
       <!-- Products Grid -->
       <div class="product-grid-modern" id="productGrid">

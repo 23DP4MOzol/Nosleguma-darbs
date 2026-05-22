@@ -340,6 +340,27 @@ export function getCategoryLabelById(categoryId, lang = 'en') {
   return categoryId;
 }
 
+const LEGACY_CATEGORY_LABELS = {
+  electronics: { en: 'Electronics', lv: 'Elektronika' },
+  clothing: { en: 'Clothing', lv: 'Apģērbs' },
+  furniture: { en: 'Furniture', lv: 'Mēbeles' },
+  books: { en: 'Books', lv: 'Grāmatas' },
+  sports: { en: 'Sports', lv: 'Sports' },
+  home: { en: 'Home & Garden', lv: 'Māja un dārzs' },
+  vehicles: { en: 'Vehicles', lv: 'Transports' },
+  other: { en: 'Other', lv: 'Cits' }
+};
+
+export function getCategoryDisplayName(categoryId, lang = 'en') {
+  if (!categoryId) return '';
+  const normalized = String(categoryId).trim().toLowerCase();
+  const treeLabel = getCategoryLabelById(normalized, lang);
+  if (treeLabel && treeLabel !== normalized) return treeLabel;
+  return LEGACY_CATEGORY_LABELS[normalized]?.[lang] ||
+    LEGACY_CATEGORY_LABELS[normalized]?.en ||
+    categoryId;
+}
+
 export function buildCategoryOptions(lang = 'en', includeTopOption = true) {
   return CATEGORY_TREE.map(group => {
     const groupLabel = group.label?.[lang] || group.label?.en || group.label?.lv || group.id;

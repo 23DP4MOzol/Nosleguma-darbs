@@ -2,6 +2,7 @@
 // SUPABASE.JS - Initialization (v2 syntax)
 // =======================================
 import { createClient } from '@supabase/supabase-js';
+import { getListingFeeForDuration } from './listing-utils.js';
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -471,7 +472,7 @@ export async function listProduct(productData, userId) {
     // Listing fee ranges from €0.50 to €1.00 based on price
     // Linear scale: €0-€100 = €0.50, €100+ = €1.00
     const duration = productData.duration || 1;
-    const listingFee = 0.50 + ((duration - 1) * 0.50);
+    const listingFee = getListingFeeForDuration(duration);
 
     // Check balance for listing fee
     const currentBalance = await getBalance(userId);
@@ -1485,6 +1486,109 @@ export async function getUserRole(userId) {
   } catch (error) {
     console.error('Error getting user role:', error);
     return 'user';
+  }
+}
+
+export async function renewProductListing(productId, userId, durationMonths = 1) {
+  let currentBalance = null;
+  let adminUser = null;
+  let userBalanceUpdated = false;
+  let adminBalanceUpdated = false;
+  try {
+    const duration = Math.min(3, Math.max(1, parseInt(durationMonths, 10) || 1));
+    const listingFee = getListingFeeForDuration(duration);
+    currentBalance = await getBalance(userId);
+
+    if (currentBalance < listingFee) {
+      throw new Error('Insufficient balance for listing fee. You need at least €' + listingFee.toFixed(2));
+    }
+
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, seller_id, name, valid_until')
+      .eq('id', productId)
+      .single();
+
+    if (productError) throw productError;
+    if (!product || product.seller_id !== userId) {
+      throw new Error('You do not have permission to renew this product');
+    }
+
+    const newBalance = currentBalance - listingFee;
+    await updateBalance(userId, newBalance);
+    userBalanceUpdated = true;
+
+    await supabase.from('user_transactions').insert({
+      user_id: userId,
+      amount: -listingFee,
+      transaction_type: 'withdrawal',
+      description: `Listing renewal fee for ${product.name}`,
+      created_at: new Date().toISOString()
+    });
+
+    const { data: adminByEmail } = await supabase
+      .from('users')
+      .select('id, balance, email, role')
+      .eq('email', 'admin@example.com')
+      .maybeSingle();
+
+    if (adminByEmail?.id) {
+      adminUser = adminByEmail;
+    } else {
+      const { data: adminByRole } = await supabase
+        .from('users')
+        .select('id, balance, email, role')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+      adminUser = adminByRole || null;
+    }
+
+    if (adminUser) {
+      const adminBalance = parseFloat(adminUser.balance || 0);
+      await updateBalance(adminUser.id, adminBalance + listingFee);
+      adminBalanceUpdated = true;
+      await supabase.from('user_transactions').insert({
+        user_id: adminUser.id,
+        amount: listingFee,
+        transaction_type: 'deposit',
+        description: `Listing renewal fee from ${product.name}`,
+        reference_id: userId,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    const now = Date.now();
+    const currentValidUntilMs = product.valid_until ? new Date(product.valid_until).getTime() : 0;
+    const startMs = Number.isFinite(currentValidUntilMs) && currentValidUntilMs > now ? currentValidUntilMs : now;
+    const nextValidUntil = new Date(startMs + (duration * 30 * 24 * 60 * 60 * 1000)).toISOString();
+
+    const { data: renewed, error: renewError } = await supabase
+      .from('products')
+      .update({
+        valid_until: nextValidUntil,
+        listing_fee: listingFee,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId)
+      .select()
+      .single();
+
+    if (renewError) throw renewError;
+    return renewed;
+  } catch (error) {
+    try {
+      if (userBalanceUpdated && currentBalance !== null) {
+        await updateBalance(userId, currentBalance);
+      }
+      if (adminBalanceUpdated && adminUser?.id) {
+        await updateBalance(adminUser.id, parseFloat(adminUser.balance || 0));
+      }
+    } catch (rollbackError) {
+      console.error('Error rolling back renewal balances:', rollbackError);
+    }
+    console.error('Error renewing product listing:', error);
+    throw error;
   }
 }
 

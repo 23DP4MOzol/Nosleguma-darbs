@@ -1,6 +1,9 @@
 // Product Modal Functionality
 import { supabase } from './supabase.js';
 import { showInfoModal } from './ui/modal.js';
+import { i18n } from './i18n.js';
+import { parseProductAttrs, getCategoryDisplayName } from './category-fields.js';
+import { formatListingPrice, getListingExpiryInfo } from './listing-utils.js';
 
 export async function showProductModal(product) {
   const modal = document.getElementById('productModal');
@@ -55,10 +58,10 @@ export async function showProductModal(product) {
   
   const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
   const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
-  const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
-  
-  // Calculate listing fee
-  const listingFee = Math.max(parseFloat(price) * 0.005, 0.50).toFixed(2);
+  const price = formatListingPrice(product.price);
+  const { description: cleanDescription } = parseProductAttrs(product.description || '');
+  const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
+  const expiry = getListingExpiryInfo(product.valid_until);
   
   modalBody.innerHTML = `
     <div class="modal-product-grid">
@@ -78,24 +81,25 @@ export async function showProductModal(product) {
             📍 ${product.location || 'Not specified'}
           </span>
           <span class="modal-badge" style="background: #f3e8ff; color: #6b21a8;">
-            📦 ${product.category || 'other'}
+            📦 ${categoryLabel || 'other'}
           </span>
           ${product.stock > 0 
-            ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} in stock</span>`
-            : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ Out of stock</span>`
+            ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} ${i18n.t('in_stock_label')}</span>`
+            : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ ${i18n.t('out_of_stock_label')}</span>`
           }
         </div>
         
         <div class="modal-description">
-          <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">Description</h3>
-          <p>${product.description || 'No description provided.'}</p>
+          ${expiry.hasExpiry ? `<p style="margin:0 0 0.75rem 0; font-size:0.875rem; font-weight:700; color:${expiry.isExpired ? '#ef4444' : '#3b82f6'};">${expiry.isExpired ? i18n.t('listing_expired') : `${i18n.t('listing_time_remaining')}: ${expiry.shortLabel}`}</p>` : ''}
+          <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">${i18n.t('modal_description')}</h3>
+          <p>${cleanDescription || i18n.t('no_description')}</p>
         </div>
         
         <!-- Product Stats -->
         <div class="modal-stats">
           <div class="modal-stat">
             <div class="modal-stat-value">❤️ ${productLikes}</div>
-            <div class="modal-stat-label">Likes</div>
+            <div class="modal-stat-label">${i18n.t('modal_likes')}</div>
           </div>
           <div class="modal-stat">
             <div class="modal-stat-value">🔖 ${productSaves}</div>
@@ -116,12 +120,12 @@ export async function showProductModal(product) {
           ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
         </div>
         <div class="modal-seller-info">
-          <h3>${sellerData?.username || 'Unknown Seller'}</h3>
+            <h3>${sellerData?.username || i18n.t('unknown_seller')}</h3>
           <div class="modal-seller-rating">
             ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
           </div>
           <div style="font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem;">
-            Member since ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
+            ${i18n.t('modal_member_since')} ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
           </div>
         </div>
       </div>
@@ -139,14 +143,14 @@ export async function showProductModal(product) {
         🔖 Save for Later
       </button>
       <button class="modal-btn modal-btn-secondary" onclick="toggleLikeProduct('${product.id}')">
-        ❤️ Like Product
+        ❤️ ${i18n.t('modal_like_product')}
       </button>
       ${(product.stock > 0 && !product.is_reserved && (!activeUser || product.seller_id !== activeUser.id)) ? `
         <button class="modal-btn modal-btn-secondary" onclick="handleReserve('${product.id}')">
           🛒 Reserve (€0.20)
         </button>
         <button class="modal-btn modal-btn-primary" onclick="handlePurchase('${product.id}')">
-          🛒 Buy Now - €${price}
+          🛒 ${i18n.t('buyNow')} - €${price}
         </button>
         ` : ''}
     </div>

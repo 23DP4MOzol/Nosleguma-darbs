@@ -30,6 +30,8 @@ import './product-modal.js';
 import './checkout-modal.js';
 import './sw-register.js';
 import { showConfirmModal, showInfoModal } from './ui/modal.js';
+import { parseProductAttrs, getCategoryDisplayName } from './category-fields.js';
+import { formatListingPrice, getListingExpiryInfo, isListingExpired } from './listing-utils.js';
 // AI widget disabled - requires Netlify functions setup
 // import './ai-widget.js';
 
@@ -100,6 +102,18 @@ export function escapeHtml(input = '') {
     "'": '&#39;'
   };
   return str.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+function renderExpiryBadge(product) {
+  const expiry = getListingExpiryInfo(product.valid_until);
+  if (!expiry.hasExpiry) return '';
+  if (expiry.isExpired) {
+    return `<span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.35rem 0.6rem;border-radius:999px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:0.75rem;font-weight:700;">⏰ ${i18n.t('listing_expired')}</span>`;
+  }
+  const label = expiry.status === 'ending_soon'
+    ? i18n.t('listing_expires_today')
+    : `${i18n.t('listing_time_remaining')}: ${expiry.shortLabel}`;
+  return `<span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.35rem 0.6rem;border-radius:999px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:0.75rem;font-weight:700;">⏳ ${label}</span>`;
 }
 
 // ============================
@@ -847,33 +861,33 @@ async function showUserProfile(userId) {
         <div class="profile-avatar">
           ${user.username?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <h2 class="profile-name">${user.username || 'Unknown User'}</h2>
+        <h2 class="profile-name">${user.username || i18n.t('unknown_seller')}</h2>
         ${user.bio ? `<p class="profile-bio">${escapeHtml(user.bio)}</p>` : ''}
         <div class="profile-stats">
           <div class="profile-stat">
             <div class="profile-stat-value">${products?.length || 0}</div>
-            <div class="profile-stat-label">Products</div>
+            <div class="profile-stat-label">${i18n.t('profile_products')}</div>
           </div>
           <div class="profile-stat">
             <div class="profile-stat-value">${averageRating.toFixed(1)} ⭐</div>
-            <div class="profile-stat-label">Rating (${reviews?.length || 0} reviews)</div>
+            <div class="profile-stat-label">${i18n.t('profile_rating')} (${reviews?.length || 0} reviews)</div>
           </div>
         </div>
       </div>
 
       <div class="profile-section">
-        <h3>Recent Products</h3>
+        <h3>${i18n.t('recent_products')}</h3>
         <div class="profile-products">
           ${products?.map(product => `
             <div class="profile-product-card">
               <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="profile-product-image">
               <div class="profile-product-info">
                 <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
-                <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>
-                <button class="btn-buy-now" style="width:100%; padding:0.5rem; margin-top:0.5rem;" data-product-id="${product.id}">View Product</button>
+                <div class="profile-product-price">€${formatListingPrice(product.price)}</div>
+                <button class="btn-buy-now" style="width:100%; padding:0.5rem; margin-top:0.5rem;" data-product-id="${product.id}">${i18n.t('view_product')}</button>
               </div>
             </div>
-          `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+          `).join('') || `<p style="grid-column:1/-1; text-align:center; color:var(--muted);">${i18n.t('no_products_yet_short')}</p>`}
         </div>
       </div>
 
@@ -1292,6 +1306,8 @@ async function initializeIndexPage() {
   function applyFiltersAndRender() {
     let filteredProducts = [...allProducts];
 
+    filteredProducts = filteredProducts.filter(p => !isListingExpired(p));
+
     // Category filter
     if (currentCategory !== 'all') {
       filteredProducts = filteredProducts.filter(p => (p.category || '').toLowerCase() === currentCategory.toLowerCase());
@@ -1302,7 +1318,7 @@ async function initializeIndexPage() {
       const searchTerm = currentFilters.search.toLowerCase();
       filteredProducts = filteredProducts.filter(p =>
         (p.name || '').toLowerCase().includes(searchTerm) ||
-        (p.description || '').toLowerCase().includes(searchTerm) ||
+        (parseProductAttrs(p.description).description || '').toLowerCase().includes(searchTerm) ||
         (p.category || '').toLowerCase().includes(searchTerm)
       );
     }
@@ -1477,15 +1493,17 @@ async function initializeIndexPage() {
 
     productsToRender.forEach(product => {
       const imageUrl = product.image_url || 'https://placehold.co/300x200/667eea/white?text=No+Image';
-      const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
+      const price = formatListingPrice(product.price);
       const stock = product.stock != null ? product.stock : 0;
-      const categoryText = escapeHtml(product.category || 'other');
+      const categoryText = escapeHtml(getCategoryDisplayName(product.category || 'other', i18n.lang));
       const nameText = escapeHtml(product.name || 'Unnamed Product');
       const locationText = escapeHtml(product.location || '');
       const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
       const likesCount = parseInt(product.likes_count || 0);
       const viewsCount = parseInt(product.views_count || 0);
       const isLiked = userFavoritesSet.has(product.id);
+      const { description: cleanDescription } = parseProductAttrs(product.description || '');
+      const expiryBadge = renderExpiryBadge(product);
 
       // Check if product was sold in the last 5 minutes
       const isSoldRecently = product.sold_at && (Date.now() - new Date(product.sold_at).getTime()) < 5 * 60 * 1000;
@@ -1535,7 +1553,7 @@ async function initializeIndexPage() {
       card.innerHTML = `
         <div class="product-image-container">
           <img src="${escapeHtml(imageUrl)}" alt="${nameText}" class="product-image" onerror="this.src='https://placehold.co/300x200/667eea/white?text=No+Image'">
-          <button class="product-like-btn ${isLiked ? 'liked' : ''}" data-id="${escapeHtml(product.id)}" aria-label="Like">
+          <button type="button" class="product-like-btn ${isLiked ? 'liked' : ''}" data-id="${escapeHtml(product.id)}" aria-label="${i18n.t('like_product_aria')}">
             <svg width="20" height="20" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path>
             </svg>
@@ -1566,15 +1584,17 @@ async function initializeIndexPage() {
             ${locationText ? `<span style="font-size:0.8rem; color:var(--muted);">\ud83d\udccd ${locationText}</span>` : ''}
             <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
+          ${expiryBadge ? `<div style="margin:0.6rem 0 0.25rem 0;">${expiryBadge}</div>` : ''}
+          <p class="product-description">${escapeHtml(cleanDescription) || (i18n.t ? i18n.t('no_description') : 'No description available.')}</p>
           <div class="product-footer">
             <div class="product-price">
               ${product.original_price && product.original_price > product.price ?
-                `<span class="price-original">\u20ac${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
+                `<span class="price-original">\u20ac${formatListingPrice(product.original_price)}</span>` : ''}
               <span class="price-currency">\u20ac</span>
               <span class="price-amount">${price}</span>
             </div>
             <div class="product-actions">
-              ${isSoldRecently ? `<span style="color:#ef4444; font-weight:700; font-size:0.875rem;">SOLD</span>` :
+              ${isSoldRecently ? `<span style="color:#ef4444; font-weight:700; font-size:0.875rem;">${i18n.t('sold_label')}</span>` :
                   ((currentUser && product.seller_id === currentUser.id) ? '' : `<button class="btn-buy-now" data-id="${escapeHtml(product.id)}" data-i18n="buyNow">\ud83d\uded2 Buy Now</button>`)}
             </div>
           </div>
@@ -1627,6 +1647,10 @@ async function initializeIndexPage() {
     // Add event listeners for newly created product elements
     addProductEventListeners();
   }
+
+  window.addEventListener('vendly:languagechange', () => {
+    applyFiltersAndRender();
+  });
 
   function addProductEventListeners() {
     // Like buttons
@@ -1831,7 +1855,10 @@ async function initializeIndexPage() {
     
     const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
     const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
-    const price = Number.isFinite(Number(product.price)) ? parseFloat(product.price).toFixed(2) : '0.00';
+    const price = formatListingPrice(product.price);
+    const { description: cleanDescription } = parseProductAttrs(product.description || '');
+    const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
+    const expiryBadge = renderExpiryBadge(product);
     
     modalBody.innerHTML = `
       <div class="modal-product-grid">
@@ -1851,17 +1878,18 @@ async function initializeIndexPage() {
               📍 ${escapeHtml(product.location) || (i18n.t ? i18n.t('not_specified') : 'Not specified')}
             </span>
             <span class="modal-badge" style="background: #f3e8ff; color: #6b21a8;">
-              📦 ${escapeHtml(product.category) || 'other'}
+              📦 ${escapeHtml(categoryLabel) || 'other'}
             </span>
             ${product.stock > 0 
               ? `<span class="modal-badge" style="background: #d1fae5; color: #065f46;">✓ ${product.stock} ${i18n.t ? i18n.t('in_stock_label') : 'in stock'}</span>`
               : `<span class="modal-badge" style="background: #fee2e2; color: #991b1b;">✗ ${i18n.t ? i18n.t('out_of_stock_label') : 'Out of stock'}</span>`
             }
           </div>
+          ${expiryBadge ? `<div style="margin-bottom:0.75rem;">${expiryBadge}</div>` : ''}
           
           <div class="modal-description">
             <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">${i18n.t ? i18n.t('modal_description') : 'Description'}</h3>
-            <p>${escapeHtml(product.description) || (i18n.t ? i18n.t('no_description') : 'No description available.')}</p>
+            <p>${escapeHtml(cleanDescription) || (i18n.t ? i18n.t('no_description') : 'No description available.')}</p>
           </div>
           
           <!-- Product Stats -->
@@ -2573,7 +2601,7 @@ function initializeSettingsPage() {
              <img src="${product.image_url || 'https://placehold.co/80x60/667eea/white?text=No+Image'}" alt="${product.name}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
              <div style="flex:1;">
                <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${product.name}</h4>
-               <div style="font-size:0.875rem; color:var(--muted);">€${parseFloat(product.price).toFixed(2)} • ${product.stock} in stock</div>
+               <div style="font-size:0.875rem; color:var(--muted);">€${formatListingPrice(product.price)} • ${product.stock} in stock</div>
              </div>
              <button class="btn-edit-product" data-product-id="${product.id}" style="padding:0.5rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Edit</button>
            </div>

@@ -3,6 +3,7 @@ import { i18n } from '../i18n.js';
 import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
 import { getPlatformSettings, applyPlatformSettingsToWindow, renderPlatformWarningBanner } from '../platform-settings.js';
 import { fetchAuditLogs, purgeAuditLogsOlderThan, logAuditEvent } from '../audit.js';
+import { parseProductAttrs } from '../category-fields.js';
 
 // ============================
 // State Management
@@ -870,6 +871,7 @@ window.viewProductDetails = async function(productId) {
   try {
     const { data: product, error } = await supabase.from('products').select('*').eq('id', productId).single();
     if (error) throw error;
+    const { description: cleanDescription } = parseProductAttrs(product.description || '');
 
     const sellersById = await fetchUsersMap([product.seller_id]);
     const seller = sellersById[product.seller_id];
@@ -885,7 +887,7 @@ window.viewProductDetails = async function(productId) {
       </div>
       <div class="admin-card" style="padding:1rem;">
         <h3 style="margin-top:0;">Description</h3>
-        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(product.description || 'No description')}</div>
+        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(cleanDescription || 'No description')}</div>
       </div>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
         <button class="btn btn-warning" onclick="editProductStock('${product.id}', ${Number(product.stock || 0)})">Update Stock</button>

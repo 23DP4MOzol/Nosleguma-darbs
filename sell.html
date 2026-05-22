@@ -168,20 +168,6 @@
             </select>
           </label>
 
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_brand">Brand (Optional)</span>
-            <input type="text" id="productBrandInput" class="form-input" data-i18n-placeholder="sell_enter_brand" placeholder="Enter brand name">
-          </label>
-
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_color">Color (Optional)</span>
-            <input type="text" id="productColorInput" class="form-input" data-i18n-placeholder="sell_enter_color" placeholder="Enter color">
-          </label>
-
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_weight">Weight (kg) — for shipping</span>
-            <input type="number" id="productWeightInput" class="form-input" data-i18n-placeholder="sell_enter_weight" placeholder="e.g. 0.5" min="0.01" step="0.01">
-          </label>
         </div>
 
         <!-- Category-Specific Extra Fields (dynamic, shown/hidden via JS) -->
@@ -198,8 +184,15 @@
             <label class="form-field">
               <span class="form-label" data-i18n="sell_shipping_from">Ship from</span>
               <select id="shippingMethod" class="form-select">
-                <option value="locker" data-i18n="sell_ship_from_locker">Parcel Locker</option>
+                <option value="locker" data-i18n="sell_locker_delivery">Parcel locker delivery</option>
+                <option value="meetup" data-i18n="sell_meetup">Meetup</option>
               </select>
+            </label>
+          </div>
+          <div id="sellerAddressSection" style="display:none; margin-top: 1rem;">
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_meetup_city">City</span>
+              <input type="text" id="meetupCityInput" class="form-input" data-i18n-placeholder="sell_meetup_city_placeholder" placeholder="e.g. Riga">
             </label>
           </div>
           <div id="parcelLockerSection" style="margin-top: 1rem;">

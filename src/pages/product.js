@@ -1,6 +1,8 @@
-import { supabase, addToFavorites, removeFromFavorites, getUserFavorites } from '../supabase.js';
+import { supabase, addToFavorites, removeFromFavorites, getUserFavorites, renewProductListing } from '../supabase.js';
 import { i18n } from '../i18n.js';
-import { showInfoModal, showConfirmModal } from '../ui/modal.js';
+import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
+import { parseProductAttrs, getCategoryDisplayName } from '../category-fields.js';
+import { formatListingPrice, getListingExpiryInfo, isListingExpired } from '../listing-utils.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -94,6 +96,27 @@ const filterControls = {
   clearButton: document.getElementById('productClearFilters')
 };
 
+const renewalSectionNote = document.getElementById('renewalSectionNote');
+
+function formatProductPrice(value) {
+  return formatListingPrice(value);
+}
+
+function getExpiryBadgeHtml(product) {
+  const expiry = getListingExpiryInfo(product.valid_until);
+  if (!expiry.hasExpiry) return '';
+
+  if (expiry.isExpired) {
+    return `<span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.35rem 0.6rem;border-radius:999px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:0.75rem;font-weight:700;">⏰ ${i18n.t('listing_expired')}</span>`;
+  }
+
+  const label = expiry.status === 'ending_soon'
+    ? i18n.t('listing_expires_today')
+    : `${i18n.t('listing_time_remaining')}: ${expiry.shortLabel}`;
+
+  return `<span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.35rem 0.6rem;border-radius:999px;background:rgba(59,130,246,0.12);color:#3b82f6;font-size:0.75rem;font-weight:700;">⏳ ${label}</span>`;
+}
+
 function syncFiltersFromUI() {
   currentFilters = {
     search: filterControls.searchInput?.value?.trim() || '',
@@ -120,11 +143,19 @@ function resetFiltersUI() {
 function applyFiltersAndDisplay() {
   let filteredProducts = [...allProducts];
 
+  if (currentFilter === 'active') {
+    filteredProducts = filteredProducts.filter(p => (parseInt(p.stock || 0) > 0) && !isListingExpired(p));
+  } else if (currentFilter === 'sold') {
+    filteredProducts = filteredProducts.filter(p => parseInt(p.stock || 0) === 0);
+  } else if (currentFilter === 'expired') {
+    filteredProducts = filteredProducts.filter(p => parseInt(p.stock || 0) > 0 && isListingExpired(p));
+  }
+
   if (currentFilters.search) {
     const term = currentFilters.search.toLowerCase();
     filteredProducts = filteredProducts.filter(p =>
       (p.name || '').toLowerCase().includes(term) ||
-      (p.description || '').toLowerCase().includes(term) ||
+      (parseProductAttrs(p.description).description || '').toLowerCase().includes(term) ||
       (p.category || '').toLowerCase().includes(term)
     );
   }
@@ -192,6 +223,10 @@ function applyFiltersAndDisplay() {
       break;
   }
 
+  if (renewalSectionNote) {
+    renewalSectionNote.style.display = currentFilter === 'expired' ? 'block' : 'none';
+  }
+
   displayProducts(filteredProducts);
 }
 
@@ -222,6 +257,10 @@ function bindFilterControls() {
 }
 
 bindFilterControls();
+
+window.addEventListener('vendly:languagechange', () => {
+  applyFiltersAndDisplay();
+});
 
 function getOrCreateGuestViewerId() {
   try {
@@ -391,7 +430,7 @@ async function loadProducts() {
         products = [];
       }
     } else {
-      // Load user's own products based on filter
+      // Load user's own products; filter-specific views are handled client-side
       let query = supabase
         .from('products')
         .select(`
@@ -399,14 +438,7 @@ async function loadProducts() {
           seller:users!seller_id(username, avatar_url)
         `);
 
-      if (currentFilter === 'active') {
-        query = query.eq('seller_id', currentUser.id).gt('stock', 0);
-      } else if (currentFilter === 'sold') {
-        query = query.eq('seller_id', currentUser.id).eq('stock', 0);
-      } else {
-        // 'all' - show user's products
-        query = query.eq('seller_id', currentUser.id);
-      }
+      query = query.eq('seller_id', currentUser.id);
 
       const { data } = await query.order('created_at', { ascending: false });
       products = data || [];
@@ -436,7 +468,7 @@ async function loadProducts() {
 
   } catch (error) {
     console.error('Error loading products:', error);
-    document.getElementById('productGrid').innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--error);">Error loading products.</div>';
+    document.getElementById('productGrid').innerHTML = `<div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--error);">${i18n.t('error_loading_products')}</div>`;
   }
 }
 
@@ -453,7 +485,7 @@ async function updateRevenueStats() {
     if (!allUserProducts) return;
 
     const sold = allUserProducts.filter(p => p.stock === 0 && p.sold_at);
-    const active = allUserProducts.filter(p => p.stock > 0);
+    const active = allUserProducts.filter(p => p.stock > 0 && !isListingExpired(p));
     const totalRevenue = sold.reduce((sum, p) => sum + parseFloat(p.price || 0), 0);
     const totalLikes = allUserProducts.reduce((sum, p) => sum + parseInt(p.likes_count || 0), 0);
 
@@ -491,19 +523,23 @@ function displayProducts(products) {
     const viewsCount = parseInt(product.views_count || 0);
     const isSold = product.stock === 0;
     const soldDate = product.sold_at ? new Date(product.sold_at).toLocaleDateString() : '';
+    const { description: cleanDescription } = parseProductAttrs(product.description || '');
+    const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
+    const isExpired = isListingExpired(product);
+    const expiryBadge = getExpiryBadgeHtml(product);
 
     return `
-    <div class="product-card-modern" data-product-id="${product.id}" ${isSold ? 'style="opacity:0.75;"' : ''}>
+    <div class="product-card-modern" data-product-id="${product.id}" ${isSold || isExpired ? 'style="opacity:0.75;"' : ''}>
       <div class="product-image-container">
         <img src="${product.image_url || 'https://placehold.co/400x300/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
-        <button class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}">
+        <button type="button" class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}" aria-label="${userFavorites.has(product.id) ? i18n.t('unlike_product_aria') : i18n.t('like_product_aria')}">
           <svg width="20" height="20" fill="${userFavorites.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path>
           </svg>
         </button>
-        ${isSold ? '<span class="product-badge-new" style="background:#ef4444;">SOLD</span>' : ''}
+        ${isSold ? `<span class="product-badge-new" style="background:#ef4444;">${i18n.t('sold_label')}</span>` : ''}
         <div class="product-overlay">
-          <button class="btn-quick-view" data-product-id="${product.id}">Quick View</button>
+          <button class="btn-quick-view" data-product-id="${product.id}">${i18n.t('quickView')}</button>
         </div>
       </div>
       <div class="product-info">
@@ -519,27 +555,36 @@ function displayProducts(products) {
         <div class="product-meta" style="display:flex; gap:1rem; align-items:center; margin-bottom:0.25rem;">
           <span style="font-size:0.8rem; color:var(--muted);" data-likes>❤️ ${likesCount}</span>
           <span style="font-size:0.8rem; color:var(--muted);" data-views-for="${product.id}">👁️ ${viewsCount}</span>
+          <span style="font-size:0.8rem; color:var(--muted);">${categoryLabel}</span>
           <span style="font-size:0.8rem; color:var(--muted);">📦 ${product.stock || 0}</span>
         </div>
-        ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">Sold on ${soldDate}</div>` : ''}
-        <p class="product-description">${product.description || 'No description available.'}</p>
+        ${expiryBadge ? `<div style="margin:0.5rem 0 0.75rem 0;">${expiryBadge}</div>` : ''}
+        ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">${i18n.t('sold_on')} ${soldDate}</div>` : ''}
+        <p class="product-description">${cleanDescription || i18n.t('no_description')}</p>
         <div class="product-footer">
           <div class="product-price">
             ${product.original_price && product.original_price > product.price ?
-              `<span class="price-original">€${parseFloat(product.original_price).toFixed(2)}</span>` : ''}
+              `<span class="price-original">€${formatProductPrice(product.original_price)}</span>` : ''}
             <span class="price-currency">€</span>
-            <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+            <span class="price-amount">${formatProductPrice(product.price)}</span>
           </div>
           <div class="product-actions">
             ${product.seller_id === currentUser?.id ?
               `<button class="btn-edit" data-product-id="${product.id}">✏️</button>
                <button class="btn-delete" data-product-id="${product.id}">🗑️</button>` :
-              (isSold ? '<span style="color:#ef4444; font-weight:600; font-size:0.8rem;">SOLD</span>' :
+              (isSold || isExpired ? `<span style="color:#ef4444; font-weight:600; font-size:0.8rem;">${isSold ? i18n.t('sold_label') : i18n.t('listing_expired')}</span>` :
               `<button class="btn-add-cart" data-product-id="${product.id}">🛒</button>
-               <button class="btn-buy-now" data-product-id="${product.id}">Buy Now</button>`)
+               <button class="btn-buy-now" data-product-id="${product.id}">${i18n.t('buyNow')}</button>`)
             }
           </div>
         </div>
+        ${product.seller_id === currentUser?.id ? `
+          <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+            <button class="btn-buy-now btn-renew-listing" style="padding:0.45rem 0.8rem; font-size:0.8125rem;" data-product-id="${product.id}" data-mode="${isExpired ? 'renew' : 'extend'}">
+              ${isExpired ? i18n.t('listing_renew') : i18n.t('listing_extend')}
+            </button>
+          </div>
+        ` : ''}
       </div>
     </div>
   `}).join('');
@@ -607,12 +652,21 @@ function attachProductEventListeners() {
       deleteProduct(productId);
     });
   });
+
+  document.querySelectorAll('.btn-renew-listing').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const productId = btn.dataset.productId;
+      const mode = btn.dataset.mode || 'renew';
+      await handleRenewListing(productId, mode);
+    });
+  });
 }
 
 // Toggle favorite status
 async function toggleFavorite(productId) {
   if (!currentUser) {
-    await showInfoModal('Please log in to add favorites', 'Authentication Required');
+    await showInfoModal(i18n.t('login_add_favorites'), i18n.t('chat_auth_required'));
     return;
   }
 
@@ -633,15 +687,16 @@ async function toggleFavorite(productId) {
     const btn = document.querySelector(`.product-like-btn[data-product-id="${productId}"]`);
     if (btn) {
       btn.classList.toggle('liked', !isFavorited);
-        const isFav = !isFavorited;
-        btn.innerHTML = `<svg width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path></svg>`;
+      const isFav = !isFavorited;
+      btn.setAttribute('aria-label', isFav ? i18n.t('unlike_product_aria') : i18n.t('like_product_aria'));
+      btn.innerHTML = `<svg width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path></svg>`;
     }
     // Update likes count immediately
     await updateProductLikesCount(productId, !isFavorited);
 
   } catch (error) {
     console.error('Error toggling favorite:', error);
-    await showInfoModal('Favorites functionality is not available yet. Please contact support.', 'Error');
+    await showInfoModal(i18n.t('favorites_unavailable'), i18n.t('delete_error_title'));
   }
 }
 
@@ -704,21 +759,21 @@ async function showUserProfile(userId) {
         <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
           ${user.username?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <h2>${user.username || 'Unknown User'}</h2>
+        <h2>${user.username || i18n.t('unknown_seller')}</h2>
         ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${user.bio}</p>` : ''}
         <div style="display:flex; justify-content:center; gap:1rem; margin:1rem 0;">
           <div style="text-align:center;">
             <div style="font-weight:700; font-size:1.25rem;">${products?.length || 0}</div>
-            <div style="font-size:0.875rem; color:var(--muted);">Products</div>
+            <div style="font-size:0.875rem; color:var(--muted);">${i18n.t('profile_products')}</div>
           </div>
           <div style="text-align:center;">
             <div style="font-weight:700; font-size:1.25rem;">⭐</div>
-            <div style="font-size:0.875rem; color:var(--muted);">Rating</div>
+            <div style="font-size:0.875rem; color:var(--muted);">${i18n.t('profile_rating')}</div>
           </div>
         </div>
       </div>
 
-      <h3 style="margin-bottom:1rem;">Recent Products</h3>
+      <h3 style="margin-bottom:1rem;">${i18n.t('recent_products')}</h3>
       <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
         ${products?.map(product => `
           <div class="product-card-modern" style="margin:0;">
@@ -729,12 +784,12 @@ async function showUserProfile(userId) {
               <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
               <div class="product-price" style="margin-bottom:0.5rem;">
                 <span class="price-currency">€</span>
-                <span class="price-amount">${parseFloat(product.price).toFixed(2)}</span>
+                <span class="price-amount">${formatProductPrice(product.price)}</span>
               </div>
-              <button class="btn-buy-now" style="width:100%; padding:0.5rem;" data-product-id="${product.id}">View Product</button>
+              <button class="btn-buy-now" style="width:100%; padding:0.5rem;" data-product-id="${product.id}">${i18n.t('view_product')}</button>
             </div>
           </div>
-        `).join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--muted);">No products yet.</p>'}
+        `).join('') || `<p style="grid-column:1/-1; text-align:center; color:var(--muted);">${i18n.t('no_products_yet_short')}</p>`}
       </div>
     `;
 
@@ -783,6 +838,35 @@ function handleProductAction(productId, action) {
 window.showUserProfile = showUserProfile;
 window.handleProductAction = handleProductAction;
 
+async function handleRenewListing(productId, mode = 'renew') {
+  const product = allProducts.find(p => String(p.id) === String(productId));
+  if (!product || !currentUser) return;
+
+  const response = await showPromptModal(i18n.t('listing_renew_prompt'), {
+    title: mode === 'renew' ? i18n.t('listing_renew') : i18n.t('listing_extend'),
+    defaultValue: '1'
+  });
+
+  if (response === null) return;
+
+  const duration = parseInt(response, 10);
+  if (![1, 2, 3].includes(duration)) {
+    await showInfoModal(i18n.t('listing_renew_prompt'), mode === 'renew' ? i18n.t('listing_renew') : i18n.t('listing_extend'));
+    return;
+  }
+
+  try {
+    await renewProductListing(productId, currentUser.id, duration);
+    await loadProducts();
+    await showInfoModal(
+      mode === 'renew' ? i18n.t('listing_renew_success') : i18n.t('listing_extend_success'),
+      mode === 'renew' ? i18n.t('listing_renew') : i18n.t('listing_extend')
+    );
+  } catch (error) {
+    await showInfoModal(error.message || i18n.t('renew_failed'), i18n.t('delete_error_title'));
+  }
+}
+
 // Edit product
 function editProduct(productId) {
   // Redirect to sell page with edit mode
@@ -791,7 +875,7 @@ function editProduct(productId) {
 
 // Delete product
 async function deleteProduct(productId) {
-  const confirmed = await showConfirmModal({ title: 'Delete Product', message: 'Are you sure you want to delete this product?', okText: 'Delete', cancelText: 'Cancel' });
+  const confirmed = await showConfirmModal({ title: i18n.t('delete_product_title'), message: i18n.t('delete_product_confirm') + '?', okText: i18n.t('delete'), cancelText: i18n.t('cancel') });
   if (!confirmed) return;
 
   try {
@@ -804,11 +888,11 @@ async function deleteProduct(productId) {
 
     // Reload products
     loadProducts();
-    await showInfoModal('Product deleted successfully', 'Deleted');
+    await showInfoModal(i18n.t('product_deleted_success'), i18n.t('delete_success_title'));
 
   } catch (error) {
     console.error('Error deleting product:', error);
-    await showInfoModal('Error deleting product', 'Error');
+    await showInfoModal(i18n.t('product_delete_error'), i18n.t('delete_error_title'));
   }
 }
 
