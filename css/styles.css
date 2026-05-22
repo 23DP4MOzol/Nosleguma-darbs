@@ -1105,7 +1105,7 @@ html.light .btn-hero-secondary {
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
-  transition: var(--transition);
+  transition: box-shadow var(--transition), border-color var(--transition);
   cursor: pointer;
   min-width: 0;
   will-change: box-shadow, border-color;
@@ -1122,6 +1122,7 @@ html.light .btn-hero-secondary {
   height: 280px;
   overflow: hidden;
   background: var(--secondary);
+  isolation: isolate;
 }
 
 .product-image {
@@ -1187,10 +1188,13 @@ html.light .btn-hero-secondary {
   padding: 1.5rem;
   opacity: 0;
   transition: var(--transition);
+  pointer-events: none;
 }
 
-.product-card-modern:hover .product-overlay {
+.product-card-modern:hover .product-overlay,
+.product-card-modern:focus-within .product-overlay {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .btn-quick-view {

@@ -1504,7 +1504,6 @@ async function initializeIndexPage() {
       const isLiked = userFavoritesSet.has(product.id);
       const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
       const expiryBadge = renderExpiryBadge(product);
-      const attrBadges = renderAttrBadges(product.category, attrs);
 
       // Check if product was sold in the last 5 minutes
       const isSoldRecently = product.sold_at && (Date.now() - new Date(product.sold_at).getTime()) < 5 * 60 * 1000;
@@ -1586,7 +1585,6 @@ async function initializeIndexPage() {
             <span style="font-size:0.8rem; color:var(--muted);">\ud83d\udce6 ${escapeHtml(stock)}</span>
           </div>
           ${expiryBadge ? `<div style="margin:0.6rem 0 0.25rem 0;">${expiryBadge}</div>` : ''}
-          ${attrBadges ? `<div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin:0.35rem 0 0.5rem 0;">${attrBadges}</div>` : ''}
           <p class="product-description">${escapeHtml(cleanDescription) || (i18n.t ? i18n.t('no_description') : 'No description available.')}</p>
           <div class="product-footer">
             <div class="product-price">
