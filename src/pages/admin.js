@@ -1,4 +1,4 @@
-import { supabase, getCurrentUser } from '../supabase.js';
+import { supabase, getCurrentUser, uploadImage } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
 import { getPlatformSettings, applyPlatformSettingsToWindow, renderPlatformWarningBanner } from '../platform-settings.js';
@@ -1306,7 +1306,18 @@ function displayOrders(orders) {
 async function loadConversations() {
   try {
     const search = (document.getElementById('chat-search')?.value || '').trim().toLowerCase();
+    const type = document.getElementById('chat-type')?.value || 'all';
     const status = document.getElementById('chat-status')?.value || 'all';
+
+    await loadSupportCases({ search, status, type });
+
+    const chatContainer = document.getElementById('chats-content');
+    if (type === 'support' || type === 'admin-room') {
+      chatContainer.innerHTML = type === 'admin-room'
+        ? '<p style="text-align:center;">Use "Open Admin Room" to join the internal team chat.</p>'
+        : '<p style="text-align:center;">Support cases are shown above.</p>';
+      return;
+    }
 
     let query = supabase
       .from('conversations')
@@ -1314,7 +1325,7 @@ async function loadConversations() {
       .order('last_message_at', { ascending: false })
       .limit(PAGE_SIZES.chats);
 
-    if (status !== 'all') {
+    if (status !== 'all' && ['active', 'archived', 'blocked'].includes(status)) {
       query = query.eq('status', status);
     }
 
@@ -1353,6 +1364,58 @@ async function loadConversations() {
   }
 }
 
+async function loadSupportCases({ search = '', status = 'all', type = 'all' } = {}) {
+  const container = document.getElementById('support-cases-content');
+  if (!container) return;
+
+  if (type === 'conversation') {
+    container.innerHTML = '<p style="text-align:center;">Switch the chat type filter to Support Cases to manage support work.</p>';
+    return;
+  }
+
+  try {
+    let query = supabase
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (status !== 'all' && ['not_taken', 'in_progress', 'done', 'open', 'resolved'].includes(status)) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const ticketUsers = await fetchUsersMap((data || []).flatMap((ticket) => [ticket.user_id, ticket.assigned_admin_id]).filter(Boolean));
+    let tickets = (data || []).map((ticket) => ({
+      ...ticket,
+      user: ticketUsers[ticket.user_id] || null,
+      assignedAdmin: ticketUsers[ticket.assigned_admin_id] || null
+    }));
+
+    if (search) {
+      tickets = tickets.filter((ticket) => {
+        const haystack = [
+          ticket.title,
+          ticket.description,
+          ticket.issue_type,
+          ticket.user?.username,
+          ticket.user?.email,
+          ticket.assignedAdmin?.username,
+          ticket.assignedAdmin?.email
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(search);
+      });
+    }
+
+    displaySupportCases(tickets);
+  } catch (error) {
+    console.error('Error loading support cases:', error);
+    container.innerHTML = '<p>Error loading support cases. Run the support chat schema SQL if this is a new setup.</p>';
+  }
+}
+
 function displayConversations(conversations) {
   const container = document.getElementById('chats-content');
   
@@ -1373,6 +1436,38 @@ function displayConversations(conversations) {
           <div class="conversation-time">${formatDate(c.last_message_at)}</div>
           <span class="badge badge-${c.status}">${c.status}</span>
           <button class="btn btn-sm" data-action="view-conversation" data-id="${c.id}">View</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function displaySupportCases(tickets) {
+  const container = document.getElementById('support-cases-content');
+  if (!container) return;
+
+  if (!tickets.length) {
+    container.innerHTML = '<p style="text-align:center;">No support cases found</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="admin-conversations-list">
+      ${tickets.map((ticket) => `
+        <div class="conversation-item">
+          <div class="conversation-users">
+            <span>${escapeHtml(ticket.user?.username || ticket.user?.email || 'Unknown user')}</span>
+            ${ticket.assignedAdmin ? `<span>• ${escapeHtml(ticket.assignedAdmin.username || ticket.assignedAdmin.email || 'Admin')}</span>` : '<span>• Unassigned</span>'}
+          </div>
+          <div class="conversation-product">🛟 ${escapeHtml(ticket.title || ticket.issue_type || 'Support case')}</div>
+          <div class="conversation-preview">${escapeHtml(ticket.description || 'No description')}</div>
+          <div class="conversation-time">${formatDate(ticket.created_at)}</div>
+          <span class="badge badge-${ticket.status || 'open'}">${escapeHtml(ticket.status || 'open')}</span>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+            <button class="btn btn-sm" data-action="view-support-case" data-id="${ticket.id}">Open</button>
+            ${!ticket.assigned_admin_id || ticket.assigned_admin_id === currentUser?.id ? `<button class="btn btn-sm btn-primary" data-action="claim-support-case" data-id="${ticket.id}">${ticket.assigned_admin_id === currentUser?.id ? 'Keep Case' : 'Take Case'}</button>` : ''}
+            ${ticket.status !== 'done' ? `<button class="btn btn-sm btn-success" data-action="mark-support-case-done" data-id="${ticket.id}">Mark Done</button>` : ''}
+          </div>
         </div>
       `).join('')}
     </div>
@@ -1421,6 +1516,263 @@ window.viewConversation = async function(conversationId) {
     `);
   } catch (error) {
     await showInfoModal('Error loading messages: ' + error.message, 'Error');
+  }
+};
+
+function renderAdminChatMessageBody(message) {
+  const safeText = escapeHtml(message.content || '');
+  const attachmentUrl = escapeHtml(message.attachment_url || '');
+  const attachmentName = escapeHtml(message.attachment_name || 'Attachment');
+  const attachmentType = String(message.attachment_type || '');
+
+  if (!attachmentUrl) {
+    return `<div class="admin-chat-message-content">${safeText}</div>`;
+  }
+
+  const attachmentHtml = attachmentType.startsWith('image/')
+    ? `<div style="margin-top:0.5rem;"><img src="${attachmentUrl}" alt="${attachmentName}" style="max-width:220px;border-radius:10px;"></div><a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>`
+    : `<a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>`;
+
+  return `
+    <div class="admin-chat-message-content">${safeText}</div>
+    <div style="margin-top:0.5rem;">${attachmentHtml}</div>
+  `;
+}
+
+window.viewSupportCase = async function(ticketId) {
+  try {
+    const { data: ticket, error } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .single();
+
+    if (error) throw error;
+
+    const usersById = await fetchUsersMap([ticket.user_id, ticket.assigned_admin_id].filter(Boolean));
+    const user = usersById[ticket.user_id];
+    const assignedAdmin = usersById[ticket.assigned_admin_id];
+    const { data: session } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('ticket_id', ticketId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let messages = [];
+    if (session?.id) {
+      const { data: messageRows } = await supabase
+        .from('chat_messages')
+        .select('*, sender:users(id,username,email)')
+        .eq('session_id', session.id)
+        .order('created_at', { ascending: true })
+        .limit(250);
+      messages = messageRows || [];
+    }
+
+    showAdminDataModal(`Support Case ${ticket.id.slice(0, 8)}`, `
+      <div class="admin-info-grid">
+        <div><strong>User</strong><div>${escapeHtml(user?.username || user?.email || 'Unknown')}</div></div>
+        <div><strong>Status</strong><div>${escapeHtml(ticket.status || 'open')}</div></div>
+        <div><strong>Assigned</strong><div>${escapeHtml(assignedAdmin?.username || assignedAdmin?.email || 'Not taken')}</div></div>
+        <div><strong>Issue</strong><div>${escapeHtml(ticket.issue_type || 'general_support')}</div></div>
+      </div>
+      <div class="admin-card" style="padding:1rem;margin-bottom:1rem;">
+        <h3 style="margin-top:0;">Description</h3>
+        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(ticket.description || 'No description')}</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="btn btn-primary" onclick="claimSupportCase('${ticket.id}')">${ticket.assigned_admin_id === currentUser?.id ? 'Refresh My Case' : 'Take Case'}</button>
+        <button class="btn btn-success" onclick="markSupportCaseDone('${ticket.id}')">Mark Done</button>
+      </div>
+      <div class="admin-chat-log">
+        ${messages.length ? messages.map((message) => `
+          <div class="admin-chat-message">
+            <div class="admin-chat-message-meta">
+              <strong>${escapeHtml(message.sender?.username || message.sender?.email || 'Unknown')}</strong>
+              <span style="color:var(--muted);">${formatDate(message.created_at)}</span>
+            </div>
+            ${renderAdminChatMessageBody(message)}
+          </div>
+        `).join('') : '<p style="margin:0;color:var(--muted);">No messages in this support case yet.</p>'}
+      </div>
+    `);
+  } catch (error) {
+    await showInfoModal('Error loading support case: ' + error.message, 'Error');
+  }
+};
+
+window.claimSupportCase = async function(ticketId) {
+  try {
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({
+        assigned_admin_id: currentUser.id,
+        status: 'in_progress',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticketId);
+
+    if (error) throw error;
+    await loadConversations();
+    await viewSupportCase(ticketId);
+  } catch (error) {
+    await showInfoModal('Error taking support case: ' + error.message, 'Error');
+  }
+};
+
+window.markSupportCaseDone = async function(ticketId) {
+  try {
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({
+        assigned_admin_id: currentUser.id,
+        status: 'done',
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticketId);
+
+    if (error) throw error;
+    await loadConversations();
+    await viewSupportCase(ticketId);
+  } catch (error) {
+    await showInfoModal('Error marking support case done: ' + error.message, 'Error');
+  }
+};
+
+async function getOrCreateAdminTeamRoom() {
+  const { data: existing } = await supabase
+    .from('chat_sessions')
+    .select('*')
+    .eq('session_type', 'admin_room')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing;
+
+  let { data: room, error } = await supabase
+    .from('chat_sessions')
+    .insert({
+      session_type: 'admin_room',
+      title: 'Support Team Room',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    const fallback = await supabase
+      .from('chat_sessions')
+      .insert({
+        status: 'active',
+        created_at: new Date().toISOString()
+      })
+      .select('*')
+      .single();
+    room = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) throw error;
+  return room;
+}
+
+window.openAdminTeamRoom = async function() {
+  try {
+    const room = await getOrCreateAdminTeamRoom();
+    const { data: messages } = await supabase
+      .from('chat_messages')
+      .select('*, sender:users(id,username,email)')
+      .eq('session_id', room.id)
+      .order('created_at', { ascending: true })
+      .limit(250);
+
+    showAdminDataModal('Admin Team Room', `
+      <div class="admin-card" style="padding:1rem;margin-bottom:1rem;">
+        <p style="margin:0;color:var(--muted);">Shared room for admins to coordinate support work. Images and files are supported after the SQL migration is applied.</p>
+      </div>
+      <div class="admin-chat-log" style="margin-bottom:1rem;">
+        ${(messages || []).length ? (messages || []).map((message) => `
+          <div class="admin-chat-message">
+            <div class="admin-chat-message-meta">
+              <strong>${escapeHtml(message.sender?.username || message.sender?.email || 'Unknown')}</strong>
+              <span style="color:var(--muted);">${formatDate(message.created_at)}</span>
+            </div>
+            ${renderAdminChatMessageBody(message)}
+          </div>
+        `).join('') : '<p style="margin:0;color:var(--muted);">No admin messages yet.</p>'}
+      </div>
+      <div style="display:grid;gap:0.75rem;">
+        <textarea id="adminTeamRoomMessage" rows="4" placeholder="Write an internal admin note..." style="width:100%;padding:0.75rem;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--fg);"></textarea>
+        <input id="adminTeamRoomFile" type="file" accept="image/*,.pdf,.doc,.docx,.txt">
+        <button class="btn btn-primary" id="adminTeamRoomSendBtn">Send To Team Room</button>
+      </div>
+    `);
+
+    document.getElementById('adminTeamRoomSendBtn')?.addEventListener('click', async () => {
+      const content = (document.getElementById('adminTeamRoomMessage')?.value || '').trim();
+      const file = document.getElementById('adminTeamRoomFile')?.files?.[0] || null;
+
+      if (!content && !file) {
+        await showInfoModal('Add a message or file first.', 'Info');
+        return;
+      }
+
+      let attachment = null;
+      if (file) {
+        const publicUrl = await uploadImage(file, currentUser.id, 'chat');
+        attachment = {
+          attachment_url: publicUrl,
+          attachment_name: file.name,
+          attachment_type: file.type || 'application/octet-stream'
+        };
+      }
+
+      let insertResult = await supabase
+        .from('chat_messages')
+        .insert({
+          session_id: room.id,
+          sender_id: currentUser.id,
+          content: content || `Shared: ${attachment?.attachment_name || 'Attachment'}`,
+          message_type: attachment ? 'attachment' : 'text',
+          is_read: false,
+          created_at: new Date().toISOString(),
+          ...(attachment || {})
+        });
+
+      if (insertResult.error && attachment) {
+        insertResult = await supabase
+          .from('chat_messages')
+          .insert({
+            session_id: room.id,
+            sender_id: currentUser.id,
+            content: content || `Shared: ${attachment.attachment_name}`,
+            message_type: 'text',
+            is_read: false,
+            created_at: new Date().toISOString()
+          });
+
+        if (!insertResult.error) {
+          await showInfoModal('Message sent, but attachment columns are missing. Run the Supabase SQL file to enable file support.', 'Notice');
+        }
+      }
+
+      if (insertResult.error) throw insertResult.error;
+
+      await supabase
+        .from('chat_sessions')
+        .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', room.id);
+
+      await openAdminTeamRoom();
+    });
+  } catch (error) {
+    await showInfoModal('Error opening admin room: ' + error.message, 'Error');
   }
 };
 
@@ -1767,6 +2119,7 @@ async function initialize() {
   document.getElementById('product-search')?.addEventListener('input', debounce(loadProducts, 300));
   document.getElementById('product-status')?.addEventListener('change', loadProducts);
   document.getElementById('chat-search')?.addEventListener('input', debounce(loadConversations, 250));
+  document.getElementById('chat-type')?.addEventListener('change', loadConversations);
   document.getElementById('chat-status')?.addEventListener('change', loadConversations);
   
   // Event delegation for action buttons
@@ -1789,6 +2142,9 @@ async function initialize() {
       case 'delete-product': deleteProduct(id); break;
       case 'view-transaction': viewTransactionDetails(id); break;
       case 'view-conversation': viewConversation(id); break;
+      case 'view-support-case': viewSupportCase(id); break;
+      case 'claim-support-case': claimSupportCase(id); break;
+      case 'mark-support-case-done': markSupportCaseDone(id); break;
       case 'resolve-ticket': resolveTicket(id); break;
       case 'save-platform-settings':
         try {

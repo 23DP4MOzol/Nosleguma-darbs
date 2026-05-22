@@ -330,13 +330,26 @@
       </div>
       <div class="admin-filters">
         <input type="text" id="chat-search" placeholder="Search by user, product, or last message..." class="admin-search">
+        <select id="chat-type" class="admin-select">
+          <option value="all">All Chat Types</option>
+          <option value="support">Support Cases</option>
+          <option value="conversation">User Chats</option>
+          <option value="admin-room">Admin Room</option>
+        </select>
         <select id="chat-status" class="admin-select">
           <option value="all">All Statuses</option>
+          <option value="not_taken">Not Taken</option>
+          <option value="in_progress">In Progress</option>
+          <option value="done">Done</option>
           <option value="active">Active</option>
           <option value="archived">Archived</option>
           <option value="blocked">Blocked</option>
         </select>
         <button class="btn btn-primary" onclick="loadConversations()">Search</button>
+        <button class="btn btn-secondary" onclick="openAdminTeamRoom()">Open Admin Room</button>
+      </div>
+      <div class="admin-card" id="support-cases-content" style="margin-bottom:1rem;">
+        <p>Loading support cases...</p>
       </div>
       <div class="admin-card" id="chats-content">
         <p>Loading conversations...</p>

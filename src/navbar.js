@@ -72,7 +72,10 @@ function showBrowserNotification(title, body, data = {}) {
   if (Notification.permission === 'granted') {
     try {
       const n = new Notification(title, { body, data, badge: '/assets/vendly-logo.svg' });
-      n.onclick = () => { window.focus(); /* could navigate to related page */ };
+      n.onclick = () => {
+        window.focus();
+        if (data?.url) window.location.href = data.url;
+      };
     } catch (e) {
       console.warn('Could not show browser notification', e);
     }
@@ -148,11 +151,81 @@ async function initNotifications() {
               const title = i18n.t ? i18n.t('notification_orders') : 'Order update';
               const body = `${i18n.t ? i18n.t('notification_orders') : 'Order'}: ${record.product_id} — ${record.order_status || (i18n.t ? i18n.t('unknown') : 'created')}`;
               addInPageNotification({ title, body, created_at: new Date().toISOString(), type: 'order' });
-              showBrowserNotification(title, body, { type: 'order', orderId: record.id });
+              showBrowserNotification(title, body, { type: 'order', orderId: record.id, url: 'orders.html' });
+            }
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
+            const record = payload.new || payload.record || payload;
+            if (!record) return;
+            if (record.buyer_id === user.id || record.seller_id === user.id) {
+              const title = i18n.t ? i18n.t('notification_orders') : 'Order update';
+              const body = `Order status: ${record.status || record.order_status || 'updated'}`;
+              addInPageNotification({ title, body, created_at: new Date().toISOString(), type: 'order' });
+              showBrowserNotification(title, body, { type: 'order', orderId: record.id, url: 'orders.html' });
             }
           })
           .subscribe();
       } catch (e) { console.warn('Orders realtime subscribe failed', e); }
+    }
+
+    try {
+      supabase.channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+          const record = payload.new || payload.record || payload;
+          if (!record || record.sender_id === user.id) return;
+
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('id,buyer_id,seller_id')
+            .eq('id', record.conversation_id)
+            .maybeSingle();
+
+          if (!conversation) return;
+          if (conversation.buyer_id !== user.id && conversation.seller_id !== user.id) return;
+
+          const { data: sender } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', record.sender_id)
+            .maybeSingle();
+
+          const title = 'New message';
+          const body = `${sender?.username || 'Someone'}: ${String(record.content || 'Sent an attachment').slice(0, 120)}`;
+          addInPageNotification({ title, body, created_at: new Date().toISOString(), type: 'message' });
+          showBrowserNotification(title, body, { type: 'message', conversationId: record.conversation_id, url: 'chat.html' });
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('Messages realtime subscribe failed', e);
+    }
+
+    try {
+      supabase.channel('public:products-reserved')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, async payload => {
+          const record = payload.new || payload.record || payload;
+          const oldRecord = payload.old || {};
+          if (!record || record.seller_id !== user.id) return;
+          if (!record.is_reserved || oldRecord.is_reserved === record.is_reserved) return;
+          if (record.reserved_by === user.id) return;
+
+          let reserverName = 'Someone';
+          if (record.reserved_by) {
+            const { data: reserver } = await supabase
+              .from('users')
+              .select('username')
+              .eq('id', record.reserved_by)
+              .maybeSingle();
+            reserverName = reserver?.username || reserverName;
+          }
+
+          const title = 'Item reserved';
+          const body = `${reserverName} reserved ${record.name || 'your item'}`;
+          addInPageNotification({ title, body, created_at: new Date().toISOString(), type: 'reserve' });
+          showBrowserNotification(title, body, { type: 'reserve', productId: record.id, url: 'index.html' });
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('Reserve realtime subscribe failed', e);
     }
 
     // Reviews
