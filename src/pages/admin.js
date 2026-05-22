@@ -32,18 +32,58 @@ function lockBodyScroll(locked) {
   document.body.style.overflow = locked ? 'hidden' : '';
 }
 
+const adminModalStack = [];
+const ADMIN_MODAL_BASE_Z_INDEX = 9999;
+const ADMIN_MODAL_LAYER_STEP = 10;
+
+function syncAdminModalStack() {
+  adminModalStack.forEach((modalId, index) => {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const layerBase = ADMIN_MODAL_BASE_Z_INDEX + (index * ADMIN_MODAL_LAYER_STEP);
+    const overlay = modal.querySelector('.modal-overlay');
+    const content = modal.querySelector('.modal-content');
+    const closeButton = modal.querySelector('.modal-close');
+
+    modal.style.zIndex = String(layerBase);
+    if (overlay) overlay.style.zIndex = String(layerBase);
+    if (content) content.style.zIndex = String(layerBase + 1);
+    if (closeButton) closeButton.style.zIndex = String(layerBase + 2);
+  });
+
+  lockBodyScroll(adminModalStack.length > 0);
+}
+
 function openModalById(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
+
+  const existingIndex = adminModalStack.indexOf(modalId);
+  if (existingIndex !== -1) {
+    adminModalStack.splice(existingIndex, 1);
+  }
+
+  adminModalStack.push(modalId);
   modal.style.display = 'flex';
-  lockBodyScroll(true);
+  syncAdminModalStack();
 }
 
 function closeModalById(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
+
+  const existingIndex = adminModalStack.indexOf(modalId);
+  if (existingIndex !== -1) {
+    adminModalStack.splice(existingIndex, 1);
+  }
+
   modal.style.display = 'none';
-  lockBodyScroll(false);
+  modal.style.zIndex = '';
+  modal.querySelector('.modal-overlay')?.style.removeProperty('z-index');
+  modal.querySelector('.modal-content')?.style.removeProperty('z-index');
+  modal.querySelector('.modal-close')?.style.removeProperty('z-index');
+  syncAdminModalStack();
 }
 
 function showAdminDataModal(title, bodyHtml) {
