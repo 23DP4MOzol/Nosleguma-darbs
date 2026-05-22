@@ -9,6 +9,106 @@ import { fetchAuditLogs, purgeAuditLogsOlderThan, logAuditEvent } from '../audit
 // ============================
 let currentTab = 'dashboard';
 let currentUser = null;
+const PAGE_SIZES = {
+  users: 50,
+  products: 50,
+  transactions: 100,
+  chats: 50,
+  userTransactions: 20,
+  userOrders: 20,
+  recentActivities: 15
+};
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function lockBodyScroll(locked) {
+  document.body.style.overflow = locked ? 'hidden' : '';
+}
+
+function openModalById(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.style.display = 'flex';
+  lockBodyScroll(true);
+}
+
+function closeModalById(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.style.display = 'none';
+  lockBodyScroll(false);
+}
+
+function showAdminDataModal(title, bodyHtml) {
+  const content = document.getElementById('adminDataModalContent');
+  if (!content) return;
+  content.innerHTML = `
+    <div class="admin-detail-layout">
+      <div class="admin-detail-header">
+        <h2 style="margin:0 0 0.35rem 0;">${escapeHtml(title)}</h2>
+      </div>
+      ${bodyHtml}
+    </div>
+  `;
+  openModalById('adminDataModal');
+}
+
+async function fetchUsersMap(userIds) {
+  const ids = [...new Set((userIds || []).filter(Boolean))];
+  if (!ids.length) return {};
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, email, role, balance')
+    .in('id', ids);
+
+  if (error) throw error;
+
+  return Object.fromEntries((data || []).map((user) => [user.id, user]));
+}
+
+async function fetchProductsMap(productIds) {
+  const ids = [...new Set((productIds || []).filter(Boolean))];
+  if (!ids.length) return {};
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, price, stock, status, seller_id, created_at, listing_fee, reserve_fee, condition, location, image_url')
+    .in('id', ids);
+
+  if (error) throw error;
+
+  return Object.fromEntries((data || []).map((product) => [product.id, product]));
+}
+
+async function fetchOrdersForUser(userId) {
+  const attempts = [
+    () => supabase
+      .from('orders')
+      .select('*')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZES.userOrders),
+    () => supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZES.userOrders)
+  ];
+
+  for (const run of attempts) {
+    const { data, error } = await run();
+    if (!error) return data || [];
+  }
+
+  return [];
+}
 
 // ============================
 // Authentication Check
@@ -159,11 +259,15 @@ async function loadDashboard() {
 
 async function loadRecentActivities() {
   try {
-    const { data: activities } = await supabase
+    const { data: activities, error } = await supabase
       .from('user_transactions')
-      .select('*, users!user_id(username, email)')
+      .select('id, user_id, amount, transaction_type, description, created_at')
       .order('created_at', { ascending: false })
-      .limit(15);
+      .limit(PAGE_SIZES.recentActivities);
+
+    if (error) throw error;
+
+    const usersById = await fetchUsersMap((activities || []).map((item) => item.user_id));
     
     const tbody = document.getElementById('dash-activities');
     if (!activities?.length) {
@@ -173,7 +277,7 @@ async function loadRecentActivities() {
     
     tbody.innerHTML = activities.map(a => `
       <tr>
-        <td>${a.users?.username || a.users?.email || 'Unknown'}</td>
+        <td>${escapeHtml(usersById[a.user_id]?.username || usersById[a.user_id]?.email || 'Unknown')}</td>
         <td><span class="badge badge-${a.transaction_type}">${a.transaction_type}</span></td>
         <td>${formatDate(a.created_at)}</td>
         <td class="${a.amount >= 0 ? 'text-success' : 'text-danger'}">€${Math.abs(a.amount).toFixed(2)}</td>
@@ -181,6 +285,10 @@ async function loadRecentActivities() {
     `).join('');
   } catch (error) {
     console.error('Error loading activities:', error);
+    const tbody = document.getElementById('dash-activities');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Unable to load recent activities</td></tr>';
+    }
   }
 }
 
@@ -241,43 +349,54 @@ function displayUsers(users) {
 
 window.viewUserDetails = async function(userId) {
   try {
-    // User data
-    const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+    const { data: user, error: userError } = await supabase.from('users').select('*').eq('id', userId).single();
+    if (userError) throw userError;
     if (!user) throw new Error('User not found');
-    
-    // Stats
-    const { count: productsCount } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', userId);
-    const { count: ordersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', userId);
-    const { count: conversationsCount } = await supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
-    
-    // Financials - detailed breakdown
-    const { data: transactions } = await supabase.from('user_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-    const totalSpent = transactions?.filter(t => t.transaction_type === 'purchase').reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
-    const totalFees = transactions?.filter(t => t.transaction_type === 'fee').reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
-    const totalEarned = transactions?.filter(t => t.transaction_type === 'sale').reduce((sum, t) => sum + t.amount, 0) || 0;
-    const totalTopUps = transactions?.filter(t => t.transaction_type === 'topup').reduce((sum, t) => sum + t.amount, 0) || 0;
-    
-    // Purchase history with product details
-    const { data: purchaseOrders } = await supabase
-      .from('orders')
-      .select('*, items:order_items(*)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    // Products sold (seller history)
-    const { data: products } = await supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false });
-    
-    // Orders
-    const { data: orders } = await supabase.from('orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
-    
-    // Recent conversations
-    const { data: conversations } = await supabase
-      .from('conversations')
-      .select('*, product:products(name, price)')
-      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-      .order('last_message_at', { ascending: false })
-      .limit(10);
-    
+
+    const [
+      productsResult,
+      transactionsResult,
+      conversationsResult,
+      orders,
+      productsCountResult,
+      conversationsCountResult
+    ] = await Promise.all([
+      supabase.from('products').select('*').eq('seller_id', userId).order('created_at', { ascending: false }).limit(PAGE_SIZES.userOrders),
+      supabase.from('user_transactions').select('id, amount, transaction_type, description, reference_id, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(PAGE_SIZES.userTransactions),
+      supabase.from('conversations').select('*').or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order('last_message_at', { ascending: false }).limit(10),
+      fetchOrdersForUser(userId),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('seller_id', userId),
+      supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    ]);
+
+    if (productsResult.error) throw productsResult.error;
+    if (transactionsResult.error) throw transactionsResult.error;
+    if (conversationsResult.error) throw conversationsResult.error;
+
+    const products = productsResult.data || [];
+    const transactions = transactionsResult.data || [];
+    const conversations = conversationsResult.data || [];
+    const productsCount = productsCountResult.count || products.length;
+    const conversationsCount = conversationsCountResult.count || conversations.length;
+    const ordersCount = Array.isArray(orders) ? orders.length : 0;
+    const purchaseOrders = (orders || []).filter((order) => order.buyer_id === userId || order.user_id === userId);
+    const productMap = await fetchProductsMap(conversations.map((conv) => conv.product_id).concat((orders || []).map((order) => order.product_id)));
+
+    const enrichedConversations = conversations.map((conversation) => ({
+      ...conversation,
+      product: productMap[conversation.product_id] || null
+    }));
+
+    const enrichedOrders = (orders || []).map((order) => ({
+      ...order,
+      product: productMap[order.product_id] || null
+    }));
+
+    const totalSpent = transactions.filter(t => t.transaction_type === 'purchase').reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+    const totalFees = transactions.filter(t => t.transaction_type === 'fee').reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+    const totalEarned = transactions.filter(t => t.transaction_type === 'sale').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalTopUps = transactions.filter(t => ['topup', 'deposit'].includes(t.transaction_type)).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
     showUserDetailModal(user, { 
       productsCount, 
       ordersCount,
@@ -286,11 +405,11 @@ window.viewUserDetails = async function(userId) {
       totalEarned,
       totalFees,
       totalTopUps,
-      transactions, 
+      transactions,
       products, 
-      orders,
+      orders: enrichedOrders,
       purchaseOrders,
-      conversations
+      conversations: enrichedConversations
     });
     
   } catch (error) {
@@ -421,14 +540,14 @@ function showUserDetailModal(user, stats) {
                   <p style="color:var(--muted);margin:0;font-size:0.875rem;">${formatDate(order.created_at)}</p>
                 </div>
                 <div style="text-align:right;">
-                  <div style="font-size:1.25rem;font-weight:bold;color:#10b981;">€${parseFloat(order.total || 0).toFixed(2)}</div>
+                  <div style="font-size:1.25rem;font-weight:bold;color:#10b981;">€${parseFloat(order.total_amount || order.total || 0).toFixed(2)}</div>
                   <span class="badge badge-${order.status}">${order.status.toUpperCase()}</span>
                 </div>
               </div>
-              ${order.items && order.items.length > 0 ? `
+              ${order.product ? `
                 <div style="background:var(--bg-secondary);padding:0.75rem;border-radius:4px;">
-                  <div style="color:var(--muted);font-size:0.875rem;margin-bottom:0.5rem;">Items:</div>
-                  ${order.items.map(item => `<div>• ${item.quantity}x ${item.product_name || 'Unknown'} @ €${parseFloat(item.price || 0).toFixed(2)}</div>`).join('')}
+                  <div style="color:var(--muted);font-size:0.875rem;margin-bottom:0.5rem;">Product</div>
+                  <div>• ${order.product.name || 'Unknown product'}</div>
                 </div>
               ` : ''}
               ${order.shipping_address ? `<div style="color:var(--muted);font-size:0.875rem;margin-top:0.75rem;">📍 ${order.shipping_address}</div>` : ''}
@@ -478,7 +597,7 @@ function showUserDetailModal(user, stats) {
     </div>
   `;
   
-  modal.style.display = 'flex';
+  openModalById('userDetailModal');
 }
 
 window.switchUserTab = function(tabId) {
@@ -592,7 +711,7 @@ window.deleteUser = async function(userId) {
     console.log('✅ Deleted user from database');
     
     await showInfoModal('User deleted successfully (including all their products, orders, and transactions)', 'Success');
-    document.getElementById('userDetailModal').style.display = 'none';
+    closeModalById('userDetailModal');
     await loadUsers();
     
   } catch (error) {
@@ -625,21 +744,25 @@ window.editUser = async function(userId, currentBalance) {
 // ============================
 async function loadProducts() {
   const search = document.getElementById('product-search')?.value || '';
+  const status = document.getElementById('product-status')?.value || 'all';
+
+  let query = supabase.from('products').select('*');
+
+  if (search) query = query.ilike('name', `%${search}%`);
+  if (status !== 'all') query = query.eq('status', status);
   
-  let query = supabase.from('products').select('*, users!seller_id(username, email)');
-  
-  if (search) {
-    query = query.ilike('name', `%${search}%`);
-  }
-  
-  const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(PAGE_SIZES.products);
   
   if (error) {
     console.error('Error loading products:', error);
     return;
   }
-  
-  displayProducts(data || []);
+
+  const sellersById = await fetchUsersMap((data || []).map((product) => product.seller_id));
+  displayProducts((data || []).map((product) => ({
+    ...product,
+    seller: sellersById[product.seller_id] || null
+  })));
 }
 
 function displayProducts(products) {
@@ -653,18 +776,106 @@ function displayProducts(products) {
   tbody.innerHTML = products.map(p => `
     <tr>
       <td><img src="${p.image_url || 'https://placehold.co/50/667eea/white?text=No+Image'}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>
-      <td>${p.name}</td>
-      <td>${p.users?.username || 'Unknown'}</td>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(p.seller?.username || p.seller?.email || 'Unknown')}</td>
       <td>€${parseFloat(p.price).toFixed(2)}</td>
       <td>${p.stock}</td>
-      <td>${p.condition || 'N/A'}</td>
+      <td>${escapeHtml(p.condition || 'N/A')}</td>
       <td>${formatDate(p.created_at)}</td>
+      <td><span class="badge badge-${p.status || (p.stock > 0 ? 'active' : 'sold')}">${escapeHtml(p.status || (p.stock > 0 ? 'active' : 'sold'))}</span></td>
       <td>
+        <button class="btn btn-sm" data-action="view-product" data-id="${p.id}">View</button>
+        <button class="btn btn-sm btn-warning" data-action="edit-product-stock" data-id="${p.id}" data-stock="${p.stock}">Stock</button>
+        <button class="btn btn-sm btn-secondary" data-action="set-product-status" data-id="${p.id}" data-status="${p.status || ''}">Status</button>
         <button class="btn btn-sm btn-danger" data-action="delete-product" data-id="${p.id}">Delete</button>
       </td>
     </tr>
   `).join('');
 }
+
+window.viewProductDetails = async function(productId) {
+  try {
+    const { data: product, error } = await supabase.from('products').select('*').eq('id', productId).single();
+    if (error) throw error;
+
+    const sellersById = await fetchUsersMap([product.seller_id]);
+    const seller = sellersById[product.seller_id];
+
+    showAdminDataModal(`Product: ${product.name || 'Untitled'}`, `
+      <div class="admin-info-grid">
+        <div><strong>Seller</strong><div>${escapeHtml(seller?.username || seller?.email || 'Unknown')}</div></div>
+        <div><strong>Price</strong><div>€${parseFloat(product.price || 0).toFixed(2)}</div></div>
+        <div><strong>Stock</strong><div>${product.stock ?? 0}</div></div>
+        <div><strong>Status</strong><div>${escapeHtml(product.status || 'active')}</div></div>
+        <div><strong>Condition</strong><div>${escapeHtml(product.condition || 'N/A')}</div></div>
+        <div><strong>Listing Fee</strong><div>€${parseFloat(product.listing_fee || 0).toFixed(2)}</div></div>
+      </div>
+      <div class="admin-card" style="padding:1rem;">
+        <h3 style="margin-top:0;">Description</h3>
+        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(product.description || 'No description')}</div>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-warning" onclick="editProductStock('${product.id}', ${Number(product.stock || 0)})">Update Stock</button>
+        <button class="btn btn-secondary" onclick="setProductStatus('${product.id}', '${escapeHtml(product.status || 'active')}')">Change Status</button>
+      </div>
+    `);
+  } catch (error) {
+    await showInfoModal('Error loading product: ' + error.message, 'Error');
+  }
+};
+
+window.editProductStock = async function(productId, currentStock) {
+  const response = await showPromptModal('Enter the new stock amount:', { title: 'Update Stock', defaultValue: String(currentStock ?? 0) });
+  if (response === null) return;
+
+  const stock = Number.parseInt(response, 10);
+  if (!Number.isFinite(stock) || stock < 0) {
+    await showInfoModal('Stock must be 0 or higher.', 'Error');
+    return;
+  }
+
+  try {
+    const payload = {
+      stock,
+      updated_at: new Date().toISOString()
+    };
+
+    if (stock === 0) payload.status = 'sold';
+
+    const { error } = await supabase.from('products').update(payload).eq('id', productId);
+    if (error) throw error;
+
+    await loadProducts();
+    await showInfoModal('Product stock updated.', 'Success');
+  } catch (error) {
+    await showInfoModal('Error updating stock: ' + error.message, 'Error');
+  }
+};
+
+window.setProductStatus = async function(productId, currentStatus = 'active') {
+  const response = await showPromptModal('Enter product status: active, hidden, or sold', { title: 'Set Product Status', defaultValue: currentStatus || 'active' });
+  if (response === null) return;
+
+  const status = String(response).trim().toLowerCase();
+  if (!['active', 'hidden', 'sold'].includes(status)) {
+    await showInfoModal('Status must be active, hidden, or sold.', 'Error');
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', productId);
+
+    if (error) throw error;
+
+    await loadProducts();
+    await showInfoModal('Product status updated.', 'Success');
+  } catch (error) {
+    await showInfoModal('Error updating product status: ' + error.message, 'Error');
+  }
+};
 
 window.deleteProduct = async function(productId) {
   const confirmed = await showConfirmModal({ title: 'Delete Product', message: 'Delete this product?', okText: 'Delete', cancelText: 'Cancel' });
@@ -689,7 +900,7 @@ async function loadTransactions() {
     const dateFrom = document.getElementById('tx-date-from')?.value;
     const dateTo = document.getElementById('tx-date-to')?.value;
     
-    let query = supabase.from('user_transactions').select('*, users!user_id(id, username, email, balance)');
+    let query = supabase.from('user_transactions').select('id, user_id, amount, transaction_type, description, reference_id, created_at');
     
     if (type !== 'all') {
       query = query.eq('transaction_type', type);
@@ -703,7 +914,7 @@ async function loadTransactions() {
       query = query.lte('created_at', dateTo + 'T23:59:59');
     }
     
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(500);
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(PAGE_SIZES.transactions);
     
     if (error) {
       console.error('❌ Error loading transactions:', error);
@@ -734,7 +945,13 @@ async function loadTransactions() {
       stats.byType[t.transaction_type]++;
     });
     
-    displayTransactions(filteredData, stats);
+    const usersById = await fetchUsersMap(filteredData.map((item) => item.user_id));
+    const enrichedTransactions = filteredData.map((item) => ({
+      ...item,
+      user: usersById[item.user_id] || null
+    }));
+
+    displayTransactions(enrichedTransactions, stats);
   } catch (err) {
     console.error('❌ Transaction loading error:', err);
     await showInfoModal('Error: ' + err.message, 'Error');
@@ -798,6 +1015,7 @@ function displayTransactions(transactions, stats = {}) {
       'purchase': '🛒',
       'sale': '💵',
       'deposit': '📥',
+      'withdrawal': '📤',
       'withdraw': '📤',
       'topup': '➕',
       'fee': '💸',
@@ -826,7 +1044,7 @@ function displayTransactions(transactions, stats = {}) {
         <td style="padding:1rem;">
           <div style="display:flex;align-items:center;gap:0.5rem;">
             <span style="font-size:1.25rem;">${typeIcon}</span>
-            <span>${t.users?.username || t.users?.email || 'Unknown'}</span>
+            <span>${escapeHtml(t.user?.username || t.user?.email || 'Unknown')}</span>
           </div>
         </td>
         <td style="padding:1rem;">
@@ -844,17 +1062,52 @@ function displayTransactions(transactions, stats = {}) {
           </span>
         </td>
         <td style="padding:1rem;color:var(--muted);font-size:0.875rem;">
-          €${parseFloat(t.users?.balance || 0).toFixed(2)}
+          €${parseFloat(t.user?.balance || 0).toFixed(2)}
         </td>
         <td style="padding:1rem;">
-          <button class="btn btn-sm" onclick="viewUserDetails('${t.user_id}')" style="cursor:pointer;">
-            👤 View
+          <button class="btn btn-sm" data-action="view-transaction" data-id="${t.id}" style="cursor:pointer;">
+            View
           </button>
         </td>
       </tr>
     `;
   }).join('');
 }
+
+window.viewTransactionDetails = async function(transactionId) {
+  try {
+    const { data: transaction, error } = await supabase
+      .from('user_transactions')
+      .select('id, user_id, amount, transaction_type, description, reference_id, created_at')
+      .eq('id', transactionId)
+      .single();
+
+    if (error) throw error;
+
+    const usersById = await fetchUsersMap([transaction.user_id]);
+    const user = usersById[transaction.user_id];
+
+    showAdminDataModal(`Transaction ${transaction.id.slice(0, 8)}`, `
+      <div class="admin-info-grid">
+        <div><strong>User</strong><div>${escapeHtml(user?.username || user?.email || 'Unknown')}</div></div>
+        <div><strong>Type</strong><div>${escapeHtml(transaction.transaction_type)}</div></div>
+        <div><strong>Amount</strong><div>${transaction.amount >= 0 ? '+' : '-'}€${Math.abs(Number(transaction.amount || 0)).toFixed(2)}</div></div>
+        <div><strong>Date</strong><div>${formatDate(transaction.created_at)}</div></div>
+        <div><strong>Reference</strong><div>${escapeHtml(transaction.reference_id || 'None')}</div></div>
+        <div><strong>User Balance</strong><div>€${parseFloat(user?.balance || 0).toFixed(2)}</div></div>
+      </div>
+      <div class="admin-card" style="padding:1rem;">
+        <h3 style="margin-top:0;">Description</h3>
+        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(transaction.description || 'No description')}</div>
+      </div>
+      <div>
+        <button class="btn btn-secondary" onclick="viewUserDetails('${transaction.user_id}')">Open User</button>
+      </div>
+    `);
+  } catch (error) {
+    await showInfoModal('Error loading transaction: ' + error.message, 'Error');
+  }
+};
 
 function formatTransactionDate(dateStr) {
   const date = new Date(dateStr);
@@ -979,20 +1232,48 @@ function displayOrders(orders) {
 // ============================
 async function loadConversations() {
   try {
-    const { data, error } = await supabase
+    const search = (document.getElementById('chat-search')?.value || '').trim().toLowerCase();
+    const status = document.getElementById('chat-status')?.value || 'all';
+
+    let query = supabase
       .from('conversations')
-      .select(`
-        *,
-        buyer:users!buyer_id(username, email),
-        seller:users!seller_id(username, email),
-        product:products(name, price)
-      `)
+      .select('*')
       .order('last_message_at', { ascending: false })
-      .limit(100);
+      .limit(PAGE_SIZES.chats);
+
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
     
     if (error) throw error;
-    
-    displayConversations(data || []);
+
+    const usersById = await fetchUsersMap((data || []).flatMap((item) => [item.buyer_id, item.seller_id]));
+    const productsById = await fetchProductsMap((data || []).map((item) => item.product_id));
+    let conversations = (data || []).map((item) => ({
+      ...item,
+      buyer: usersById[item.buyer_id] || null,
+      seller: usersById[item.seller_id] || null,
+      product: productsById[item.product_id] || null
+    }));
+
+    if (search) {
+      conversations = conversations.filter((conversation) => {
+        const haystack = [
+          conversation.buyer?.username,
+          conversation.buyer?.email,
+          conversation.seller?.username,
+          conversation.seller?.email,
+          conversation.product?.name,
+          conversation.last_message
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return haystack.includes(search);
+      });
+    }
+
+    displayConversations(conversations);
   } catch (error) {
     console.error('Error loading conversations:', error);
     document.getElementById('chats-content').innerHTML = '<p>Error loading conversations</p>';
@@ -1027,26 +1308,44 @@ function displayConversations(conversations) {
 
 window.viewConversation = async function(conversationId) {
   try {
-    const { data: messages } = await supabase
+    const [{ data: conversation, error: conversationError }, { data: messages, error: messagesError }] = await Promise.all([
+      supabase.from('conversations').select('*').eq('id', conversationId).single(),
+      supabase
       .from('messages')
-      .select('*, sender:users!sender_id(username)')
+      .select('id, sender_id, content, created_at, message_type')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-    
-    if (!messages?.length) {
-      await showInfoModal('No messages in this conversation', 'Info');
-      return;
-    }
-    
-    // showInfoModal renders message via innerText (not HTML). Build a readable plain-text view.
-    const chatText = messages.map(m => {
-      const who = m.sender?.username || 'Unknown';
-      const when = formatDate(m.created_at);
-      const content = (m.content == null ? '' : String(m.content));
-      return `[${when}] ${who}: ${content}`;
-    }).join('\n\n');
+      .order('created_at', { ascending: true })
+      .limit(250)
+    ]);
 
-    await showInfoModal(chatText || 'No messages in this conversation', 'Messages');
+    if (conversationError) throw conversationError;
+    if (messagesError) throw messagesError;
+
+    const usersById = await fetchUsersMap([conversation.buyer_id, conversation.seller_id, ...(messages || []).map((message) => message.sender_id)]);
+    const productsById = await fetchProductsMap([conversation.product_id]);
+    const product = productsById[conversation.product_id];
+    const buyer = usersById[conversation.buyer_id];
+    const seller = usersById[conversation.seller_id];
+
+    showAdminDataModal(`Conversation ${conversation.id.slice(0, 8)}`, `
+      <div class="admin-info-grid">
+        <div><strong>Buyer</strong><div>${escapeHtml(buyer?.username || buyer?.email || 'Unknown')}</div></div>
+        <div><strong>Seller</strong><div>${escapeHtml(seller?.username || seller?.email || 'Unknown')}</div></div>
+        <div><strong>Product</strong><div>${escapeHtml(product?.name || 'No product')}</div></div>
+        <div><strong>Status</strong><div>${escapeHtml(conversation.status || 'active')}</div></div>
+      </div>
+      <div class="admin-chat-log">
+        ${(messages || []).length ? messages.map((message) => `
+          <div class="admin-chat-message">
+            <div class="admin-chat-message-meta">
+              <strong>${escapeHtml(usersById[message.sender_id]?.username || usersById[message.sender_id]?.email || 'Unknown')}</strong>
+              <span style="color:var(--muted);">${formatDate(message.created_at)}</span>
+            </div>
+            <div class="admin-chat-message-content">${escapeHtml(message.content || '')}</div>
+          </div>
+        `).join('') : '<p style="margin:0;color:var(--muted);">No messages in this conversation.</p>'}
+      </div>
+    `);
   } catch (error) {
     await showInfoModal('Error loading messages: ' + error.message, 'Error');
   }
@@ -1391,7 +1690,11 @@ async function initialize() {
   });
   
   document.getElementById('user-search')?.addEventListener('input', debounce(loadUsers, 300));
+  document.getElementById('user-role')?.addEventListener('change', loadUsers);
   document.getElementById('product-search')?.addEventListener('input', debounce(loadProducts, 300));
+  document.getElementById('product-status')?.addEventListener('change', loadProducts);
+  document.getElementById('chat-search')?.addEventListener('input', debounce(loadConversations, 250));
+  document.getElementById('chat-status')?.addEventListener('change', loadConversations);
   
   // Event delegation for action buttons
   document.addEventListener('click', async (e) => {
@@ -1407,7 +1710,11 @@ async function initialize() {
       case 'promote-user': promoteUserById(id); break;
       case 'demote-user': demoteUserById(id); break;
       case 'delete-user': deleteUser(id); break;
+      case 'view-product': viewProductDetails(id); break;
+      case 'edit-product-stock': editProductStock(id, btn.dataset.stock); break;
+      case 'set-product-status': setProductStatus(id, btn.dataset.status); break;
       case 'delete-product': deleteProduct(id); break;
+      case 'view-transaction': viewTransactionDetails(id); break;
       case 'view-conversation': viewConversation(id); break;
       case 'resolve-ticket': resolveTicket(id); break;
       case 'save-platform-settings':
@@ -2200,11 +2507,23 @@ Last Check: ${new Date().toLocaleString()}
 
 // Modal handlers
 document.getElementById('userDetailModalClose')?.addEventListener('click', () => {
-  document.getElementById('userDetailModal').style.display = 'none';
+  closeModalById('userDetailModal');
 });
 document.getElementById('userDetailModalOverlay')?.addEventListener('click', () => {
-  document.getElementById('userDetailModal').style.display = 'none';
+  closeModalById('userDetailModal');
 });
+document.getElementById('adminDataModalClose')?.addEventListener('click', () => {
+  closeModalById('adminDataModal');
+});
+document.getElementById('adminDataModalOverlay')?.addEventListener('click', () => {
+  closeModalById('adminDataModal');
+});
+
+window.loadUsers = loadUsers;
+window.loadProducts = loadProducts;
+window.loadTransactions = loadTransactions;
+window.loadConversations = loadConversations;
+window.exportTransactions = exportTransactions;
 
 // Run
 initialize();

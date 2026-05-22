@@ -246,6 +246,7 @@
           <select id="tx-type" class="admin-select" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--fg);">
             <option value="all">All Types</option>
             <option value="deposit">📥 Deposit</option>
+            <option value="withdrawal">📤 Withdrawal</option>
             <option value="withdraw">📤 Withdrawal</option>
             <option value="topup">➕ Top-up</option>
             <option value="purchase">🛒 Purchase</option>
@@ -326,6 +327,16 @@
     <section id="section-chats" class="admin-section" style="display:none;">
       <div class="admin-header">
         <h2>💬 Chat Moderation</h2>
+      </div>
+      <div class="admin-filters">
+        <input type="text" id="chat-search" placeholder="Search by user, product, or last message..." class="admin-search">
+        <select id="chat-status" class="admin-select">
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="archived">Archived</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadConversations()">Search</button>
       </div>
       <div class="admin-card" id="chats-content">
         <p>Loading conversations...</p>
@@ -497,6 +508,14 @@
       <div class="modal-body" id="userDetailContent">
         <!-- Content loaded dynamically -->
       </div>
+    </div>
+  </div>
+
+  <div id="adminDataModal" class="product-modal" style="display: none;">
+    <div class="modal-overlay" id="adminDataModalOverlay"></div>
+    <div class="modal-content admin-detail-modal-content">
+      <button class="modal-close" id="adminDataModalClose">×</button>
+      <div class="modal-body" id="adminDataModalContent"></div>
     </div>
   </div>
 
@@ -877,6 +896,74 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+    }
+
+    .admin-detail-modal-content {
+      max-width: 920px;
+      width: min(920px, calc(100vw - 32px));
+      max-height: 88vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-detail-modal-content .modal-body {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      max-height: calc(88vh - 48px);
+      padding-right: 0.25rem;
+    }
+
+    .admin-detail-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .admin-detail-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--card-bg);
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .admin-chat-log {
+      max-height: 60vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--secondary);
+    }
+
+    .admin-chat-message {
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      margin-bottom: 0.75rem;
+    }
+
+    .admin-chat-message:last-child {
+      margin-bottom: 0;
+    }
+
+    .admin-chat-message-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: baseline;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+    }
+
+    .admin-chat-message-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
     }
     
     .conversation-item {

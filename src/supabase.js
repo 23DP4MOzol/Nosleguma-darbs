@@ -497,13 +497,25 @@ export async function listProduct(productData, userId) {
     try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
     try { sessionStorage.setItem('vendly_balance_cache', JSON.stringify({ userId, balance: newBalance, role: 'user' })); } catch (e) {}
 
-    // Credit listing fee to admin account
-    const { data: adminUser } = await supabase
+    // Credit listing fee to the canonical admin account first, then fall back to any admin user.
+    let adminUser = null;
+    const { data: adminByEmail } = await supabase
       .from('users')
-      .select('id, balance')
-      .eq('role', 'admin')
-      .limit(1)
-      .single();
+      .select('id, balance, email, role')
+      .eq('email', 'admin@example.com')
+      .maybeSingle();
+
+    if (adminByEmail?.id) {
+      adminUser = adminByEmail;
+    } else {
+      const { data: adminByRole } = await supabase
+        .from('users')
+        .select('id, balance, email, role')
+        .eq('role', 'admin')
+        .limit(1)
+        .maybeSingle();
+      adminUser = adminByRole || null;
+    }
     
     if (adminUser) {
       const adminBalance = parseFloat(adminUser.balance || 0);
@@ -545,7 +557,17 @@ export async function listProduct(productData, userId) {
       updated_at: new Date().toISOString()
     }]).select();
 
-    if (error) throw error;
+    if (error) {
+      try {
+        await updateBalance(userId, currentBalance);
+        if (adminUser?.id) {
+          await updateBalance(adminUser.id, parseFloat(adminUser.balance || 0));
+        }
+      } catch (rollbackError) {
+        console.error('Failed to rollback balances after product insert error:', rollbackError);
+      }
+      throw error;
+    }
     return data[0];
   } catch (error) {
     console.error('Error listing product:', error);
