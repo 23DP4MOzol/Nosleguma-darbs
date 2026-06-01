@@ -1810,39 +1810,13 @@ async function initializeIndexPage() {
     
     const modalBody = modal.querySelector('.modal-body');
     
-    // Get seller information
-    let sellerData = null;
+    // Render immediately from product data; slower seller/review counts refresh in the background.
+    let sellerData = product.users
+      ? { id: product.seller_id, username: product.users.username, email: product.users.email, created_at: product.users.created_at }
+      : null;
     let sellerRating = 0;
     let sellerReviews = 0;
-    
-    if (product.seller_id) {
-      const { data: seller } = await supabase
-        .from('users')
-        .select('id, username, email, created_at')
-        .eq('id', product.seller_id)
-        .single();
-      
-      sellerData = seller;
-      
-      // Get real seller rating from reviews table
-      try {
-        const { data: reviewsData } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('seller_id', product.seller_id);
-        if (reviewsData && reviewsData.length > 0) {
-          sellerReviews = reviewsData.length;
-          sellerRating = (reviewsData.reduce((sum, r) => sum + r.rating, 0) / sellerReviews).toFixed(1);
-        }
-      } catch (e) { /* reviews table may not exist yet */ }
-    }
-    
-    // Get real product stats from favorites
     let productLikes = parseInt(product.likes_count || 0);
-    try {
-      const { count } = await supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id);
-      productLikes = count || productLikes;
-    } catch (e) { /* favorites may not exist */ }
     const productViews = parseInt(product.views_count || 0);
     
     const conditionEmoji = {
@@ -1911,21 +1885,21 @@ async function initializeIndexPage() {
       <!-- Seller Information -->
       <div class="modal-seller-card">
         <div class="modal-seller-header">
-          <div class="modal-seller-avatar">
+          <div class="modal-seller-avatar" id="modalSellerAvatar">
             ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
           </div>
           <div class="modal-seller-info">
-            <h3 style="cursor:pointer; color:#3b82f6;">${escapeHtml(sellerData?.username) || (i18n.t ? i18n.t('unknown_seller') : 'Unknown Seller')}</h3>
-            <div class="modal-seller-rating">
+            <h3 id="modalSellerName" style="cursor:pointer; color:#3b82f6;">${escapeHtml(sellerData?.username) || (i18n.t ? i18n.t('unknown_seller') : 'Unknown Seller')}</h3>
+            <div class="modal-seller-rating" id="modalSellerRating">
               ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
             </div>
-            <div style="font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem;">
+            <div id="modalSellerSince" style="font-size: 0.875rem; color: var(--muted); margin-top: 0.25rem;">
               ${i18n.t ? i18n.t('modal_member_since') : 'Member since'} ${sellerData?.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}
             </div>
           </div>
         </div>
         
-        ${sellerData ? `
+        ${product.seller_id ? `
           <button class="modal-btn modal-btn-secondary" style="width: 100%; margin-top: 1rem;" id="chatSellerBtn" data-seller="${product.seller_id}" data-product="${product.id}">
             💬 ${i18n.t ? i18n.t('modal_chat_seller') : 'Chat with Seller'}
           </button>
@@ -1948,6 +1922,46 @@ async function initializeIndexPage() {
     // Show modal
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
+
+    (async () => {
+      try {
+        const [sellerResult, reviewsResult, likesResult] = await Promise.all([
+          product.seller_id
+            ? supabase.from('users').select('id, username, email, created_at').eq('id', product.seller_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+          product.seller_id
+            ? supabase.from('reviews').select('rating').eq('seller_id', product.seller_id)
+            : Promise.resolve({ data: [] }),
+          supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('product_id', product.id)
+        ]);
+
+        if (sellerResult?.data && modal.dataset.productId === String(product.id)) {
+          sellerData = sellerResult.data;
+          const sellerNameEl = document.getElementById('modalSellerName');
+          const sellerAvatarEl = document.getElementById('modalSellerAvatar');
+          const sellerSinceEl = document.getElementById('modalSellerSince');
+          if (sellerNameEl) sellerNameEl.textContent = sellerData.username || (i18n.t ? i18n.t('unknown_seller') : 'Unknown Seller');
+          if (sellerAvatarEl) sellerAvatarEl.textContent = sellerData.username ? sellerData.username.charAt(0).toUpperCase() : '?';
+          if (sellerSinceEl) sellerSinceEl.textContent = `${i18n.t ? i18n.t('modal_member_since') : 'Member since'} ${sellerData.created_at ? new Date(sellerData.created_at).toLocaleDateString() : 'N/A'}`;
+        }
+
+        if (reviewsResult?.data && modal.dataset.productId === String(product.id)) {
+          sellerReviews = reviewsResult.data.length;
+          sellerRating = sellerReviews
+            ? (reviewsResult.data.reduce((sum, r) => sum + Number(r.rating || 0), 0) / sellerReviews).toFixed(1)
+            : 0;
+          const sellerRatingEl = document.getElementById('modalSellerRating');
+          if (sellerRatingEl) sellerRatingEl.textContent = `${'★'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)`;
+        }
+
+        if (typeof likesResult?.count === 'number' && modal.dataset.productId === String(product.id)) {
+          const likesEl = modal.querySelector('.modal-stat-value');
+          if (likesEl) likesEl.textContent = `❤️ ${likesResult.count}`;
+        }
+      } catch (error) {
+        console.warn('Could not refresh product modal details:', error?.message || error);
+      }
+    })();
 
     // Add click handler for seller name
     const sellerNameEl = modal.querySelector('.modal-seller-info h3');
@@ -1973,9 +1987,8 @@ async function initializeIndexPage() {
     // Action button handlers
     const chatBtn = document.getElementById('chatSellerBtn');
     if (chatBtn) {
-      const sellerUsername = sellerData?.username || '';
       chatBtn.onclick = () => {
-        window.location.href = `chat.html?seller=${encodeURIComponent(sellerUsername)}&product=${encodeURIComponent(product.id)}`;
+        window.location.href = `chat.html?seller=${encodeURIComponent(product.seller_id)}&product=${encodeURIComponent(product.id)}`;
       };
     }
 

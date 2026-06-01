@@ -32,6 +32,29 @@ let selectedAttachment = null;
 let supportThreadSummary = null;
 let cachedConversations = [];
 
+async function fetchAdminSupportUser() {
+  try {
+    const byRole = await supabase
+      .from('users')
+      .select('id, username')
+      .eq('role', 'admin')
+      .limit(1)
+      .maybeSingle();
+    if (byRole?.data?.id) return byRole.data;
+
+    const byEmail = await supabase
+      .from('users')
+      .select('id, username')
+      .ilike('email', '%admin%')
+      .limit(1)
+      .maybeSingle();
+    return byEmail?.data || null;
+  } catch (error) {
+    console.warn('Admin support user lookup failed', error?.message || error);
+    return null;
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -255,10 +278,12 @@ async function fetchSupportTicketSummary() {
     };
   } catch (error) {
     console.warn('Support summary unavailable', error?.message || error);
+    const fallbackAdmin = await fetchAdminSupportUser();
     return {
       ticket: null,
       session: null,
       assignedAdmin: null,
+      fallbackAdmin,
       unavailable: true,
       unread: 0
     };
@@ -269,7 +294,7 @@ function buildSupportListItem(summary) {
   const status = summary?.ticket?.status || 'Not taken';
   const assignedLabel = summary?.assignedAdmin?.username
     ? `Assigned to ${summary.assignedAdmin.username}`
-    : (summary?.unavailable ? 'Support setup required' : status);
+    : (summary?.fallbackAdmin?.username ? `Admin support: ${summary.fallbackAdmin.username}` : (summary?.unavailable ? 'Support setup required' : status));
   const lastText = summary?.ticket?.description
     ? String(summary.ticket.description).slice(0, 80)
     : 'Open a case with support';
@@ -522,6 +547,20 @@ function renderSupportWelcome(summary) {
 
 async function openSupportThread() {
   await closeThreadSubscription();
+
+  if (supportThreadSummary?.unavailable && supportThreadSummary?.fallbackAdmin?.id && currentUser) {
+    try {
+      const conv = await getOrCreateConversation(null, currentUser.id, supportThreadSummary.fallbackAdmin.id);
+      if (conv) {
+        activeThread = { kind: 'conversation', id: conv.id, conversation: conv };
+        await openConversation(conv);
+        return;
+      }
+    } catch (error) {
+      console.warn('Could not open fallback admin support conversation', error?.message || error);
+    }
+  }
+
   activeThread = { kind: 'support', id: SUPPORT_THREAD_KEY, summary: supportThreadSummary };
   updateHeaderActions();
   knownMessageIds.clear();

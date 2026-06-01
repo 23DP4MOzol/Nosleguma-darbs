@@ -203,21 +203,7 @@ import { showCheckoutModal } from './checkout-modal.js';
 
 // Use checkout modal for purchases
 window.handlePurchase = async function(productId) {
-  // Find product data
-  const { data: product, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('id', productId)
-    .single();
-  
-  if (error || !product) {
-    await showInfoModal('Product not found', 'Error');
-    return;
-  }
-  
-  // Close current modal and show checkout
-  document.getElementById('productModal').style.display = 'none';
-  showCheckoutModal(product);
+  window.location.href = `orders.html?product=${encodeURIComponent(productId)}`;
 };
 
 window.handleReserve = async function(productId) {

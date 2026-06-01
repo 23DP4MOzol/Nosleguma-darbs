@@ -20,6 +20,21 @@ const SELL_CATEGORY_OPTIONS = [
   { value: 'Other', key: 'other', emoji: '📦' }
 ];
 
+const CLEAN_CATEGORY_EMOJIS = {
+  Electronics: '\uD83D\uDCF1',
+  Clothing: '\uD83D\uDC55',
+  Furniture: '\uD83E\uDE91',
+  Books: '\uD83D\uDCDA',
+  Sports: '\u26BD',
+  Home: '\uD83C\uDFE0',
+  Vehicles: '\uD83D\uDE97',
+  Other: '\uD83D\uDCE6'
+};
+
+SELL_CATEGORY_OPTIONS.forEach((option) => {
+  option.emoji = CLEAN_CATEGORY_EMOJIS[option.value] || option.emoji;
+});
+
 // ============================
 // Authentication Check - Redirect guests to login
 // ============================

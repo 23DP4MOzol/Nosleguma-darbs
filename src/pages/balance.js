@@ -67,10 +67,10 @@ async function loadTransactions(userId, filter = 'all') {
           filteredData = data.filter(tx => tx.transaction_type === 'deposit' || tx.transaction_type === 'topup');
           break;
         case 'purchases':
-          filteredData = data.filter(tx => tx.transaction_type === 'purchase');
+          filteredData = data.filter(tx => ['purchase', 'escrow_hold', 'payment', 'fee', 'withdrawal', 'withdraw'].includes(tx.transaction_type));
           break;
         case 'sales':
-          filteredData = data.filter(tx => tx.transaction_type === 'sale');
+          filteredData = data.filter(tx => ['sale', 'escrow_release'].includes(tx.transaction_type));
           break;
       }
     }
@@ -145,7 +145,7 @@ async function loadTransactions(userId, filter = 'all') {
       };
 
       const amount = Math.abs(parseFloat(tx.amount || 0));
-      const isPositive = ['deposit', 'topup', 'sale', 'refund'].includes(tx.transaction_type);
+      const isPositive = ['deposit', 'topup', 'sale', 'refund', 'escrow_release'].includes(tx.transaction_type);
 
       div.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.75rem;">

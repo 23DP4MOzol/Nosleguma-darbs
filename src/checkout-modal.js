@@ -265,7 +265,14 @@ window.selectShippingCarrier = async function(carrier, service) {
   
   // Highlight selected carrier
   document.querySelectorAll('.carrier-card').forEach(card => card.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  document.querySelectorAll('.carrier-card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    const isSelected = text.includes(carrier.toLowerCase()) && (
+      (service === 'courier' && text.includes('courier')) ||
+      (service === 'parcel_locker' && !text.includes('courier'))
+    );
+    card.classList.toggle('selected', isSelected);
+  });
   
   // Show appropriate input section
   const isParcelLocker = service === 'parcel_locker';
