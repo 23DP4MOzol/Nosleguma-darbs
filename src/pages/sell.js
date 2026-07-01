@@ -3,11 +3,15 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
-import { CATEGORY_FIELDS, getCategoryDisplayName } from '../category-fields.js';
+import { CATEGORY_FIELDS, getCategoryDisplayName, parseProductAttrs } from '../category-fields.js';
 import { getPlatformSettings } from '../platform-settings.js';
 import { logAuditEvent } from '../audit.js';
 
 let listingDisabledByAdmin = false;
+let editingProductId = null;
+let editingProduct = null;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 
 const SELL_CATEGORY_OPTIONS = [
   { value: 'Electronics', key: 'electronics', emoji: '📱' },
@@ -34,6 +38,67 @@ const CLEAN_CATEGORY_EMOJIS = {
 SELL_CATEGORY_OPTIONS.forEach((option) => {
   option.emoji = CLEAN_CATEGORY_EMOJIS[option.value] || option.emoji;
 });
+
+const EXTRA_FIELD_I18N = {
+  brand: 'extra_brand',
+  make: 'extra_make',
+  model: 'extra_model',
+  screen_size: 'extra_screen_size',
+  storage: 'extra_storage',
+  color: 'extra_color',
+  size: 'extra_size',
+  gender: 'extra_gender',
+  material: 'extra_material',
+  dimensions: 'extra_dimensions',
+  room: 'extra_room',
+  author: 'extra_author',
+  isbn: 'extra_isbn',
+  pages: 'extra_pages',
+  book_language: 'extra_book_language',
+  genre: 'extra_genre',
+  sport_type: 'extra_sport_type',
+  year: 'extra_year',
+  mileage: 'extra_mileage',
+  fuel_type: 'extra_fuel_type',
+  transmission: 'extra_transmission'
+};
+
+function tFieldLabel(field) {
+  const key = EXTRA_FIELD_I18N[field.key];
+  return key ? i18n.t(key) : field.label;
+}
+
+function tFieldPlaceholder(field) {
+  const baseKey = EXTRA_FIELD_I18N[field.key];
+  if (!baseKey) return field.placeholder || '';
+  const key = `${baseKey}_ph`;
+  const translated = i18n.t(key);
+  return translated !== key ? translated : (field.placeholder || '');
+}
+
+function readFilesAsDataUrls(files) {
+  return Promise.all(files.map((file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  })));
+}
+
+async function getValidImageDataUrls(fileInput) {
+  const files = Array.from(fileInput?.files || []);
+  if (!files.length) return [];
+
+  if (files.some((file) => !ALLOWED_IMAGE_TYPES.includes(file.type))) {
+    throw new Error(i18n.t('image_type_invalid'));
+  }
+
+  if (files.some((file) => file.size > MAX_IMAGE_SIZE_BYTES)) {
+    throw new Error(i18n.t('image_too_large'));
+  }
+
+  return readFilesAsDataUrls(files);
+}
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -100,19 +165,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (extraGrid) {
       extraGrid.innerHTML = fields.map(f => {
         if (f.type === 'select') {
+          const label = tFieldLabel(f);
           const opts = f.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
           return `<label class="form-field">
-            <span class="form-label">${f.emoji || ''} ${f.label}${f.required ? ' *' : ''}</span>
+            <span class="form-label">${f.emoji || ''} ${label}${f.required ? ' *' : ''}</span>
             <select id="extra_${f.key}" class="form-select" ${f.required ? 'required' : ''}>
               <option value="">— ${i18n.t ? i18n.t('select') || 'Select' : 'Select'} —</option>
               ${opts}
             </select>
           </label>`;
         }
+        const label = tFieldLabel(f);
         return `<label class="form-field">
-          <span class="form-label">${f.emoji || ''} ${f.label}${f.required ? ' *' : ''}</span>
+          <span class="form-label">${f.emoji || ''} ${label}${f.required ? ' *' : ''}</span>
           <input type="${f.type || 'text'}" id="extra_${f.key}" class="form-input"
-            placeholder="${f.placeholder || ''}" ${f.min !== undefined ? `min="${f.min}"` : ''} ${f.step ? `step="${f.step}"` : ''}
+            placeholder="${tFieldPlaceholder(f)}" ${f.min !== undefined ? `min="${f.min}"` : ''} ${f.step ? `step="${f.step}"` : ''}
             ${f.required ? 'required' : ''}>
         </label>`;
       }).join('');
@@ -156,7 +223,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveCropBtn = document.getElementById('saveCropBtn');
 
   if (productImageFileInput) {
-    productImageFileInput.addEventListener('change', (e) => {
+    productImageFileInput.addEventListener('change', async (e) => {
+      let imageDataUrls = [];
+      try {
+        imageDataUrls = await getValidImageDataUrls(productImageFileInput);
+        if (imageDataUrls.length) {
+          productImageFileInput.dataset.previewUrl = imageDataUrls[0];
+          productImageFileInput.dataset.imageUrls = JSON.stringify(imageDataUrls);
+        }
+      } catch (error) {
+        await showInfoModal(error.message || i18n.t('image_upload_failed'), i18n.t('admin_error') || 'Error');
+        productImageFileInput.value = '';
+        delete productImageFileInput.dataset.previewUrl;
+        delete productImageFileInput.dataset.imageUrls;
+        updatePreview();
+        return;
+      }
+
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
@@ -171,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         reader.readAsDataURL(file);
       } else {
         delete productImageFileInput.dataset.previewUrl;
+        delete productImageFileInput.dataset.imageUrls;
         updatePreview();
       }
     });
@@ -186,6 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       productImageFileInput.value = '';
       delete productImageFileInput.dataset.previewUrl;
+      delete productImageFileInput.dataset.imageUrls;
       updatePreview();
     });
   }
@@ -199,6 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           height: 800
         });
         productImageFileInput.dataset.previewUrl = canvas.toDataURL(productImageFileInput.files[0].type || 'image/jpeg');
+        productImageFileInput.dataset.imageUrls = JSON.stringify([productImageFileInput.dataset.previewUrl]);
         cropperModal.style.display = 'none';
         cropper.destroy();
         cropper = null;
@@ -213,16 +299,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const shippingMethodSelect = document.getElementById('shippingMethod');
   const sellerAddressSection = document.getElementById('sellerAddressSection');
   const meetupCityInput = document.getElementById('meetupCityInput');
-  const parcelLockerSection = document.getElementById('parcelLockerSection');
-  const mapElement = document.getElementById('map');
-  const lockerListElement = document.getElementById('locker-list');
-  const carrierFilterButtons = document.querySelectorAll('.carrier-filter-btn');
-  const lockerSearchInput = document.getElementById('lockerSearchInput');
-  const selectedLockerIdInput = document.getElementById('selectedLockerId');
-
-  let map = null;
-  let allLockers = [];
-  let visibleMarkers = [];
+  const packageSizeSection = document.getElementById('packageSizeSection');
+  const packageSizeInput = document.getElementById('packageSizeInput');
 
   function renderCategorySelectOptions() {
     if (!categorySelect) return;
@@ -237,164 +315,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     categorySelect.value = currentValue;
   }
 
+  function updatePublicationPeriodOptions() {
+    const durationSelect = document.getElementById('productDurationInput');
+    if (!durationSelect) return;
+    const labels = ['publication_period_1', 'publication_period_2', 'publication_period_3'].map((key) => i18n.t(key));
+    Array.from(durationSelect.options).forEach((option, index) => {
+      if (labels[index]) option.textContent = labels[index];
+    });
+  }
+
+  function updatePackageSizeOptions() {
+    if (!packageSizeInput) return;
+    Array.from(packageSizeInput.options).forEach((option) => {
+      if (option.dataset.i18n) option.textContent = i18n.t(option.dataset.i18n);
+    });
+  }
+
   function updateShippingMethodUI() {
     if (!shippingMethodSelect) return;
     const isMeetup = shippingMethodSelect.value === 'meetup';
-    if (sellerAddressSection) sellerAddressSection.style.display = isMeetup ? 'block' : 'none';
-    if (parcelLockerSection) parcelLockerSection.style.display = isMeetup ? 'none' : 'block';
+    const includesMeetup = shippingMethodSelect.value === 'meetup' || shippingMethodSelect.value === 'both';
+    const includesLocker = shippingMethodSelect.value === 'locker' || shippingMethodSelect.value === 'both';
+    if (sellerAddressSection) sellerAddressSection.style.display = includesMeetup ? 'block' : 'none';
+    if (packageSizeSection) packageSizeSection.style.display = includesLocker ? 'block' : 'none';
     if (meetupCityInput) {
-      meetupCityInput.required = isMeetup;
-      if (!isMeetup) meetupCityInput.value = '';
+      meetupCityInput.required = includesMeetup;
+      if (!includesMeetup) meetupCityInput.value = '';
     }
-    if (selectedLockerIdInput && isMeetup) {
-      selectedLockerIdInput.value = '';
+    if (packageSizeInput) {
+      packageSizeInput.required = includesLocker;
+      if (!includesLocker) packageSizeInput.value = '';
     }
-  }
-
-  function normalizeCarrier(rawCarrier) {
-    const value = String(rawCarrier || '').trim().toLowerCase();
-    if (!value) return '';
-    if (value.includes('omniva')) return 'omniva';
-    if (value.includes('venipak')) return 'venipak';
-    if (value.includes('dpd')) return 'dpd';
-    if (value.includes('pasts') || value.includes('latvijas pasts') || value.includes('pasts')) return 'pasts';
-    return value;
-  }
-
-  function resolveLockerCoords(locker) {
-    const lat = parseFloat(locker.latitude ?? locker.lat ?? locker.y);
-    const lng = parseFloat(locker.longitude ?? locker.lng ?? locker.lon ?? locker.x);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    return [lat, lng];
-  }
-
-  async function initializeLockerMap() {
-    if (!mapElement) return;
-
-    // Initialize map
-    map = L.map(mapElement).setView([56.9496, 24.1052], 8); // Centered on Riga
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Fetch lockers
-    const { data, error } = await supabase.from('parcel_lockers').select('*').eq('active', true);
-    if (error) {
-      console.error('Error fetching lockers:', error);
-      lockerListElement.innerHTML = '<p>Could not load lockers.</p>';
-      return;
-    }
-    allLockers = (data || []).map((locker) => ({
-      ...locker,
-      normalizedCarrier: normalizeCarrier(locker.carrier)
-    }));
-    
-    renderLockerList(allLockers);
-    updateMapMarkers(allLockers);
-  }
-
-  function renderLockerList(lockers) {
-    lockerListElement.innerHTML = '';
-    if (lockers.length === 0) {
-      lockerListElement.innerHTML = '<p style="padding: 1rem; text-align: center;">No lockers found.</p>';
-      return;
-    }
-    lockers.forEach(locker => {
-      const item = document.createElement('div');
-      item.className = 'locker-item';
-      item.dataset.lockerId = locker.id;
-      item.innerHTML = `
-        <strong>${locker.name}</strong>
-        <p style="font-size: 0.8rem; color: var(--muted); margin: 0;">${locker.address}, ${locker.city}</p>
-      `;
-      item.addEventListener('click', () => {
-        selectedLockerIdInput.value = locker.id;
-        document.querySelectorAll('.locker-item').forEach(el => el.classList.remove('selected'));
-        item.classList.add('selected');
-        map.setView([locker.latitude, locker.longitude], 15);
-        // Find and open the corresponding marker popup
-        const marker = visibleMarkers.find(m => m.options.lockerId === locker.id);
-        if (marker) {
-            marker.openPopup();
-        }
-      });
-      lockerListElement.appendChild(item);
-    });
-  }
-
-  function updateMapMarkers(lockers) {
-    // Clear existing markers
-    visibleMarkers.forEach(marker => marker.removeFrom(map));
-    visibleMarkers = [];
-
-    const carrierMeta = {
-      omniva: { label: 'OM', color: '#f59e0b' },
-      dpd: { label: 'DPD', color: '#dc2626' },
-      pasts: { label: 'LP', color: '#2563eb' },
-      venipak: { label: 'VP', color: '#16a34a' }
-    };
-
-    lockers.forEach(locker => {
-      const coords = resolveLockerCoords(locker);
-      if (coords) {
-        const meta = carrierMeta[locker.normalizedCarrier] || { label: 'PK', color: '#6b7280' };
-        const iconHtml = `<div style="width: 30px; height: 30px; border-radius: 999px; background: ${meta.color}; color: #fff; display:flex; align-items:center; justify-content:center; font-size: 10px; font-weight: 700;">${meta.label}</div>`;
-        const customIcon = L.divIcon({
-            html: iconHtml,
-            className: 'custom-map-icon',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-            popupAnchor: [0, -15]
-        });
-
-        const marker = L.marker(coords, { icon: customIcon, lockerId: locker.id })
-          .addTo(map)
-          .bindPopup(`<b>${locker.name}</b><br>${locker.address}`);
-        visibleMarkers.push(marker);
-      }
-    });
-  }
-  
-  function filterLockers() {
-    const activeCarrier = document.querySelector('.carrier-filter-btn.active')?.dataset.carrier || 'all';
-    const searchTerm = lockerSearchInput.value.toLowerCase();
-
-    let filteredLockers = allLockers;
-
-    if (activeCarrier !== 'all') {
-      filteredLockers = filteredLockers.filter(locker => locker.normalizedCarrier === activeCarrier);
-    }
-
-    if (searchTerm) {
-      filteredLockers = filteredLockers.filter(locker => 
-        locker.name.toLowerCase().includes(searchTerm) || 
-        locker.address.toLowerCase().includes(searchTerm) ||
-        locker.city.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    renderLockerList(filteredLockers);
-    updateMapMarkers(filteredLockers);
   }
 
   renderCategorySelectOptions();
+  updatePublicationPeriodOptions();
+  updatePackageSizeOptions();
 
   if (shippingMethodSelect) {
     shippingMethodSelect.value = 'locker';
     shippingMethodSelect.addEventListener('change', updateShippingMethodUI);
   }
   updateShippingMethodUI();
-  initializeLockerMap();
-
-  carrierFilterButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      carrierFilterButtons.forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
-      filterLockers();
-    });
-  });
-
-  lockerSearchInput.addEventListener('input', filterLockers);
 
 
   // Real-time preview update
@@ -419,16 +381,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } else {
       imageUrl = document.getElementById('productImageInput').value || 'https://placehold.co/300x200/667eea/white?text=Upload+Image';
-    }
-
-    // Calculate and display listing fee (€0.50 to €1.00)
-    const duration = parseInt(document.getElementById('productDurationInput')?.value || '1');
-    const baseFee = 0.50;
-    const listingFee = baseFee + ((duration - 1) * 0.50);
-    const feeElement = document.getElementById('calculatedFee');
-    if (feeElement) {
-      const feePrefix = i18n.t ? i18n.t('sell_current_fee_prefix') : 'Current fee:';
-      feeElement.textContent = `${feePrefix} €${listingFee.toFixed(2)}`;
     }
 
     const conditionEmoji = {
@@ -488,12 +440,63 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('vendly:languagechange', () => {
     renderCategorySelectOptions();
+    updatePublicationPeriodOptions();
+    updatePackageSizeOptions();
     renderCategoryFields(categorySelect?.value || '');
     updatePreview();
   });
 
+  async function loadEditProductIfNeeded() {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId) return;
+
+    editingProductId = editId;
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', editId)
+      .maybeSingle();
+
+    if (error || !product) {
+      await showInfoModal(i18n.t('co_product_not_found'), i18n.t('admin_error') || 'Error');
+      return;
+    }
+
+    if (product.seller_id !== user.id) {
+      await showInfoModal(i18n.t('product_delete_failed'), i18n.t('admin_error') || 'Error');
+      return;
+    }
+
+    editingProduct = product;
+    const parsed = parseProductAttrs(product.description || '');
+    const categoryValue = product.category
+      ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
+      : '';
+
+    document.getElementById('productNameInput').value = product.name || '';
+    document.getElementById('productCategoryInput').value = categoryValue;
+    document.getElementById('productPriceInput').value = product.price || '';
+    document.getElementById('productConditionInput').value = product.condition || '';
+    document.getElementById('productStockInput').value = product.stock || 1;
+    document.getElementById('productLocationInput').value = product.location || '';
+    document.getElementById('productDescriptionInput').value = parsed.description || '';
+    document.getElementById('productImageInput').value = product.image_url || '';
+
+    renderCategoryFields(categoryValue);
+    Object.entries(parsed.attrs || {}).forEach(([key, value]) => {
+      const el = document.getElementById(`extra_${key}`);
+      if (el) el.value = value;
+    });
+
+    const submitText = form.querySelector('button[type="submit"] span');
+    if (submitText) submitText.textContent = i18n.t('save_listing_changes');
+    updatePreview();
+  }
+
+  await loadEditProductIfNeeded();
+
   // Update preview on input changes
-  ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput', 'productDurationInput'].forEach(id => {
+  ['productNameInput', 'productCategoryInput', 'productPriceInput', 'productConditionInput', 'productDescriptionInput', 'productImageInput', 'productDurationInput', 'packageSizeInput'].forEach(id => {
     const element = document.getElementById(id);
     if (element) {
       element.addEventListener('input', updatePreview);
@@ -566,20 +569,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         color: '',
         weight_kg: null,
         seller_street: '',
-        seller_city: shippingMethodSelect?.value === 'meetup' ? (meetupCityInput?.value || '').trim() : '',
+        seller_city: ['meetup', 'both'].includes(shippingMethodSelect?.value) ? (meetupCityInput?.value || '').trim() : '',
         seller_postal_code: '',
-        shipping_from_locker: document.getElementById('selectedLockerId').value || null
+        shipping_method: shippingMethodSelect?.value || 'locker',
+        package_size: packageSizeInput?.value || ''
       };
 
-      if (shippingMethodSelect?.value === 'meetup' && !productData.seller_city) {
+      if (['meetup', 'both'].includes(shippingMethodSelect?.value) && !productData.seller_city) {
         await showInfoModal(i18n.t('sell_meetup_city_required'), i18n.t('sell_meetup_city'));
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
         return;
       }
 
-      if (shippingMethodSelect?.value !== 'meetup' && !productData.shipping_from_locker) {
-        await showInfoModal(i18n.t('co_err_select_locker'), 'Missing Parcel Locker');
+      if (['locker', 'both'].includes(shippingMethodSelect?.value) && !productData.package_size) {
+        await showInfoModal(i18n.t('sell_package_size_required'), i18n.t('sell_package_size'));
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
         return;
@@ -604,6 +608,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           productData.description = productData.description + '\n<!--vendly-attrs:' + JSON.stringify(extraAttrs) + '-->';
         }
       }
+
+      productData.description += '\n<!--vendly-delivery:' + JSON.stringify({
+        shipping_method: productData.shipping_method,
+        package_size: productData.package_size || null
+      }) + '-->';
 
       const { listProduct } = await import('../supabase.js');
       const result = await listProduct(productData, user.id);

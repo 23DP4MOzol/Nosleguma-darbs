@@ -2223,14 +2223,92 @@ async function initializeIndexPage() {
   // Real-time search
   const searchInput = document.getElementById('searchInput');
   if (searchInput) {
+    const suggestionsBox = document.createElement('div');
+    suggestionsBox.id = 'searchSuggestions';
+    suggestionsBox.className = 'search-suggestions';
+    suggestionsBox.style.display = 'none';
+    searchInput.insertAdjacentElement('afterend', suggestionsBox);
+
+    const normalizeSearch = (value) => String(value || '').toLowerCase().trim();
+    const fuzzyScore = (text, query) => {
+      const target = normalizeSearch(text);
+      const needle = normalizeSearch(query);
+      if (!needle) return 0;
+      if (target.startsWith(needle)) return 100;
+      if (target.includes(needle)) return 80;
+      let index = 0;
+      let score = 0;
+      for (const char of needle) {
+        const found = target.indexOf(char, index);
+        if (found === -1) return 0;
+        score += Math.max(1, 12 - (found - index));
+        index = found + 1;
+      }
+      return score;
+    };
+
+    const renderSearchSuggestions = () => {
+      const query = searchInput.value.trim();
+      if (query.length < 2) {
+        suggestionsBox.style.display = 'none';
+        suggestionsBox.innerHTML = '';
+        return;
+      }
+
+      const suggestions = allProducts
+        .map((product) => ({
+          product,
+          score: Math.max(
+            fuzzyScore(product.name, query),
+            fuzzyScore(product.category, query),
+            fuzzyScore(parseProductAttrs(product.description).description, query)
+          )
+        }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6);
+
+      if (!suggestions.length) {
+        suggestionsBox.style.display = 'none';
+        suggestionsBox.innerHTML = '';
+        return;
+      }
+
+      suggestionsBox.innerHTML = suggestions.map(({ product }) => `
+        <button type="button" class="search-suggestion-item" data-product-id="${escapeHtml(product.id)}">
+          <span>${escapeHtml(product.name || i18n.t('unnamed_product'))}</span>
+          <small>${escapeHtml(getCategoryDisplayName(product.category || '', i18n.lang))}</small>
+        </button>
+      `).join('');
+      suggestionsBox.style.display = 'block';
+    };
+
+    suggestionsBox.addEventListener('click', (event) => {
+      const item = event.target.closest('.search-suggestion-item');
+      if (!item) return;
+      const product = allProducts.find((p) => String(p.id) === String(item.dataset.productId));
+      if (!product) return;
+      searchInput.value = product.name || '';
+      currentFilters.search = searchInput.value;
+      suggestionsBox.style.display = 'none';
+      applyFiltersAndRender();
+      updateActiveFilters();
+    });
+
     let searchTimeout;
     searchInput.addEventListener('input', () => {
+      renderSearchSuggestions();
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         currentFilters.search = searchInput.value;
         applyFiltersAndRender();
         updateActiveFilters();
       }, 300);
+    });
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#searchInput') && !event.target.closest('#searchSuggestions')) {
+        suggestionsBox.style.display = 'none';
+      }
     });
   }
 

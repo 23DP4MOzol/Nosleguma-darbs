@@ -31,6 +31,7 @@ let knownMessageIds = new Set();
 let selectedAttachment = null;
 let supportThreadSummary = null;
 let cachedConversations = [];
+let chatFilter = 'buying';
 
 async function fetchAdminSupportUser() {
   try {
@@ -346,9 +347,14 @@ function renderConversations(convs, supportSummary) {
 
   const pinnedIds = getPinnedChatIds();
   const supportItem = buildSupportListItem(supportSummary);
+  const filteredConvs = (convs || []).filter((conv) => {
+    if (!currentUser) return true;
+    if (chatFilter === 'selling') return conv.seller_id === currentUser.id;
+    return conv.buyer_id === currentUser.id;
+  });
   const items = [
     supportItem,
-    ...(convs || [])
+    ...filteredConvs
   ].sort((a, b) => {
     const aPinned = pinnedIds.has(a.id);
     const bPinned = pinnedIds.has(b.id);
@@ -358,7 +364,7 @@ function renderConversations(convs, supportSummary) {
     return bTime - aTime;
   });
 
-  if (items.length === 1 && !convs.length) {
+  if (items.length === 1 && !filteredConvs.length) {
     chatList.innerHTML = '';
   }
 
@@ -366,6 +372,7 @@ function renderConversations(convs, supportSummary) {
     const isSupport = entry.kind === 'support';
     const other = isSupport ? null : getOtherParticipant(entry);
     const title = isSupport ? entry.title : (other?.username || t('unknown'));
+    const subject = !isSupport && entry.product?.name ? entry.product.name : '';
     const subtitle = isSupport
       ? entry.assignedLabel
       : (entry.last_message || (entry.product?.name ? `${t('chat_regarding')} ${entry.product.name}` : t('chat_new_conversation')));
@@ -379,6 +386,7 @@ function renderConversations(convs, supportSummary) {
       <div class="chat-avatar avatar-circle-small">${escapeHtml((title || 'S').charAt(0).toUpperCase())}</div>
       <div class="chat-preview">
         <div class="chat-name">${escapeHtml(title)}</div>
+        ${subject ? `<div class="chat-subject">${escapeHtml(subject)}</div>` : ''}
         <div class="chat-last-message">${escapeHtml(isSupport ? entry.lastText : subtitle)} <span class="chat-time">${escapeHtml(lastMsgTime)}</span></div>
         ${isSupport ? `<div class="chat-time">${escapeHtml(entry.status || '')}</div>` : ''}
       </div>
@@ -1253,6 +1261,15 @@ if (newChatBtn && !newChatBtn._hasHandler) {
   });
   newChatBtn._hasHandler = true;
 }
+
+document.querySelectorAll('.chat-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    chatFilter = tab.dataset.chatFilter || 'buying';
+    document.querySelectorAll('.chat-tab').forEach((item) => item.classList.remove('active'));
+    tab.classList.add('active');
+    renderConversations(cachedConversations, supportThreadSummary);
+  });
+});
 
 async function initializeChat() {
   await loadUser();

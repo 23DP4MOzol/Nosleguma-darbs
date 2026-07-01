@@ -340,6 +340,7 @@ export async function purchaseProduct(productId, userId) {
     // Set sold_at timestamp when stock reaches 0
     if (newStock === 0) {
       updateData.sold_at = new Date().toISOString();
+      updateData.status = 'sold';
     }
     const { error: productError } = await supabase
       .from('products')
@@ -472,7 +473,7 @@ export async function listProduct(productData, userId) {
     // Listing fee ranges from €0.50 to €1.00 based on price
     // Linear scale: €0-€100 = €0.50, €100+ = €1.00
     const duration = productData.duration || 1;
-    const listingFee = getListingFeeForDuration(duration);
+    const listingFee = 0;
 
     // Check balance for listing fee
     const currentBalance = await getBalance(userId);

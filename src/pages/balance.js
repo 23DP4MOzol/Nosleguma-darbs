@@ -47,6 +47,9 @@ const currentBalanceEl = document.getElementById('currentBalance');
 const transactionHistoryEl = document.getElementById('transactionHistory');
 
 let currentUserId = null;
+let selectedPaymentMethod = 'bank';
+const MIN_TOPUP_AMOUNT = 1;
+const MAX_TOPUP_AMOUNT = 5000;
 
 // Keep transaction filter state and loader above loadUser so loadUser can call it
 let currentTransactionFilter = 'all';
@@ -246,6 +249,91 @@ logoutBtn.addEventListener('click', async () => {
 // ============================
 const addFundsContainer = document.querySelector('.add-funds');
 const fundControls = addFundsContainer?.querySelector('div'); // the controls row containing input + add button
+const fundAmountInput = document.getElementById('fundAmount');
+
+function setupPaymentMethodsUI() {
+  if (!addFundsContainer || !fundAmountInput || document.getElementById('paymentMethods')) return;
+
+  fundAmountInput.min = String(MIN_TOPUP_AMOUNT);
+  fundAmountInput.max = String(MAX_TOPUP_AMOUNT);
+  fundAmountInput.step = '0.01';
+  fundAmountInput.inputMode = 'decimal';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:flex;flex-direction:column;gap:0.85rem;';
+  wrapper.innerHTML = `
+    <div class="quick-amounts" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0.5rem;">
+      <button type="button" class="quick-amount-btn" data-amount="5">€5</button>
+      <button type="button" class="quick-amount-btn" data-amount="10">€10</button>
+      <button type="button" class="quick-amount-btn" data-amount="25">€25</button>
+      <button type="button" class="quick-amount-btn" data-amount="50">€50</button>
+    </div>
+    <div>
+      <div style="font-size:0.875rem;font-weight:600;color:var(--fg);margin-bottom:0.5rem;" data-i18n="payment_methods">${i18n.t('payment_methods')}</div>
+      <div class="payment-method-grid" id="paymentMethods" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.5rem;">
+        <button type="button" class="payment-method-btn active" data-method="bank" data-i18n="payment_bank">${i18n.t('payment_bank')}</button>
+        <button type="button" class="payment-method-btn" data-method="card" data-i18n="payment_card">${i18n.t('payment_card')}</button>
+        <button type="button" class="payment-method-btn" data-method="paypal">PayPal</button>
+        <button type="button" class="payment-method-btn" data-method="wallets" data-i18n="payment_wallets">${i18n.t('payment_wallets')}</button>
+      </div>
+      <div id="paymentMethodDetails" style="margin-top:0.75rem;padding:0.75rem;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:0.875rem;">${i18n.t('payment_bank_details')}</div>
+    </div>
+  `;
+
+  fundAmountInput.insertAdjacentElement('afterend', wrapper);
+  document.querySelector('[data-i18n="minimum_deposit"]')?.setAttribute('data-i18n', 'wallet_amount_limits');
+  document.querySelector('[data-i18n="wallet_amount_limits"]')?.replaceChildren(document.createTextNode(i18n.t('wallet_amount_limits')));
+
+  wrapper.querySelectorAll('.quick-amount-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      fundAmountInput.value = btn.dataset.amount || '';
+      validateFundAmount(false);
+    });
+  });
+
+  wrapper.querySelectorAll('.payment-method-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      wrapper.querySelectorAll('.payment-method-btn').forEach((item) => item.classList.remove('active'));
+      btn.classList.add('active');
+      selectedPaymentMethod = btn.dataset.method || 'bank';
+      updatePaymentMethodDetails();
+    });
+  });
+}
+
+function updatePaymentMethodDetails() {
+  const details = document.getElementById('paymentMethodDetails');
+  if (!details) return;
+  const key = {
+    bank: 'payment_bank_details',
+    card: 'payment_card_details',
+    paypal: 'payment_paypal_details',
+    wallets: 'payment_wallets_details'
+  }[selectedPaymentMethod] || 'payment_bank_details';
+  details.textContent = i18n.t(key);
+}
+
+function validateFundAmount(showMessage = true) {
+  const amount = parseFloat(fundAmountInput?.value || '');
+  const help = document.getElementById('fundAmountHelp') || document.querySelector('[data-i18n="wallet_amount_limits"]');
+  const invalid = !Number.isFinite(amount) || amount < MIN_TOPUP_AMOUNT || amount > MAX_TOPUP_AMOUNT;
+  if (fundAmountInput) {
+    fundAmountInput.style.borderColor = invalid && fundAmountInput.value ? '#ef4444' : 'var(--border)';
+  }
+  if (help) {
+    help.textContent = invalid && fundAmountInput?.value ? i18n.t('wallet_amount_error') : i18n.t('wallet_amount_limits');
+    help.style.color = invalid && fundAmountInput?.value ? '#ef4444' : 'var(--muted)';
+  }
+  if (invalid && showMessage) showInfoModal(i18n.t('wallet_amount_error'), i18n.t('admin_error') || 'Error');
+  return !invalid ? amount : null;
+}
+
+setupPaymentMethodsUI();
+fundAmountInput?.addEventListener('input', () => validateFundAmount(false));
+window.addEventListener('vendly:languagechange', () => {
+  updatePaymentMethodDetails();
+  validateFundAmount(false);
+});
 
 // Ensure withdraw button exists and is visible next to the Add Funds button
 let withdrawBtn = document.getElementById('withdrawBtn');
@@ -262,8 +350,8 @@ if (!withdrawBtn) {
 const addFundsBtn = document.getElementById('addFundsBtn');
 if (addFundsBtn) {
   addFundsBtn.addEventListener('click', async () => {
-    const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) { await showInfoModal(i18n.t('enter_valid_amount'), 'Error'); return; }
+    const amount = validateFundAmount(true);
+    if (!amount) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { await showInfoModal(i18n.t('loginFirst'), 'Error'); return; }
@@ -271,7 +359,7 @@ if (addFundsBtn) {
     try {
       // Import addBalance function from supabase.js
       const { addBalance } = await import('../supabase.js');
-      await addBalance(user.id, amount, 'Balance top-up');
+      await addBalance(user.id, amount, `Balance top-up (${selectedPaymentMethod})`);
       await loadUser();
       document.getElementById('fundAmount').value = '';
       await showInfoModal(i18n.t('deposit_success'), 'Success');
@@ -286,7 +374,7 @@ if (addFundsBtn) {
 if (withdrawBtn) {
   withdrawBtn.addEventListener('click', async () => {
     const amount = parseFloat(document.getElementById('fundAmount').value);
-    if (isNaN(amount) || amount <= 0) { await showInfoModal(i18n.t('enter_valid_amount'), 'Error'); return; }
+    if (isNaN(amount) || amount <= 0 || amount > MAX_TOPUP_AMOUNT) { await showInfoModal(i18n.t('wallet_amount_error'), 'Error'); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { await showInfoModal(i18n.t('loginFirst'), 'Error'); return; }

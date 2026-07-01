@@ -6029,3 +6029,117 @@ input, select, textarea, button {
     grid-template-columns: 1fr !important;
   }
 }
+.quick-amount-btn,
+.payment-method-btn {
+  min-height: 42px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quick-amount-btn:hover,
+.payment-method-btn:hover,
+.payment-method-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg));
+}
+
+.filter-group {
+  position: relative;
+}
+
+.search-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+}
+
+.search-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-suggestion-item small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.search-suggestion-item:hover {
+  background: var(--secondary);
+}
+
+.chat-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.chat-tab {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.chat-subject {
+  margin-top: 0.15rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--fg);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .payment-method-grid,
+  .quick-amounts {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
