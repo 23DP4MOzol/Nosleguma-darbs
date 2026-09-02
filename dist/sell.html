@@ -7,10 +7,12 @@
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-  <script type="module" crossorigin src="./assets/sell-DOprg1jh.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-B75INr24.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C0LyWGaa.css">
+  <script type="module" crossorigin src="./assets/sell-Cuc2pl_Z.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BXmGAIWN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5qMZDql.css">
 </head>
 <body>
 
@@ -83,22 +85,8 @@
     <!-- FORM SECTION -->
     <div class="sell-form-section">
       <form id="sellForm" class="sell-form-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 0.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;">Product Details</h3>
+        <h3 style="margin-bottom: 0.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;" data-i18n="sell_product_details">Product Details</h3>
         
-        <!-- Listing Fee Info -->
-        <div style="background: color-mix(in srgb, #f59e0b 15%, var(--card-bg)); border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-            <span style="font-size: 1.25rem;">💰</span>
-            <strong style="color: #f59e0b;">Listing Fee</strong>
-          </div>
-          <p style="margin: 0; font-size: 0.875rem; color: var(--fg);">
-            <span data-i18n="listing_fee_description">Listing fee: €0.50 - €1.00 (based on price)</span>
-          </p>
-          <p id="calculatedFee" style="margin: 0.5rem 0 0 0; font-size: 1rem; font-weight: 700; color: #f59e0b;">
-            Current fee: €0.50
-          </p>
-        </div>
-
         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
           <label class="form-field">
             <span class="form-label" data-i18n="sell_product_name">Product Name *</span>
@@ -125,8 +113,18 @@
             <input type="number" id="productPriceInput" class="form-input" data-i18n-placeholder="sell_enter_price" placeholder="0.00" required min="0" step="0.01">
           </label>
 
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_condition">Condition *</span>
+          
+            <label class="form-field">
+              <span class="form-label" data-i18n="publication_period">Publication Period *</span>
+              <select id="productDurationInput" class="form-select" required>
+                <option value="1">1 Month - Base Fee</option>
+                <option value="2">2 Months - +€0.50</option>
+                <option value="3">3 Months - +€1.00</option>
+              </select>
+            </label>
+
+            <label class="form-field">
+              <span class="form-label" data-i18n="sell_condition">Condition *</span>
             <select id="productConditionInput" class="form-select" required>
               <option value="" data-i18n="sell_select_condition">Select condition</option>
               <option value="new" data-i18n="condition_new">✨ New</option>
@@ -158,20 +156,6 @@
             </select>
           </label>
 
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_brand">Brand (Optional)</span>
-            <input type="text" id="productBrandInput" class="form-input" data-i18n-placeholder="sell_enter_brand" placeholder="Enter brand name">
-          </label>
-
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_color">Color (Optional)</span>
-            <input type="text" id="productColorInput" class="form-input" data-i18n-placeholder="sell_enter_color" placeholder="Enter color">
-          </label>
-
-          <label class="form-field">
-            <span class="form-label" data-i18n="sell_weight">Weight (kg) — for shipping</span>
-            <input type="number" id="productWeightInput" class="form-input" data-i18n-placeholder="sell_enter_weight" placeholder="e.g. 0.5" min="0.01" step="0.01">
-          </label>
         </div>
 
         <!-- Category-Specific Extra Fields (dynamic, shown/hidden via JS) -->
@@ -181,32 +165,37 @@
           <div id="categoryExtraFieldsGrid" class="form-grid" style="grid-template-columns: 1fr 1fr;"></div>
         </div>
 
-        <!-- Shipping Origin Address -->
+        <!-- Delivery Options -->
         <div style="margin-top: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card-bg);">
-          <h4 style="margin-bottom: 0.75rem; color: var(--fg);">📦 <span data-i18n="sell_shipping_origin">Shipping Origin (your address)</span></h4>
-          <p style="font-size: 0.8125rem; color: var(--muted); margin-bottom: 1rem;" data-i18n="sell_shipping_origin_desc">This address is used to calculate shipping costs. It will NOT be shown to buyers.</p>
+          <h4 style="margin-bottom: 0.75rem; color: var(--fg);">🚚 <span data-i18n="sell_shipping_method">Shipping Method</span></h4>
+          <p style="font-size: 0.875rem; color: var(--muted); margin: 0 0 1rem 0;" data-i18n="sell_delivery_context">Choose how you can hand over the item. The buyer selects their delivery locker during checkout.</p>
           <div class="form-cols">
             <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_street">Street Address</span>
-              <input type="text" id="sellerStreetInput" class="form-input" data-i18n-placeholder="sell_origin_street_ph" placeholder="Brīvības iela 100">
-            </label>
-            <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_city">City</span>
-              <select id="sellerCityInput" class="form-select">
-                <option value="Rīga">Rīga</option>
-                <option value="Daugavpils">Daugavpils</option>
-                <option value="Liepāja">Liepāja</option>
-                <option value="Jelgava">Jelgava</option>
-                <option value="Jūrmala">Jūrmala</option>
-                <option value="Ventspils">Ventspils</option>
-                <option value="Rēzekne">Rēzekne</option>
-                <option value="Valmiera">Valmiera</option>
+              <span class="form-label" data-i18n="sell_shipping_from">Delivery from parcel locker</span>
+              <select id="shippingMethod" class="form-select">
+                <option value="locker" data-i18n="sell_locker_delivery">Parcel locker delivery</option>
+                <option value="meetup" data-i18n="sell_meetup">Meetup</option>
+                <option value="both" data-i18n="sell_shipping_both">Parcel locker or meetup</option>
               </select>
             </label>
+          </div>
+          <div id="sellerAddressSection" style="display:none; margin-top: 1rem;">
             <label class="form-field">
-              <span class="form-label" data-i18n="sell_origin_postal">Postal Code</span>
-              <input type="text" id="sellerPostalInput" class="form-input" data-i18n-placeholder="sell_origin_postal_ph" placeholder="LV-1001">
+              <span class="form-label" data-i18n="sell_meetup_city">City</span>
+              <input type="text" id="meetupCityInput" class="form-input" data-i18n-placeholder="sell_meetup_city_placeholder" placeholder="e.g. Riga">
             </label>
+          </div>
+          <div id="packageSizeSection" style="margin-top: 1rem;">
+             <label class="form-field">
+               <span class="form-label" data-i18n="sell_package_size">Package size *</span>
+               <select id="packageSizeInput" class="form-select" required>
+                 <option value="" data-i18n="sell_select_package_size">Select package size</option>
+                 <option value="S" data-i18n="package_size_s">S - up to 9 x 38 x 64 cm (Omniva) / small DPD locker</option>
+                 <option value="M" data-i18n="package_size_m">M - up to 19 x 38 x 64 cm (Omniva) / medium DPD locker</option>
+                 <option value="L" data-i18n="package_size_l">L - up to 39 x 38 x 64 cm (Omniva) / large DPD locker</option>
+               </select>
+             </label>
+             <p style="font-size: 0.75rem; color: var(--muted); margin: 0.5rem 0 0 0;" data-i18n="sell_package_size_hint">Use the smallest size that fits the packed item.</p>
           </div>
         </div>
 
@@ -224,16 +213,17 @@
             </label>
             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
               <input type="radio" name="imageType" value="file" style="margin: 0;">
-              <span style="font-size: 0.875rem; color: var(--fg);">Upload File</span>
+              <span style="font-size: 0.875rem; color: var(--fg);" data-i18n="upload_file">Upload File</span>
             </label>
           </div>
           <input type="url" id="productImageInput" class="form-input" data-i18n-placeholder="sell_enter_image_url" placeholder="https://example.com/image.jpg" required>
-          <input type="file" id="productImageFileInput" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none; background: var(--card-bg); color: var(--fg);">
+          <input type="file" id="productImageFileInput" accept="image/jpeg,image/png" multiple style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; transition: border-color 0.2s, box-shadow 0.2s; display: none; background: var(--card-bg); color: var(--fg);">
+          <small style="display:block; margin-top:0.4rem; color:var(--muted);" data-i18n="image_upload_rules">JPEG or PNG, max 5MB per image.</small>
         </label>
 
         <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
           <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
-            📤 List Product
+            <span data-i18n="sell_list_product">📤 List Product</span>
           </button>
           <!-- Preview button removed (live preview updates automatically) -->
         </div>
@@ -243,7 +233,7 @@
     <!-- PREVIEW SECTION -->
     <div class="sell-preview-section">
       <div class="preview-card" style="background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); position: sticky; top: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;">Live Preview</h3>
+        <h3 style="margin-bottom: 1.5rem; color: var(--fg); font-size: 1.25rem; font-weight: 600;" data-i18n="sell_live_preview">Live Preview</h3>
 
         <div class="product-preview-card" id="productPreview" style="border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; background: var(--bg);">
           <div class="preview-placeholder" style="text-align: center; color: var(--muted); padding: 2rem;">
@@ -307,6 +297,41 @@
 
 .btn-secondary:hover {
   background: #e5e7eb;
+}
+
+#map {
+  z-index: 1;
+}
+
+.carrier-filter-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background-color: var(--card-bg);
+  color: var(--fg);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.carrier-filter-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.locker-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.locker-item:hover {
+  background-color: var(--secondary);
+}
+
+.locker-item.selected {
+  background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  border-left: 4px solid var(--primary);
 }
 </style>
 

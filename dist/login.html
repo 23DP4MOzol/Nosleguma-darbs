@@ -59,9 +59,9 @@
       .dropdown-menu { min-width: 120px; }
     }
   </style>
-  <script type="module" crossorigin src="./assets/login-D9yCyPH9.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-B75INr24.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C0LyWGaa.css">
+  <script type="module" crossorigin src="./assets/login-CW-9XHYJ.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BXmGAIWN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5qMZDql.css">
 </head>
 <body>
 
@@ -128,7 +128,12 @@
 
     <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
        <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
-       <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required>
+       <div style="position: relative; display: flex; align-items: center;">
+         <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required style="padding-right: 3rem;">
+         <button type="button" id="togglePassword" style="position: absolute; right: 0.5rem; background: none; border: none; cursor: pointer; font-size: 1.25rem; color: var(--muted);">
+           👁️
+         </button>
+       </div>
        <button type="submit" class="btn-buy-now" data-i18n="login">Login</button>
        <p style="text-align: center; color: var(--muted); font-size: 0.875rem;">
          <span data-i18n="no_account">Don't have an account?</span> <a href="register.html" style="color: var(--primary);" data-i18n="sign_up">Sign up</a>

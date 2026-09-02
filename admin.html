@@ -80,6 +80,7 @@
       <button class="admin-nav-btn" data-tab="transactions">💳 Transactions</button>
       <button class="admin-nav-btn" data-tab="orders">🛒 Orders</button>
       <button class="admin-nav-btn" data-tab="chats">💬 Chats</button>
+      <button class="admin-nav-btn" data-tab="tickets">🎫 Support Tickets</button>
       <button class="admin-nav-btn" data-tab="analytics">📈 Analytics</button>
       <button class="admin-nav-btn" data-tab="settings">⚙️ Settings</button>
     </nav>
@@ -132,6 +133,13 @@
           <div class="stat-content">
             <div class="stat-value" id="dash-total-orders">0</div>
             <div class="stat-label">Total Orders</div>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="stat-icon">🎧</div>
+          <div class="stat-content">
+            <div class="stat-value" id="dash-open-tickets">0</div>
+            <div class="stat-label">Open Support</div>
           </div>
         </div>
       </div>
@@ -353,6 +361,17 @@
       </div>
       <div class="admin-card" id="chats-content">
         <p>Loading conversations...</p>
+      </div>
+    </section>
+    
+    <!-- Support Tickets Section -->
+    <section id="section-tickets" class="admin-section" style="display:none;">
+      <div class="admin-header">
+        <h2>🎫 Support Tickets</h2>
+        <p style="color:var(--muted);margin-top:0.5rem;">Review incoming support requests and resolve open tickets</p>
+      </div>
+      <div class="admin-card" id="tickets-content">
+        <p>Loading support tickets...</p>
       </div>
     </section>
     
@@ -1215,12 +1234,241 @@
     .badge-open { background: #d1fae5; color: #065f46; }
     .badge-resolved { background: #dbeafe; color: #1e40af; }
     
-    @media (max-width: 768px) {
+    .admin-mobile-nav-toggle {
+      display: none;
+      position: sticky;
+      top: 0.75rem;
+      z-index: 70;
+      margin: 0.75rem 1rem 0;
+      width: calc(100% - 2rem);
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      color: var(--fg);
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 79;
+      display: none;
+      background: rgba(15, 23, 42, 0.46);
+      backdrop-filter: blur(3px);
+    }
+
+    .admin-sidebar-overlay.active {
+      display: block;
+    }
+
+    .admin-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table-wrapper .admin-table {
+      min-width: 760px;
+    }
+
+    .admin-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .admin-table tbody tr:hover {
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+    }
+
+    .admin-table td:last-child {
+      min-width: 180px;
+    }
+
+    .admin-table td:last-child .btn,
+    .admin-table td:last-child button {
+      margin: 0.15rem;
+      white-space: nowrap;
+    }
+
+    .admin-section {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .admin-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .admin-header h2 {
+      overflow-wrap: anywhere;
+    }
+
+    .admin-card {
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-stat-card {
+      min-width: 0;
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-stat-card .stat-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: var(--secondary);
+      flex: 0 0 auto;
+    }
+
+    .admin-stat-card .stat-content {
+      min-width: 0;
+    }
+
+    .admin-stat-card .stat-value,
+    .admin-stat-card .stat-label {
+      overflow-wrap: anywhere;
+    }
+
+    .admin-filters,
+    .admin-filters-enhanced {
+      align-items: end;
+    }
+
+    .admin-filters .btn,
+    .admin-filters button,
+    .admin-filters-enhanced .btn,
+    .admin-filters-enhanced button {
+      min-height: 42px;
+      justify-content: center;
+    }
+
+    .admin-search,
+    .admin-select,
+    .admin-date {
+      min-height: 42px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .conversation-item {
+      min-width: 0;
+      align-items: flex-start;
+    }
+
+    .conversation-preview {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .analytics-grid,
+    .admin-modal-grid {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    @media (max-width: 1024px) {
       .admin-sidebar {
-        display: none;
+        width: 196px;
       }
+
+      .admin-main {
+        margin-left: 196px;
+        padding: 1.25rem;
+      }
+
+      .admin-stats-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admin-mobile-nav-toggle {
+        display: block;
+      }
+
+      .admin-sidebar {
+        display: block;
+        top: 0;
+        width: min(82vw, 320px);
+        z-index: 80;
+        transform: translateX(-105%);
+        transition: transform 0.22s ease;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .admin-sidebar.mobile-open {
+        transform: translateX(0);
+      }
+
       .admin-main {
         margin-left: 0;
+        padding: 1rem;
+      }
+
+      .admin-stats-row {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .admin-card {
+        padding: 1rem;
+      }
+
+      .admin-modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .admin-modal-tabs {
+        overflow-x: auto;
+      }
+
+      .conversation-item {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .admin-main {
+        padding: 0.75rem;
+      }
+
+      .admin-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .admin-stat-card {
+        padding: 1rem;
+      }
+
+      .admin-table th,
+      .admin-table td {
+        padding: 0.65rem;
+      }
+
+      .product-modal .modal-body,
+      .admin-detail-modal-content .modal-body {
+        padding: 1rem;
+      }
+
+      .confirm-content {
+        max-width: calc(100% - 1rem);
       }
     }
     @media (max-width: 900px) {

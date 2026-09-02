@@ -64,8 +64,23 @@ function extractKeys(blockText) {
   return keys;
 }
 
-const enKeys = extractKeys(extractBlock(enStart));
-const lvKeys = extractKeys(extractBlock(lvStart));
+function collectKeysForLang(lang) {
+  const baseStart = lang === 'en' ? enStart : lvStart;
+  const keys = extractKeys(extractBlock(baseStart));
+  const assignRegex = new RegExp(`Object\\.assign\\(\\s*i18n\\.strings\\.${lang}\\s*,\\s*\\{`, 'g');
+  let match;
+
+  while ((match = assignRegex.exec(source)) !== null) {
+    for (const key of extractKeys(extractBlock(match.index))) {
+      keys.add(key);
+    }
+  }
+
+  return keys;
+}
+
+const enKeys = collectKeysForLang('en');
+const lvKeys = collectKeysForLang('lv');
 
 const usedKeys = new Set();
 const skipDirs = new Set(['node_modules', '.git', 'dist']);

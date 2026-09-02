@@ -9,8 +9,7 @@ export function formatListingPrice(value) {
 }
 
 export function getListingFeeForDuration(durationMonths = 1) {
-  const months = Math.min(3, Math.max(1, parseInt(durationMonths, 10) || 1));
-  return 0.50 + ((months - 1) * 0.50);
+  return 0;
 }
 
 export function getDurationLabel(durationMonths = 1) {

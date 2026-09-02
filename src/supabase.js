@@ -988,6 +988,7 @@ export async function updateOrderStatus(orderId, status, userId) {
     const { error } = await supabase
       .from('orders')
       .update({
+        status: status,
         order_status: status,
         updated_at: new Date().toISOString()
       })

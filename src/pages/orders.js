@@ -914,6 +914,7 @@ async function placeOrder() {
       };
       if (newStock === 0) {
         stockUpdate.sold_at = new Date().toISOString();
+        stockUpdate.status = 'sold';
       }
       await supabase.from('products').update(stockUpdate).eq('id', product.id);
     }
@@ -1257,9 +1258,32 @@ window.payOrder = async function(orderId) {
       status: nextStatus,
       order_status: nextStatus,
       payment_status: 'paid',
+      escrow_amount: totalAmount,
+      escrow_released: false,
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', orderId);
+
+    if (order.product_id) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, stock')
+        .eq('id', order.product_id)
+        .maybeSingle();
+
+      if (product) {
+        const newStock = Math.max(0, parseInt(product.stock || 0, 10) - (order.quantity || 1));
+        const productUpdate = {
+          stock: newStock,
+          updated_at: new Date().toISOString()
+        };
+        if (newStock === 0) {
+          productUpdate.sold_at = new Date().toISOString();
+          productUpdate.status = 'sold';
+        }
+        await supabase.from('products').update(productUpdate).eq('id', order.product_id);
+      }
+    }
 
     toast(t('orders_payment_success'), 'success');
     await loadOrders();
@@ -1444,6 +1468,14 @@ async function releaseEscrowToSeller(order) {
   var releaseAmount = parseFloat(order.escrow_amount || order.total_amount || 0);
   if (!sellerId || releaseAmount <= 0) return;
 
+  const { data: latestOrder } = await supabase
+    .from('orders')
+    .select('escrow_released, status, order_status')
+    .eq('id', order.id)
+    .maybeSingle();
+
+  if (latestOrder?.escrow_released) return;
+
   var selRes = await supabase.from('users').select('balance').eq('id', sellerId).single();
   var sellerBalance = parseFloat(selRes.data ? selRes.data.balance : 0);
 
@@ -1511,7 +1543,8 @@ if (cancelBtn) {
             if (prodRes.data) {
               await supabase.from('products').update({
                 stock: (prodRes.data.stock || 0) + (order.quantity || 1),
-                sold_at: null
+                sold_at: null,
+                status: 'active'
               }).eq('id', order.product_id);
             }
           }

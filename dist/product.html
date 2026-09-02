@@ -18,9 +18,9 @@
   .dropdown-menu { min-width: 120px; }
 }
 </style>
-  <script type="module" crossorigin src="./assets/product-FLttAIG6.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-B75INr24.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C0LyWGaa.css">
+  <script type="module" crossorigin src="./assets/product-DIxP4sYW.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BXmGAIWN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5qMZDql.css">
 </head>
 <body>
 
@@ -100,15 +100,15 @@
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--primary);" id="totalSold">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Products Sold</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="products_sold_stat">Products Sold</div>
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--accent);" id="totalActive">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Active Listings</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="active_listings_stat">Active Listings</div>
       </div>
       <div style="text-align:center;">
         <div style="font-size: 2rem; font-weight: 800; color: var(--error);" id="totalLikes">0</div>
-        <div style="font-size: 0.875rem; color: var(--muted);">Total Likes</div>
+        <div style="font-size: 0.875rem; color: var(--muted);" data-i18n="total_likes_stat">Total Likes</div>
       </div>
     </div>
   </div>
@@ -123,28 +123,137 @@
     </button>
   </div>
 
-  <!-- Filter Tabs -->
-  <div class="filter-tabs" style="margin-bottom: 2rem;">
-    <button class="filter-tab active" data-filter="all" data-i18n="allProducts">All Products</button>
-    <button class="filter-tab" data-filter="active" data-i18n="activeProducts">Active</button>
-    <button class="filter-tab" data-filter="sold" data-i18n="soldProducts">Sold</button>
-    <button class="filter-tab" data-filter="favorites" data-i18n="favorites" id="favoritesTab" style="display: none;">❤️ Favorites</button>
-  </div>
+  <div class="product-page-layout">
+    <aside class="product-filters" id="productFilters">
+      <div class="product-filters-header">
+        <h3>
+          <span>🔎</span>
+          <span data-i18n="advanced_filters">Advanced Filters</span>
+        </h3>
+        <p data-i18n="advanced_filters_subtitle">Refine your search to find exactly what you need</p>
+      </div>
+      <div class="product-filters-body">
+        <div class="filter-group">
+          <label for="productSearchInput">
+            <span>🔍</span>
+            <span data-i18n="filter_search">Search</span>
+          </label>
+          <input type="text" id="productSearchInput" data-i18n-placeholder="search_placeholder" placeholder="Search products...">
+        </div>
 
-  <!-- Products Grid -->
-  <div class="product-grid-modern" id="productGrid">
-    <!-- Product cards will be inserted here -->
-    <div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">
-      <span data-i18n="loading">Loading products...</span>
-    </div>
-  </div>
+        <div class="filter-group">
+          <label for="productCategoryFilter">
+            <span>📦</span>
+            <span data-i18n="filter_category">Category</span>
+          </label>
+          <select id="productCategoryFilter">
+            <option value="" data-i18n="filter_all_categories">All Categories</option>
+            <option value="electronics" data-i18n="electronics">📱 Electronics</option>
+            <option value="clothing" data-i18n="clothing">👕 Clothing</option>
+            <option value="furniture" data-i18n="furniture">🪑 Furniture</option>
+            <option value="books" data-i18n="books">📚 Books</option>
+            <option value="sports" data-i18n="sports">⚽ Sports</option>
+            <option value="home" data-i18n="home">🏠 Home</option>
+            <option value="vehicles" data-i18n="vehicles">🚗 Vehicles</option>
+            <option value="other" data-i18n="other">📦 Other</option>
+          </select>
+        </div>
 
-  <!-- Empty State -->
-  <div id="emptyState" style="display: none; text-align: center; padding: 4rem 2rem;">
-    <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
-    <h3 style="margin-bottom: 1rem;" data-i18n="noProductsYet">No Products Yet</h3>
-    <p style="color: var(--muted); margin-bottom: 2rem;" data-i18n="startSelling">Start selling by listing your first product</p>
-    <button class="btn-hero-primary" id="sellNowEmptyBtn" data-i18n="sellFirstProduct">Sell Your First Product</button>
+        <div class="filter-group">
+          <label>
+            <span>💰</span>
+            <span data-i18n="filter_price_range">Price Range</span>
+          </label>
+          <div class="filter-range">
+            <input type="number" id="productMinPrice" min="0" step="0.01" data-i18n-placeholder="min_price" placeholder="Min €">
+            <input type="number" id="productMaxPrice" min="0" step="0.01" data-i18n-placeholder="max_price" placeholder="Max €">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="productConditionFilter">
+            <span>⭐</span>
+            <span data-i18n="filter_condition">Condition</span>
+          </label>
+          <select id="productConditionFilter">
+            <option value="" data-i18n="filter_all_conditions">All Conditions</option>
+            <option value="new" data-i18n="condition_new">✨ New</option>
+            <option value="like_new" data-i18n="condition_like_new">🔄 Like New</option>
+            <option value="good" data-i18n="condition_good">👍 Good</option>
+            <option value="fair" data-i18n="condition_fair">😐 Fair</option>
+            <option value="poor" data-i18n="condition_poor">⚠️ Poor</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="productStockFilter">
+            <span>📦</span>
+            <span data-i18n="filter_stock">Stock Level</span>
+          </label>
+          <select id="productStockFilter">
+            <option value="" data-i18n="stock_all">All Stock Levels</option>
+            <option value="in_stock" data-i18n="stock_in_stock">In Stock (1+)</option>
+            <option value="low_stock" data-i18n="stock_low">Low Stock (1-5)</option>
+            <option value="high_stock" data-i18n="stock_high">High Stock (10+)</option>
+            <option value="out_of_stock" data-i18n="stock_out">Out of Stock</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="productSortFilter">
+            <span>📅</span>
+            <span data-i18n="filter_sort">Sort By</span>
+          </label>
+          <select id="productSortFilter">
+            <option value="newest" data-i18n="sort_newest">Newest First</option>
+            <option value="oldest" data-i18n="sort_oldest">Oldest First</option>
+            <option value="price_low" data-i18n="sort_price_low">Price: Low to High</option>
+            <option value="price_high" data-i18n="sort_price_high">Price: High to Low</option>
+            <option value="name" data-i18n="sort_name">Name A-Z</option>
+            <option value="name_desc" data-i18n="sort_name_desc">Name Z-A</option>
+          </select>
+        </div>
+
+        <div class="product-filters-actions">
+          <button class="btn-filter-apply" id="productApplyFilters">
+            <span>🔍</span>
+            <span data-i18n="btn_apply_filters">Apply Filters</span>
+          </button>
+          <button class="btn-filter-clear" id="productClearFilters">
+            <span>✖️</span>
+            <span data-i18n="btn_clear_filters">Clear</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="product-results">
+      <!-- Filter Tabs -->
+      <div class="filter-tabs" style="margin-bottom: 2rem;">
+        <button class="filter-tab active" data-filter="all" data-i18n="allProducts">All Products</button>
+        <button class="filter-tab" data-filter="active" data-i18n="activeProducts">Active</button>
+        <button class="filter-tab" data-filter="sold" data-i18n="soldProducts">Sold</button>
+        <button class="filter-tab" data-filter="expired" data-i18n="renewalProducts">Needs Renewal</button>
+        <button class="filter-tab" data-filter="favorites" data-i18n="favorites" id="favoritesTab" style="display: none;">❤️ Favorites</button>
+      </div>
+      <div id="renewalSectionNote" style="display:none; margin-bottom:1rem; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:12px; background:var(--card-bg); color:var(--muted);" data-i18n="renewalProductsSubtitle">Expired listings that you can renew or extend</div>
+
+      <!-- Products Grid -->
+      <div class="product-grid-modern" id="productGrid">
+        <!-- Product cards will be inserted here -->
+        <div style="padding:20px;text-align:center;grid-column:1/-1;color:var(--muted);">
+          <span data-i18n="loading">Loading products...</span>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" style="display: none; text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+        <h3 style="margin-bottom: 1rem;" data-i18n="noProductsYet">No Products Yet</h3>
+        <p style="color: var(--muted); margin-bottom: 2rem;" data-i18n="startSelling">Start selling by listing your first product</p>
+        <button class="btn-hero-primary" id="sellNowEmptyBtn" data-i18n="sellFirstProduct">Sell Your First Product</button>
+      </div>
+    </section>
   </div>
 
 </main>

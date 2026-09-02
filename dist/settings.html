@@ -6,9 +6,9 @@
   <title data-i18n="settings_title">Vendly - Settings</title>
   <link rel="icon" href="./assets/vendly-logo-DwGj9RJp.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/settings-CX5OMCtT.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-B75INr24.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C0LyWGaa.css">
+  <script type="module" crossorigin src="./assets/settings-VgGy4VxC.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BXmGAIWN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5qMZDql.css">
 </head>
 <body>
 
@@ -260,6 +260,34 @@
             <span data-i18n="no_reviews">No reviews yet</span>
           </div>
         </div>
+      </div>
+
+      <!-- Followed Categories -->
+      <div class="product-card-modern" style="padding: 2rem;">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;" data-i18n="followed_categories">Categories I follow</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+          <span class="profile-chip" data-i18n="electronics">Electronics</span>
+          <span class="profile-chip" data-i18n="clothing">Clothing</span>
+          <span class="profile-chip" data-i18n="home">Home</span>
+        </div>
+      </div>
+
+      <!-- Seller Alerts -->
+      <div class="product-card-modern" style="padding: 2rem;">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;" data-i18n="seller_alerts">Seller alerts</h3>
+        <label style="display:flex; gap:0.75rem; align-items:flex-start; color:var(--fg);">
+          <input type="checkbox" id="buyerForItemAlert" checked>
+          <span>
+            <strong data-i18n="buyer_for_my_item">There is a buyer for my item</strong>
+            <small style="display:block; color:var(--muted); margin-top:0.25rem;" data-i18n="buyer_for_my_item_desc">Notify me when someone starts a purchase or serious chat about my listing.</small>
+          </span>
+        </label>
+      </div>
+
+      <!-- Comments Definition -->
+      <div class="product-card-modern" style="padding: 2rem;">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600;" data-i18n="comments_section">Comments</h3>
+        <p style="margin:0; color:var(--muted); line-height:1.6;" data-i18n="comments_definition">Comments are public notes on product listings. Private negotiation stays in chat.</p>
       </div>
 
       <!-- Sales History -->

@@ -1776,7 +1776,19 @@ export const i18n = {
     package_size_m: "M - up to 19 x 38 x 64 cm (Omniva) / medium DPD locker",
     package_size_l: "L - up to 39 x 38 x 64 cm (Omniva) / large DPD locker",
     sell_package_size_hint: "Use the smallest size that fits the packed item.",
-    sell_package_size_required: "Please select a package size"
+    sell_package_size_required: "Please select a package size",
+    pages_menu: "Pages",
+    publication_period: "Publication period *",
+    publication_period_1: "1 month",
+    publication_period_2: "2 months",
+    publication_period_3: "3 months",
+    upload_file: "Upload file",
+    image_upload_rules: "JPEG or PNG, max 5MB per image.",
+    image_type_invalid: "Only JPEG and PNG images are supported.",
+    image_too_large: "Each image must be 5MB or smaller.",
+    image_upload_failed: "Image upload failed.",
+    save_listing_changes: "Save changes",
+    listing_disabled: "Listing disabled"
   });
 
   Object.assign(i18n.strings.lv, {
@@ -1822,7 +1834,19 @@ export const i18n = {
     package_size_m: "M - l\u012bdz 19 x 38 x 64 cm (Omniva) / vid\u0113js DPD nodal\u012bjums",
     package_size_l: "L - l\u012bdz 39 x 38 x 64 cm (Omniva) / liels DPD nodal\u012bjums",
     sell_package_size_hint: "Izv\u0113lieties maz\u0101ko izm\u0113ru, kur\u0101 iepakot\u0101 prece ietilpst.",
-    sell_package_size_required: "L\u016bdzu izv\u0113lieties pakas izm\u0113ru"
+    sell_package_size_required: "L\u016bdzu izv\u0113lieties pakas izm\u0113ru",
+    pages_menu: "Lapas",
+    publication_period: "Public\u0113\u0161anas periods *",
+    publication_period_1: "1 m\u0113nesis",
+    publication_period_2: "2 m\u0113ne\u0161i",
+    publication_period_3: "3 m\u0113ne\u0161i",
+    upload_file: "Aug\u0161upiel\u0101d\u0113t failu",
+    image_upload_rules: "JPEG vai PNG, ne vair\u0101k k\u0101 5MB katram att\u0113lam.",
+    image_type_invalid: "Atbalst\u012bti tikai JPEG un PNG att\u0113li.",
+    image_too_large: "Katram att\u0113lam j\u0101b\u016bt 5MB vai maz\u0101kam.",
+    image_upload_failed: "Att\u0113la aug\u0161upiel\u0101de neizdev\u0101s.",
+    save_listing_changes: "Saglab\u0101t izmai\u0146as",
+    listing_disabled: "Sludin\u0101jumi atsp\u0113joti"
   });
   
   // Auto-apply translations and preferences on page load

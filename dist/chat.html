@@ -18,9 +18,9 @@
   .dropdown-menu { min-width: 120px; }
 }
 </style>
-  <script type="module" crossorigin src="./assets/chat-DS-YGjVd.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-B75INr24.js">
-  <link rel="stylesheet" crossorigin href="./assets/styles-C0LyWGaa.css">
+  <script type="module" crossorigin src="./assets/chat-BJm7z20f.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BXmGAIWN.js">
+  <link rel="stylesheet" crossorigin href="./assets/styles-C5qMZDql.css">
 </head>
 <body>
 
@@ -96,6 +96,13 @@
         <h3 data-i18n="contacts">Contacts</h3>
         <button class="btn-icon-small">+</button>
       </div>
+      <div class="chat-sidebar-tools">
+        <button class="btn btn-secondary btn-sm" id="supportShortcutBtn" type="button">Support</button>
+      </div>
+      <div class="chat-tabs" role="tablist" aria-label="Chat categories">
+        <button type="button" class="chat-tab active" data-chat-filter="buying" data-i18n="chat_buying">Buying</button>
+        <button type="button" class="chat-tab" data-chat-filter="selling" data-i18n="chat_selling">Selling</button>
+      </div>
       <div class="chat-list" id="chatList">
         <!-- Chat contacts populated via JS -->
       </div>
@@ -113,17 +120,20 @@
           </div>
         </div>
         <div class="chat-header-actions">
-          <button class="icon-btn">&#128172;</button>
-          <button class="icon-btn">&#8942;</button>
+          <button class="icon-btn" id="pinConversationBtn" type="button" title="Pin chat">📌</button>
+          <button class="icon-btn" id="reportConversationBtn" type="button" title="Open support">🛟</button>
         </div>
       </div>
       <div class="chat-messages-area" id="chatMessages">
         <!-- Messages populated via JS -->
       </div>
       <div class="chat-input-area">
+        <input type="file" id="chatAttachmentInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;">
+        <button class="btn-icon-small" id="chatAttachBtn" type="button" title="Add file">+</button>
         <input type="text" data-i18n-placeholder="type_message" placeholder="Type a message..." class="chat-input-field" id="messageInput">
         <button class="btn-send" id="sendBtn" data-i18n="send">Send</button>
       </div>
+      <div id="chatAttachmentPreview" class="chat-attachment-preview" style="display:none;"></div>
     </div>
 
   </div>

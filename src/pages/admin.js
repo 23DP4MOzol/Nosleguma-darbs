@@ -235,6 +235,9 @@ function switchAdminTab(tab) {
     btn.classList.remove('active');
     if (btn.dataset.tab === tab) btn.classList.add('active');
   });
+
+  document.querySelector('.admin-sidebar')?.classList.remove('mobile-open');
+  document.getElementById('adminSidebarOverlay')?.classList.remove('active');
   
   document.querySelectorAll('.admin-section').forEach(section => {
     section.style.display = 'none';
@@ -1807,6 +1810,7 @@ function displayTickets(tickets) {
   }
   
   container.innerHTML = `
+    <div class="admin-table-wrapper">
     <table class="admin-table">
       <thead>
         <tr><th>User</th><th>Title</th><th>Priority</th><th>Status</th><th>Date</th><th>Action</th></tr>
@@ -1827,6 +1831,7 @@ function displayTickets(tickets) {
         `).join('')}
       </tbody>
     </table>
+    </div>
   `;
 }
 
