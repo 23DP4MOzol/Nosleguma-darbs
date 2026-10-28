@@ -3,7 +3,7 @@
 
 # Allow scripts from same origin and inline scripts
 /*
-  Content-Security-Policy: script-src 'self' 'unsafe-inline' 'unsafe-eval'; default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://nhzukmkmfyyekyhhfyru.supabase.co;
+  Content-Security-Policy: script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.omniva.lt; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
 
 # Cache static assets
 /assets/*

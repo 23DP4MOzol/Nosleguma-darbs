@@ -14,14 +14,15 @@ const token = `${Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toStr
 const session = { access_token: token, refresh_token: 'audit-refresh', expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600, token_type: 'bearer', user };
 const browser = await chromium.launch({ headless: true, ...(process.env.AUDIT_BROWSER_PATH ? { executablePath: process.env.AUDIT_BROWSER_PATH } : {}) });
 let failures = 0;
-async function fixture({ signedIn = true, failTable, fixtureProduct = product, orders = [] } = {}) {
+let passed = 0;
+async function fixture({ signedIn = true, failTable, fixtureProduct = product, orders = [], fixtureProfile = profile, fixtureUser = user } = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block' });
   const mutations = [];
   const errors = [];
   await context.addInitScript(({ project, session, signedIn }) => {
     localStorage.setItem('lang', 'en');
     if (signedIn) localStorage.setItem(`sb-${project}-auth-token`, JSON.stringify(session));
-  }, { project, session, signedIn });
+  }, { project, session: { ...session, user: fixtureUser }, signedIn });
   await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -34,10 +35,10 @@ async function fixture({ signedIn = true, failTable, fixtureProduct = product, o
     const isMutation = !['GET', 'HEAD', 'OPTIONS'].includes(method);
     const payload = request.postDataJSON();
     if (isMutation) mutations.push({ table, method, payload });
-    if (url.pathname.endsWith('/user')) data = user;
+    if (url.pathname.endsWith('/user')) data = fixtureUser;
     else if (url.pathname.endsWith('/token')) data = session;
-    else if (table === 'users') data = [profile];
-    else if (table === 'products') data = [fixtureProduct];
+    else if (table === 'users') data = fixtureProfile ? [fixtureProfile] : [];
+    else if (table === 'products') data = fixtureProduct ? [fixtureProduct] : [];
     else if (table === 'orders') data = orders;
     else if (table === 'platform_settings') data = [{ id: 1, disable_listing: false, disable_buying: false }];
     else if (table === 'count_unique_sellers') data = 1;
@@ -51,7 +52,7 @@ async function fixture({ signedIn = true, failTable, fixtureProduct = product, o
   return { context, page, mutations, errors };
 }
 async function test(name, fn) {
-  try { await fn(); console.log(`PASS ${name}`); }
+  try { await fn(); passed++; console.log(`PASS ${name}`); }
   catch (error) { failures++; console.log(`FAIL ${name}: ${error.message}`); }
 }
 try {
@@ -72,6 +73,32 @@ try {
       await f.page.waitForURL('**/settings.html?tab=password', { timeout: 6000 });
     } finally { await f.context.close(); }
   });
+  await test('Login rejects an external return destination', async () => {
+    const f = await fixture();
+    try {
+      await f.page.goto(`${baseURL}/login.html?redirect=${encodeURIComponent('https://example.test/steal')}`);
+      await f.page.waitForURL('**/index.html', { timeout: 5000 });
+      assert.equal(new URL(f.page.url()).origin, new URL(baseURL).origin);
+    } finally { await f.context.close(); }
+  });
+  await test('Self-claimed admin metadata cannot create or grant an admin role', async () => {
+    const f = await fixture({ fixtureProfile: null, fixtureUser: { ...user, user_metadata: { role: 'admin' } } });
+    try {
+      await f.page.goto(`${baseURL}/admin.html`);
+      await f.page.waitForFunction(() => document.querySelector('#globalConfirmMessage')?.innerText.includes('Access denied'));
+      assert(!f.mutations.some(m => m.table === 'users' && m.payload?.role === 'admin'));
+    } finally { await f.context.close(); }
+  });
+  for (const [label, changes] of [['own', {}], ['sold out', { stock: 0, seller_id: 'other' }], ['expired', { valid_until: '2020-01-01', seller_id: 'other' }], ['reserved by someone else', { is_reserved: true, reserved_by: 'someone-else', seller_id: 'other' }]]) {
+    await test(`Checkout rejects a listing that is ${label}`, async () => {
+      const f = await fixture({ fixtureProduct: { ...product, ...changes } });
+      try {
+        await f.page.goto(`${baseURL}/orders.html?product=${product.id}`);
+        await f.page.waitForURL(`${baseURL}/orders.html`, { timeout: 5000 });
+        assert(!f.mutations.some(m => ['orders', 'user_transactions'].includes(m.table)));
+      } finally { await f.context.close(); }
+    });
+  }
   await test('Listing edit updates the existing row and preserves delivery', async () => {
     const f = await fixture();
     try {
@@ -94,6 +121,41 @@ try {
       await f.page.locator('#productNameInput').fill('<img src=x onerror="window.auditXss=true">');
       await f.page.waitForTimeout(200);
       assert.equal(await f.page.evaluate(() => !!window.auditXss), false);
+    } finally { await f.context.close(); }
+  });
+  await test('Empty catalog and language changes do not recursively render', async () => {
+    const f = await fixture({ fixtureProduct: null });
+    try {
+      await f.page.goto(`${baseURL}/index.html`);
+      await f.page.waitForTimeout(800);
+      await f.page.locator('#langSelect').selectOption('lv');
+      await f.page.waitForTimeout(300);
+      assert.deepEqual(f.errors, []);
+    } finally { await f.context.close(); }
+  });
+  await test('Registration cannot bypass terms through a second submit handler', async () => {
+    const f = await fixture({ signedIn: false });
+    try {
+      await f.page.goto(`${baseURL}/register.html`);
+      await f.page.waitForTimeout(700);
+      await f.page.locator('#usernameInput').fill('Audit');
+      await f.page.locator('#emailInput').fill(user.email);
+      await f.page.locator('#passwordInput').fill('audit-password');
+      await f.page.locator('#confirmPasswordInput').fill('audit-password');
+      await f.page.locator('#registerForm').evaluate(form => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+      await f.page.waitForTimeout(400);
+      assert(!f.mutations.some(m => m.table === 'signup'), 'Signed up without accepting terms');
+    } finally { await f.context.close(); }
+  });
+  await test('One wallet click does not bind two deposit handlers', async () => {
+    const f = await fixture();
+    try {
+      await f.page.goto(`${baseURL}/balance.html`);
+      await f.page.waitForTimeout(700);
+      await f.page.locator('#fundAmount').fill('5');
+      await f.page.locator('#addFundsBtn').click();
+      await f.page.waitForTimeout(500);
+      assert.equal(f.mutations.filter(m => m.table === 'user_transactions' && m.payload?.transaction_type === 'deposit').length, 1);
     } finally { await f.context.close(); }
   });
   await test('Product modal treats listing and attribute markup as text', async () => {
@@ -127,6 +189,9 @@ try {
         await f.page.goto(`${baseURL}/${name}.html`);
         await f.page.waitForTimeout(700);
         assert.deepEqual(f.errors, []);
+        await f.page.setViewportSize({ width: 390, height: 844 });
+        const overflow = await f.page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+        if (overflow) console.log(`FINDING authenticated ${name} overflows a 390px viewport`);
         if (name === 'admin') {
           assert.match(await f.page.locator('#globalConfirmMessage').innerText(), /Access denied/);
           await f.page.locator('#globalConfirmOk').click();
@@ -136,4 +201,5 @@ try {
     });
   }
 } finally { await browser.close(); }
+console.log(JSON.stringify({ passed, failures }));
 process.exitCode = failures ? 1 : 0;

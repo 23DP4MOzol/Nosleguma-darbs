@@ -862,7 +862,7 @@ async function showUserProfile(userId) {
         <div class="profile-avatar">
           ${user.username?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <h2 class="profile-name">${user.username || i18n.t('unknown_seller')}</h2>
+        <h2 class="profile-name">${escapeHtml(user.username || i18n.t('unknown_seller'))}</h2>
         ${user.bio ? `<p class="profile-bio">${escapeHtml(user.bio)}</p>` : ''}
         <div class="profile-stats">
           <div class="profile-stat">
@@ -881,7 +881,7 @@ async function showUserProfile(userId) {
         <div class="profile-products">
           ${products?.map(product => `
             <div class="profile-product-card">
-              <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="profile-product-image">
+              <img src="${escapeHtml(product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" class="profile-product-image">
               <div class="profile-product-info">
                 <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
                 <div class="profile-product-price">€${formatListingPrice(product.price)}</div>
@@ -2692,9 +2692,9 @@ function initializeSettingsPage() {
        if (products && products.length > 0) {
          container.innerHTML = products.map(product => `
            <div class="product-card-modern" style="margin:0; display:flex; align-items:center; gap:1rem; padding:1rem;">
-             <img src="${product.image_url || 'https://placehold.co/80x60/667eea/white?text=No+Image'}" alt="${product.name}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
+             <img src="${escapeHtml(product.image_url || 'https://placehold.co/80x60/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
              <div style="flex:1;">
-               <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${product.name}</h4>
+               <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${escapeHtml(product.name)}</h4>
                <div style="font-size:0.875rem; color:var(--muted);">€${formatListingPrice(product.price)} • ${product.stock} in stock</div>
              </div>
              <button class="btn-edit-product" data-product-id="${product.id}" style="padding:0.5rem; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer;">Edit</button>
@@ -3112,13 +3112,13 @@ function initializeSettingsPage() {
            <div style="text-align: center; padding: 2rem;">
              <div style="position: relative; width: 120px; margin: 0 auto 1rem;">
                <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; overflow: hidden; margin: 0 auto;">
-                 ${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">` : `<span>${username.charAt(0).toUpperCase()}</span>`}
+                 ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">` : `<span>${username.charAt(0).toUpperCase()}</span>`}
                </div>
              </div>
-             <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--fg);">${username}</h3>
-             <p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;">${email}</p>
-             ${bio ? `<p style="margin: 0 0 1rem 0; color: var(--fg); font-size: 0.875rem;">${bio}</p>` : ''}
-             ${whatISell ? `<p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;"><strong>What I sell:</strong> ${whatISell}</p>` : ''}
+             <h3 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--fg);">${escapeHtml(username)}</h3>
+             <p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;">${escapeHtml(email)}</p>
+             ${bio ? `<p style="margin: 0 0 1rem 0; color: var(--fg); font-size: 0.875rem;">${escapeHtml(bio)}</p>` : ''}
+             ${whatISell ? `<p style="margin: 0 0 1rem 0; color: var(--muted); font-size: 0.875rem;"><strong>What I sell:</strong> ${escapeHtml(whatISell)}</p>` : ''}
              <div style="margin-top: 2rem; padding: 1rem; background: var(--secondary); border-radius: 12px;">
                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">€0.00</div>
                <div style="font-size: 0.875rem; color: var(--muted);">Current Balance</div>
@@ -3312,7 +3312,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Audit: page view (best-effort)
   try {
     logAuditEvent('page_view', {
-      href: typeof window !== 'undefined' ? window.location.href : null,
+      // Auth callbacks may carry tokens or codes; never put them in audit logs.
+      href: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : null,
       referrer: typeof document !== 'undefined' ? (document.referrer || null) : null
     });
   } catch (e) {}
@@ -3327,9 +3328,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize page-specific functionality
   // These functions already guard by checking for page-specific elements
   initializeIndexPage();
-  initializeSettingsPage();
   initializeSellPage();
   initializeLoginPage();
-  initializeRegisterPage();
-  initializeBalancePage();
+  // Settings, registration, and balance each have their own page module.
+  // Binding the legacy handlers too submits registrations and deposits twice.
   });

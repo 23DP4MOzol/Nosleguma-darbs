@@ -1518,6 +1518,7 @@ export const i18n = {
         console.warn(`Language ${lang} not found, defaulting to English`);
         lang = 'en';
       }
+      const languageChanged = self.lang !== lang;
       self.lang = lang;
       localStorage.setItem('language', lang);
       localStorage.setItem('lang', lang); // keep both keys in sync
@@ -1606,7 +1607,9 @@ export const i18n = {
       }
 
       try {
-        window.dispatchEvent(new CustomEvent('vendly:languagechange', { detail: { lang } }));
+        // Reapplying translations to newly rendered HTML must not recursively
+        // trigger another product render for the same language.
+        if (languageChanged) window.dispatchEvent(new CustomEvent('vendly:languagechange', { detail: { lang } }));
       } catch (e) {
         console.warn('Error dispatching language change event:', e);
       }

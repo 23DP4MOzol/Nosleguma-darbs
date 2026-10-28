@@ -378,9 +378,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
     if (result.error) {
       // Handle specific errors
-      if (result.error.message.includes('already registered') || 
-          result.error.message.includes('User already exists') ||
-          result.error.message.includes('email')) {
+      if (result.error.message.includes('already registered') ||
+          result.error.message.includes('User already exists')) {
         await showInfoModal('This email address is already registered in our system.\n\nIf you already have an account, please log in instead.', 'Email Already Registered');
         return;
       }

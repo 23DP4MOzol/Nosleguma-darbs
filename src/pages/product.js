@@ -532,7 +532,7 @@ function displayProducts(products) {
     return `
     <div class="product-card-modern" data-product-id="${product.id}" ${isSold || isExpired ? 'style="opacity:0.75;"' : ''}>
       <div class="product-image-container">
-        <img src="${product.image_url || 'https://placehold.co/400x300/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
+        <img src="${escapeHtml(product.image_url || 'https://placehold.co/400x300/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" class="product-image">
         <button type="button" class="product-like-btn ${userFavorites.has(product.id) ? 'liked' : ''}" data-product-id="${product.id}" aria-label="${userFavorites.has(product.id) ? i18n.t('unlike_product_aria') : i18n.t('like_product_aria')}">
           <svg width="20" height="20" fill="${userFavorites.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path>
@@ -549,10 +549,10 @@ function displayProducts(products) {
             ${product.seller?.username?.charAt(0).toUpperCase() || 'U'}
           </div>
           <span class="seller-name" style="font-size:0.875rem; color:var(--muted); cursor:pointer;" onclick="showUserProfile('${product.seller_id}')">
-            ${product.seller?.username || 'Unknown'}
+            ${escapeHtml(product.seller?.username || 'Unknown')}
           </span>
         </div>
-        <h3 class="product-name">${product.name}</h3>
+        <h3 class="product-name">${escapeHtml(product.name)}</h3>
         <div class="product-meta" style="display:flex; gap:1rem; align-items:center; margin-bottom:0.25rem;">
           <span style="font-size:0.8rem; color:var(--muted);" data-likes>❤️ ${likesCount}</span>
           <span style="font-size:0.8rem; color:var(--muted);" data-views-for="${product.id}">👁️ ${viewsCount}</span>
@@ -561,7 +561,7 @@ function displayProducts(products) {
         </div>
         ${expiryBadge ? `<div style="margin:0.5rem 0 0.75rem 0;">${expiryBadge}</div>` : ''}
         ${isSold && soldDate ? `<div style="font-size:0.75rem; color:var(--error); margin-bottom:0.25rem;">${i18n.t('sold_on')} ${soldDate}</div>` : ''}
-        <p class="product-description">${cleanDescription || i18n.t('no_description')}</p>
+        <p class="product-description">${escapeHtml(cleanDescription || i18n.t('no_description'))}</p>
         <div class="product-footer">
           <div class="product-price">
             ${product.original_price && product.original_price > product.price ?
@@ -760,8 +760,8 @@ async function showUserProfile(userId) {
         <div style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-weight:700; margin:0 auto 1rem;">
           ${user.username?.charAt(0).toUpperCase() || 'U'}
         </div>
-        <h2>${user.username || i18n.t('unknown_seller')}</h2>
-        ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${user.bio}</p>` : ''}
+        <h2>${escapeHtml(user.username || i18n.t('unknown_seller'))}</h2>
+        ${user.bio ? `<p style="color:var(--muted); margin:0.5rem 0;">${escapeHtml(user.bio)}</p>` : ''}
         <div style="display:flex; justify-content:center; gap:1rem; margin:1rem 0;">
           <div style="text-align:center;">
             <div style="font-weight:700; font-size:1.25rem;">${products?.length || 0}</div>
@@ -779,10 +779,10 @@ async function showUserProfile(userId) {
         ${products?.map(product => `
           <div class="product-card-modern" style="margin:0;">
             <div class="product-image-container">
-              <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${product.name}" class="product-image">
+              <img src="${escapeHtml(product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" class="product-image">
             </div>
             <div class="product-info" style="padding:1rem;">
-              <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${product.name}</h4>
+              <h4 style="font-size:1rem; margin:0 0 0.5rem 0;">${escapeHtml(product.name)}</h4>
               <div class="product-price" style="margin-bottom:0.5rem;">
                 <span class="price-currency">€</span>
                 <span class="price-amount">${formatProductPrice(product.price)}</span>

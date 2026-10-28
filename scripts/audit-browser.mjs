@@ -62,3 +62,6 @@ try {
   await browser.close();
   await writeFile(process.env.AUDIT_OUTPUT || 'audit-browser-results.json', JSON.stringify(results, null, 2) + '\n');
 }
+const failedPages = results.filter(result => result.page && (result.errors.length || result.status !== 200));
+console.log(JSON.stringify({ pagesChecked: results.filter(result => result.page).length, failedPages: failedPages.map(result => result.page) }));
+process.exitCode = failedPages.length ? 1 : 0;

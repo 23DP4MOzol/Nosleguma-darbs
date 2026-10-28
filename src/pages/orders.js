@@ -5,6 +5,7 @@ import { showInfoModal, showConfirmModal } from '../ui/modal.js';
 import { fetchOmnivaBalticLockers } from '../lib/omniva-lockers.js';
 import { getPlatformSettings } from '../platform-settings.js';
 import { logAuditEvent } from '../audit.js';
+import { isListingExpired } from '../listing-utils.js';
 
 // ============================
 // State
@@ -403,7 +404,9 @@ async function initCheckout(productId) {
     .eq('id', productId)
     .maybeSingle();
 
-  if (error || !product) {
+  if (error || !product || product.seller_id === currentUser.id ||
+      Number(product.stock) <= 0 || isListingExpired(product) ||
+      (product.is_reserved && product.reserved_by !== currentUser.id)) {
     toast(t('co_product_not_found'), 'error');
     window.location.href = 'orders.html';
     return;

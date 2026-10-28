@@ -1,6 +1,16 @@
 import { defineConfig } from 'vite';
+import { copyFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export default defineConfig({
+  plugins: [{
+    name: 'vendly-hosting-files',
+    writeBundle(options) {
+      for (const file of ['service-worker.js', '_headers']) {
+        copyFileSync(resolve(file), resolve(options.dir, file));
+      }
+    }
+  }],
   base: './',
   root: '.',
   build: {

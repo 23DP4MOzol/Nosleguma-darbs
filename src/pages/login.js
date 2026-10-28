@@ -103,7 +103,7 @@ if (togglePassword && passwordInput) {
     // If email was passed in redirect, pre-fill it
     const redirectEmail = urlParams.get('email');
     if (redirectEmail) {
-      document.getElementById('verificationEmailInput').value = decodeURIComponent(redirectEmail);
+      document.getElementById('verificationEmailInput').value = redirectEmail;
     }
 
     // Gate resending for 15 minutes after registration when we have a timestamp
