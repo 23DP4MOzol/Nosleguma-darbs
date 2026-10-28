@@ -1,5 +1,6 @@
 // Checkout Modal with Delivery Options and Logistics Integration
 import { supabase, getCurrentUser } from './supabase.js';
+import { escapeHtml } from './html.js';
 import { showInfoModal } from './ui/modal.js';
 
 // ============================
@@ -75,9 +76,9 @@ function renderCheckoutModal(product) {
       <div class="checkout-section">
         <h3>Product</h3>
         <div class="checkout-product-summary">
-          <img src="${productImage}" alt="${product.name}" class="checkout-product-image">
+          <img src="${escapeHtml(productImage)}" alt="${escapeHtml(product.name)}" class="checkout-product-image">
           <div class="checkout-product-info">
-            <h4>${product.name}</h4>
+            <h4>${escapeHtml(product.name)}</h4>
             <p class="checkout-product-price">€${price}</p>
             <div class="checkout-quantity">
               <label>Quantity:</label>

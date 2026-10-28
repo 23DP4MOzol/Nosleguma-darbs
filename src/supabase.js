@@ -2,7 +2,8 @@
 // SUPABASE.JS - Initialization (v2 syntax)
 // =======================================
 import { createClient } from '@supabase/supabase-js';
-import { getListingFeeForDuration } from './listing-utils.js';
+import { getListingFeeForDuration, validateListingData } from './listing-utils.js';
+import './auth-navigation.js';
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -459,6 +460,7 @@ export async function removeReserve(productId, userId) {
 // List/Sell product with mandatory condition
 export async function listProduct(productData, userId) {
   try {
+    validateListingData(productData);
     // Validate mandatory condition field
     if (!productData.condition || productData.condition.trim() === '') {
       throw new Error('Product condition is mandatory and cannot be empty');
@@ -472,7 +474,7 @@ export async function listProduct(productData, userId) {
     const price = parseFloat(productData.price);
     // Listing fee ranges from €0.50 to €1.00 based on price
     // Linear scale: €0-€100 = €0.50, €100+ = €1.00
-    const duration = productData.duration || 1;
+    const duration = Math.min(3, Math.max(1, parseInt(productData.duration, 10) || 1));
     const listingFee = 0;
 
     // Check balance for listing fee
@@ -544,7 +546,7 @@ export async function listProduct(productData, userId) {
       condition: productData.condition.toLowerCase(),
       location: productData.location || '',
       image_url: productData.image_url || '',
-      stock: parseInt(productData.stock) || 1,
+      stock: productData.stock === undefined ? 1 : Number(productData.stock),
       listing_fee: listingFee,
         valid_until: new Date(Date.now() + (duration * 30 * 24 * 60 * 60 * 1000)).toISOString(),
       reserve_fee: parseFloat(productData.reserve_fee) || 0.20,
@@ -1408,6 +1410,7 @@ export async function deleteProduct(productId, userId) {
 // Update product
 export async function updateProduct(productId, userId, productData) {
   try {
+    validateListingData(productData);
     // Check permissions
     const permissions = await canManageProduct(productId, userId);
     if (!permissions.canManage) {
@@ -1457,6 +1460,7 @@ export async function updateProduct(productId, userId, productData) {
     if (productData.stock !== undefined) updateData.stock = parseInt(productData.stock);
     if (productData.brand !== undefined) updateData.brand = productData.brand;
     if (productData.color !== undefined) updateData.color = productData.color;
+    if (productData.seller_city !== undefined) updateData.seller_city = productData.seller_city;
     
     // Update the product
     const { data, error } = await supabase

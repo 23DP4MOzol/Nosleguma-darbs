@@ -3,6 +3,7 @@ import { i18n } from '../i18n.js';
 import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js';
 import { parseProductAttrs, getCategoryDisplayName } from '../category-fields.js';
 import { formatListingPrice, getListingExpiryInfo, isListingExpired } from '../listing-utils.js';
+import { escapeHtml } from '../html.js';
 
 // ============================
 // Authentication Check - Redirect guests to login

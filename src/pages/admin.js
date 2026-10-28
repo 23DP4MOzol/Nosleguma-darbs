@@ -195,26 +195,8 @@ async function checkAdminAuth() {
       }
     }
 
-    // If no users row exists but the auth metadata claims admin, create a minimal users row and allow access
-    if (!userData) {
-      const claimedRole = user.user_metadata?.role || user.app_metadata?.role;
-      if (claimedRole === 'admin') {
-        try {
-          await supabase.from('users').upsert({
-            id: user.id,
-            email: user.email,
-            username: user.user_metadata?.username || user.email?.split('@')[0] || null,
-            balance: 0,
-            role: 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
-          return user;
-        } catch (e) {
-          console.warn('Failed to create users row for admin fallback:', e?.message || e);
-        }
-      }
-    }
+    // Fail closed: user-editable auth metadata must never grant a role or
+    // create an administrator profile. Roles are provisioned by the backend.
   } catch (e) {
     console.error('Error during admin auth check:', e?.message || e);
   }

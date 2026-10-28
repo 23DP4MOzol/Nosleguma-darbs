@@ -2,6 +2,7 @@ import { supabase } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showInfoModal } from '../ui/modal.js';
 import { logAuditEvent } from '../audit.js';
+import { getLoginDestination, isPasswordRecovery } from '../auth-navigation.js';
 
 console.log('login.js module loaded');
 
@@ -57,7 +58,7 @@ function formatMmSs(ms) {
     console.log('Already logged in as:', session.user.email);
     // Only allow verified users to remain logged in
     if (isEmailVerified(session.user)) {
-      window.location.href = 'index.html';
+      window.location.href = getLoginDestination();
       return;
     }
 
@@ -412,7 +413,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     console.log('Already logged in as:', session.user.email);
     if (isEmailVerified(session.user)) {
       loginHandled = true;
-      window.location.href = 'index.html';
+      window.location.href = getLoginDestination();
       return;
     }
 
@@ -503,7 +504,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       
       // Redirect to index
       console.log('🔄 Redirecting to index.html...');
-      window.location.href = 'index.html';
+      window.location.href = getLoginDestination();
     }
   } catch (err) {
     loginHandled = false; // Reset on error so user can try again
@@ -520,6 +521,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 // Check for email confirmation hash and auto-login
 // ============================
 (async function checkEmailConfirmation() {
+  // The initial session check handles recovery without racing another redirect.
+  if (isPasswordRecovery) return;
   const hash = window.location.hash;
   const search = window.location.search;
   const urlParams = new URLSearchParams(search);

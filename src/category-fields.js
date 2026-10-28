@@ -459,7 +459,7 @@ export function renderAttrBadges(category, attrs) {
     const displayValue = field && field.type === 'select' && field.options
       ? (field.options.find(o => o.value === value)?.label || value)
       : value;
-    return `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--secondary,#f3f4f6);color:var(--fg,#374151);padding:0.25rem 0.5rem;border-radius:6px;font-size:0.75rem;font-weight:500;border:1px solid var(--border,#e5e7eb);">${emoji} ${label}: ${displayValue}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--secondary,#f3f4f6);color:var(--fg,#374151);padding:0.25rem 0.5rem;border-radius:6px;font-size:0.75rem;font-weight:500;border:1px solid var(--border,#e5e7eb);">${emoji} ${escapeHtml(label)}: ${escapeHtml(displayValue)}</span>`;
   }).filter(Boolean).join(' ');
 }
 
@@ -494,3 +494,4 @@ export function buildBrowseFilters(category) {
     </div>`;
   }).join('');
 }
+import { escapeHtml } from './html.js';

@@ -6,6 +6,7 @@ import { showInfoModal } from '../ui/modal.js';
 import { CATEGORY_FIELDS, getCategoryDisplayName, parseProductAttrs } from '../category-fields.js';
 import { getPlatformSettings } from '../platform-settings.js';
 import { logAuditEvent } from '../audit.js';
+import { escapeHtml } from '../html.js';
 
 let listingDisabledByAdmin = false;
 let editingProductId = null;
@@ -405,17 +406,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     productPreview.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 1rem;">
         <div style="width: 100%; height: 250px; border-radius: 12px; overflow: hidden; background: var(--secondary); position: relative;">
-          <img src="${imageUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/300x200/667eea/white?text=Upload+Image'">
+          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/300x200/667eea/white?text=Upload+Image'">
           ${stock > 0 ? '' : '<div style="position: absolute; top: 10px; left: 10px; background: #ef4444; color: white; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600;">Out of Stock</div>'}
         </div>
         <div>
           <div style="display: inline-block; background: var(--secondary); color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
             ${categoryEmoji[category] || '📦'} ${categoryLabel}
           </div>
-          <h4 style="margin: 0 0 1rem 0; color: var(--fg); font-size: 1.25rem; font-weight: 700;">${name}</h4>
+          <h4 style="margin: 0 0 1rem 0; color: var(--fg); font-size: 1.25rem; font-weight: 700;">${escapeHtml(name)}</h4>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
             ${condition ? `<span style="background: #dbeafe; color: #1e40af; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600;">${conditionEmoji[condition]} ${i18n.t(`condition_${condition}_text`)}</span>` : ''}
-            ${location ? `<span style="color: var(--muted); font-size: 0.875rem;">📍 ${location}</span>` : ''}
+            ${location ? `<span style="color: var(--muted); font-size: 0.875rem;">📍 ${escapeHtml(location)}</span>` : ''}
             <span style="color: var(--muted); font-size: 0.875rem;">📦 ${stock} ${i18n.t('in_stock_label')}</span>
           </div>
           <div style="padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
@@ -424,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span style="font-size: 2rem; font-weight: 900; color: var(--fg);">${parseFloat(price).toFixed(2)}</span>
             </div>
           </div>
-          <p style="margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.6;">${description.length > 150 ? description.substring(0, 150) + '...' : description}</p>
+          <p style="margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.6;">${escapeHtml(description.length > 150 ? description.substring(0, 150) + '...' : description)}</p>
           <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
             <button style="width: 100%; padding: 0.75rem; background: var(--gradient-primary); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.9375rem; cursor: not-allowed;" disabled>
               🛒 Buy Now - €${parseFloat(price).toFixed(2)}
@@ -481,6 +482,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('productLocationInput').value = product.location || '';
     document.getElementById('productDescriptionInput').value = parsed.description || '';
     document.getElementById('productImageInput').value = product.image_url || '';
+    const deliveryMarker = (product.description || '').match(/<!--vendly-delivery:([\s\S]*?)-->/);
+    let delivery = {};
+    try { delivery = JSON.parse(deliveryMarker?.[1] || '{}'); } catch {}
+    shippingMethodSelect.value = delivery.shipping_method || product.shipping_method || 'locker';
+    updateShippingMethodUI();
+    meetupCityInput.value = product.seller_city || '';
+    packageSizeInput.value = delivery.package_size || product.package_size || '';
+    // Keep internal delivery metadata out of the editable description.
+    document.getElementById('productDescriptionInput').value = (parsed.description || '').replace(/\s*<!--vendly-delivery:[\s\S]*?-->/g, '');
 
     renderCategoryFields(categoryValue);
     Object.entries(parsed.attrs || {}).forEach(([key, value]) => {
@@ -548,8 +558,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (fileRadio && fileRadio.checked) {
         const fileInput = document.getElementById('productImageFileInput');
         if (fileInput && fileInput.files[0]) {
-          // Use the data URL from the preview for file uploads
-          imageUrl = fileInput.dataset.previewUrl || 'https://placehold.co/300x200/667eea/white?text=Upload+Image';
+          const images = await getValidImageDataUrls(fileInput);
+          imageUrl = fileInput.dataset.previewUrl || images[0];
         }
       } else {
         // URL input
@@ -560,6 +570,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         name: document.getElementById('productNameInput').value,
         category: document.getElementById('productCategoryInput').value.toLowerCase(),
         price: parseFloat(document.getElementById('productPriceInput').value),
+        duration: parseInt(document.getElementById('productDurationInput').value, 10),
         description: document.getElementById('productDescriptionInput').value,
         image_url: imageUrl,
         stock: parseInt(document.getElementById('productStockInput').value),
@@ -614,11 +625,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         package_size: productData.package_size || null
       }) + '-->';
 
-      const { listProduct } = await import('../supabase.js');
-      const result = await listProduct(productData, user.id);
+      const { listProduct, updateProduct } = await import('../supabase.js');
+      const result = editingProduct
+        ? await updateProduct(editingProductId, user.id, productData)
+        : await listProduct(productData, user.id);
 
       if (result) {
-        await showInfoModal('Product listed successfully!', 'Success');
+        await showInfoModal(editingProduct ? i18n.t('save_listing_changes') : 'Product listed successfully!', 'Success');
         form.reset();
         updatePreview();
         // Redirect to home page

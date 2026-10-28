@@ -3,6 +3,7 @@
 // =======================================
 
 import { supabase, logoutUser } from './supabase.js';
+import { isPasswordRecovery } from './auth-navigation.js';
 
 // Expose to window for debugging convenience (best-effort)
 try {
@@ -619,7 +620,7 @@ function initializeAuth() {
 
   // Check for hash-based session recovery (email confirmation)
   const hash = window.location.hash;
-  if (hash.includes('access_token')) {
+  if (hash.includes('access_token') && !isPasswordRecovery) {
     console.log('🔑 Hash detected, recovering session...');
     setTimeout(async () => {
       try {

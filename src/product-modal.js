@@ -4,6 +4,7 @@ import { showInfoModal } from './ui/modal.js';
 import { i18n } from './i18n.js';
 import { parseProductAttrs, getCategoryDisplayName, renderAttrBadges } from './category-fields.js';
 import { formatListingPrice, getListingExpiryInfo } from './listing-utils.js';
+import { escapeHtml } from './html.js';
 
 export async function showProductModal(product) {
   const modal = document.getElementById('productModal');
@@ -67,11 +68,11 @@ export async function showProductModal(product) {
   modalBody.innerHTML = `
     <div class="modal-product-grid">
       <div>
-        <img src="${imageUrl}" alt="${product.name}" class="modal-product-image">
+        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" class="modal-product-image">
       </div>
       
       <div class="modal-product-info">
-        <h1>${product.name}</h1>
+        <h1>${escapeHtml(product.name)}</h1>
         <div class="modal-product-price">€${price}</div>
         
         <div class="modal-product-meta">
@@ -79,7 +80,7 @@ export async function showProductModal(product) {
             ${conditionEmoji[product.condition] || '📦'} ${conditionText}
           </span>
           <span class="modal-badge" style="background: #fef3c7; color: #92400e;">
-            📍 ${product.location || 'Not specified'}
+              📍 ${escapeHtml(product.location || 'Not specified')}
           </span>
           <span class="modal-badge" style="background: #f3e8ff; color: #6b21a8;">
             📦 ${categoryLabel || 'other'}
@@ -94,7 +95,7 @@ export async function showProductModal(product) {
           ${expiry.hasExpiry ? `<p style="margin:0 0 0.75rem 0; font-size:0.875rem; font-weight:700; color:${expiry.isExpired ? '#ef4444' : '#3b82f6'};">${expiry.isExpired ? i18n.t('listing_expired') : `${i18n.t('listing_time_remaining')}: ${expiry.shortLabel}`}</p>` : ''}
           ${attrBadges ? `<div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin:0 0 0.75rem 0;">${attrBadges}</div>` : ''}
           <h3 style="margin-bottom: 0.75rem; font-size: 1.125rem;">${i18n.t('modal_description')}</h3>
-          <p>${cleanDescription || i18n.t('no_description')}</p>
+          <p>${escapeHtml(cleanDescription || i18n.t('no_description'))}</p>
         </div>
         
         <!-- Product Stats -->
@@ -122,7 +123,7 @@ export async function showProductModal(product) {
           ${sellerData?.username ? sellerData.username.charAt(0).toUpperCase() : '?'}
         </div>
         <div class="modal-seller-info">
-            <h3>${sellerData?.username || i18n.t('unknown_seller')}</h3>
+            <h3>${escapeHtml(sellerData?.username || i18n.t('unknown_seller'))}</h3>
           <div class="modal-seller-rating">
             ${'⭐'.repeat(Math.floor(sellerRating))} ${sellerRating}/5 (${sellerReviews} reviews)
           </div>

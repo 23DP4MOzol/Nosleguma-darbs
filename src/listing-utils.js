@@ -3,6 +3,16 @@ const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2
 });
 
+export function validateListingData(data) {
+  if (data.price !== undefined && (!Number.isFinite(Number(data.price)) || Number(data.price) < 0)) {
+    throw new Error('Price must be a finite, non-negative number');
+  }
+  if (data.stock !== undefined && (!Number.isInteger(Number(data.stock)) || Number(data.stock) < 0)) {
+    throw new Error('Stock must be a non-negative whole number');
+  }
+  if (data.name !== undefined && !String(data.name).trim()) throw new Error('Product name is required');
+}
+
 export function formatListingPrice(value) {
   const amount = Number(value || 0);
   return PRICE_FORMATTER.format(Number.isFinite(amount) ? amount : 0);

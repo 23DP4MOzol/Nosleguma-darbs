@@ -1298,9 +1298,10 @@ window.payOrder = async function(orderId) {
 // ============================
 window.markAsProcessing = async function(orderId) {
   try {
-    await supabase.from('orders').update({
+    const { error } = await supabase.from('orders').update({
       status: 'processing', order_status: 'processing', updated_at: new Date().toISOString()
     }).eq('id', orderId);
+    if (error) throw error;
     toast(t('orders_marked_processing'), 'success');
     await loadOrders();
   } catch (error) {
@@ -1311,9 +1312,10 @@ window.markAsProcessing = async function(orderId) {
 
 window.markReadyForPickup = async function(orderId) {
   try {
-    await supabase.from('orders').update({
+    const { error } = await supabase.from('orders').update({
       status: 'ready_for_pickup', order_status: 'ready_for_pickup', updated_at: new Date().toISOString()
     }).eq('id', orderId);
+    if (error) throw error;
     toast(t('orders_marked_ready'), 'success');
     await loadOrders();
   } catch (error) {
@@ -1343,11 +1345,12 @@ if (trackBtn) {
     if (!trackingNumber) { toast(t('orders_err_tracking_empty'), 'error'); return; }
 
     try {
-      await supabase.from('orders').update({
+      const { error } = await supabase.from('orders').update({
         status: 'shipped', order_status: 'shipped',
         tracking_number: trackingNumber,
         updated_at: new Date().toISOString()
       }).eq('id', orderId);
+      if (error) throw error;
 
       toast(t('orders_shipped_success'), 'success');
       closeTrackingModal();

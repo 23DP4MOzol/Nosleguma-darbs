@@ -43,13 +43,7 @@ async function fetchAdminSupportUser() {
       .maybeSingle();
     if (byRole?.data?.id) return byRole.data;
 
-    const byEmail = await supabase
-      .from('users')
-      .select('id, username')
-      .ilike('email', '%admin%')
-      .limit(1)
-      .maybeSingle();
-    return byEmail?.data || null;
+    return null;
   } catch (error) {
     console.warn('Admin support user lookup failed', error?.message || error);
     return null;
