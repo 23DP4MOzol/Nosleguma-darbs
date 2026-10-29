@@ -33,6 +33,16 @@ let supportThreadSummary = null;
 let cachedConversations = [];
 let chatFilter = 'buying';
 
+// Rotating into a narrow layout must keep the conversation list available.
+const mobileChat = window.matchMedia('(max-width: 768px)');
+function syncChatPanels() {
+  if (mobileChat.matches && !activeThread) {
+    document.querySelector('.chat-sidebar')?.classList.add('mobile-visible');
+  }
+}
+mobileChat.addEventListener('change', syncChatPanels);
+syncChatPanels();
+
 async function fetchAdminSupportUser() {
   try {
     const byRole = await supabase
@@ -182,18 +192,6 @@ if (logoutBtn && !logoutBtn._hasHandler) {
   logoutBtn._hasHandler = true;
 }
 
-(function setupDropdown() {
-  const dropdownBtnLocal = document.querySelector('.dropdown-btn');
-  if (!dropdownBtnLocal) return;
-  dropdownBtnLocal.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = e.target.closest('.dropdown');
-    if (dropdown) dropdown.classList.toggle('open');
-  });
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.dropdown.open').forEach((dropdown) => dropdown.classList.remove('open'));
-  });
-})();
 
 async function loadUser() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -1127,6 +1125,7 @@ async function openNewChatDialog() {
   removeNewChatDialog();
 
   const overlay = document.createElement('div');
+  overlay.className = 'new-chat-dialog';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem;';
   overlay.innerHTML = `
     <div style="width:min(560px,100%);background:var(--card-bg);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);padding:1rem;">

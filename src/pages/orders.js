@@ -554,7 +554,7 @@ function showCarrierDetail(carrierKey) {
   '</div>';
 
   // Route info
-  html += '<div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;font-size:0.875rem;color:var(--muted);">' +
+  html += '<div class="carrier-route" style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;font-size:0.875rem;color:var(--muted);">' +
     '<span>\uD83D\uDCE4 ' + esc(sellerCity) + '</span>' +
     '<span>\u2192</span>' +
     '<span>\uD83D\uDCE5 ' + getCountryName(destCountry) + '</span>' +

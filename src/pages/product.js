@@ -581,7 +581,7 @@ function displayProducts(products) {
         </div>
         ${product.seller_id === currentUser?.id ? `
           <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
-            <button class="btn-buy-now btn-renew-listing" style="padding:0.45rem 0.8rem; font-size:0.8125rem;" data-product-id="${product.id}" data-mode="${isExpired ? 'renew' : 'extend'}">
+            <button type="button" class="btn-renew-listing" style="padding:0.45rem 0.8rem; font-size:0.8125rem;" data-product-id="${product.id}" data-mode="${isExpired ? 'renew' : 'extend'}">
               ${isExpired ? i18n.t('listing_renew') : i18n.t('listing_extend')}
             </button>
           </div>
@@ -775,7 +775,7 @@ async function showUserProfile(userId) {
       </div>
 
       <h3 style="margin-bottom:1rem;">${i18n.t('recent_products')}</h3>
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap:1rem;">
         ${products?.map(product => `
           <div class="product-card-modern" style="margin:0;">
             <div class="product-image-container">

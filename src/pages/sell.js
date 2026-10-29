@@ -634,8 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await showInfoModal(editingProduct ? i18n.t('save_listing_changes') : 'Product listed successfully!', 'Success');
         form.reset();
         updatePreview();
-        // Redirect to home page
-        setTimeout(() => window.location.href = './index.html', 1500);
+        window.location.href = editingProduct ? './product.html' : './index.html';
       }
     } catch (error) {
       console.error('Error listing product:', error);

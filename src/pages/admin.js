@@ -465,7 +465,7 @@ function showUserDetailModal(user, stats) {
     </div>
     
     <!-- Financial Overview -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 200px), 1fr));gap:1rem;margin-bottom:2rem;">
       <div class="admin-card" style="padding:1rem;">
         <div style="color:var(--muted);font-size:0.875rem;margin-bottom:0.5rem;">💰 Current Balance</div>
         <div style="font-size:1.5rem;font-weight:bold;color:#10b981;">€${parseFloat(user.balance || 0).toFixed(2)}</div>
@@ -495,7 +495,7 @@ function showUserDetailModal(user, stats) {
     <!-- User Info -->
     <div class="admin-card" style="margin-bottom:2rem;">
       <h3 style="margin-top:0;">👤 Profile Information</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 250px), 1fr));gap:1.5rem;">
         <div>
           <div style="color:var(--muted);font-size:0.875rem;">Email</div>
           <div style="font-weight:500;">${user.email}</div>
@@ -535,7 +535,7 @@ function showUserDetailModal(user, stats) {
     <!-- Transactions Tab -->
     <div id="udt-transactions" class="tab-content active">
       ${stats.transactions && stats.transactions.length > 0 ? `
-        <table class="admin-table" style="width:100%;border-collapse:collapse;">
+        <div class="admin-table-wrapper" tabindex="0" role="region" aria-label="Scrollable data table"><table class="admin-table" style="width:100%;border-collapse:collapse;">
           <thead style="background:var(--bg-secondary);">
             <tr>
               <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Date</th>
@@ -554,7 +554,7 @@ function showUserDetailModal(user, stats) {
               </tr>
             `).join('')}
           </tbody>
-        </table>
+        </table></div>
       ` : '<p style="text-align:center;color:var(--muted);">No transactions</p>'}
     </div>
     
@@ -590,7 +590,7 @@ function showUserDetailModal(user, stats) {
     <!-- Products Tab -->
     <div id="udt-products" class="tab-content">
       ${stats.products && stats.products.length > 0 ? `
-        <div class="admin-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem;">
+        <div class="admin-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 200px), 1fr));gap:1.5rem;">
           ${stats.products.map(p => `
             <div class="admin-card">
               <img src="${p.image_url || 'https://placehold.co/150/667eea/white?text=No+Image'}" style="width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:0.75rem;">
@@ -628,7 +628,7 @@ function showUserDetailModal(user, stats) {
 
     <div id="udt-audit" class="tab-content">
       ${stats.auditLogs && stats.auditLogs.length > 0 ? `
-        <table class="admin-table" style="width:100%;border-collapse:collapse;">
+        <div class="admin-table-wrapper" tabindex="0" role="region" aria-label="Scrollable data table"><table class="admin-table" style="width:100%;border-collapse:collapse;">
           <thead style="background:var(--bg-secondary);">
             <tr>
               <th style="padding:0.75rem;text-align:left;border-bottom:2px solid var(--border);">Date</th>
@@ -651,7 +651,7 @@ function showUserDetailModal(user, stats) {
               `;
             }).join('')}
           </tbody>
-        </table>
+        </table></div>
       ` : '<p style="text-align:center;color:var(--muted);">No audit entries in the last 14 days</p>'}
     </div>
   `;
@@ -2044,7 +2044,7 @@ async function loadAuditLogs() {
     };
 
     container.innerHTML = `
-      <table class="admin-table">
+      <div class="admin-table-wrapper" tabindex="0" role="region" aria-label="Scrollable data table"><table class="admin-table">
         <thead>
           <tr>
             <th>Date</th>
@@ -2069,7 +2069,7 @@ async function loadAuditLogs() {
             `;
           }).join('')}
         </tbody>
-      </table>
+      </table></div>
     `;
   } catch (e) {
     container.innerHTML = `<p style="color:var(--error);">Error loading audit logs: ${e.message || e}</p>`;

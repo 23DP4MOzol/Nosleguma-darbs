@@ -27,20 +27,16 @@
         <button class="btn-sell" id="sellBtn"><span>Sell Items</span></button>
   
         <div class="dropdown" id="pagesDropdown">
-          <button class="dropdown-btn" id="pagesDropdownBtn" style="display:flex; align-items:center; gap:4px; background:none; border:none; cursor:pointer;">
-          <span class="icon-lines horizontal" style="display:inline-block; width:20px; height:20px;">
-            <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect y="3" width="20" height="2" rx="1"/><rect y="9" width="20" height="2" rx="1"/><rect y="15" width="20" height="2" rx="1"/></svg>
-          </span>
-          <span class="icon-lines vertical" style="display:none; width:20px; height:20px;">
-            <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect x="3" width="2" height="20" rx="1"/><rect x="9" width="2" height="20" rx="1"/><rect x="15" width="2" height="20" rx="1"/></svg>
-          </span>
+        <button type="button" class="dropdown-btn" id="pagesDropdownBtn" aria-expanded="false" aria-controls="pagesDropdownMenu" data-i18n-aria-label="pages_menu" aria-label="Pages">
+          <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><rect y="3" width="20" height="2" rx="1"/><rect y="9" width="20" height="2" rx="1"/><rect y="15" width="20" height="2" rx="1"/></svg>
         </button>
-          <div class="dropdown-menu">
-            <a href="admin.html" class="dropdown-item" id="adminBtn">Admin</a>
-            <a href="chat.html" class="dropdown-item">Chat</a>
-            <a href="product.html" class="dropdown-item">Products</a>
-          </div>
+        <div class="dropdown-menu" id="pagesDropdownMenu">
+          <a href="admin.html" class="dropdown-item" data-i18n="admin" id="adminBtn" style="display:none;">Admin</a>
+          <a href="chat.html" class="dropdown-item" data-i18n="chat">Chat</a>
+          <a href="product.html" class="dropdown-item" data-i18n="myProducts">My Products</a>
+          <a href="orders.html" class="dropdown-item" data-i18n="nav_orders">My Orders</a>
         </div>
+      </div>
   
         <select id="langSelect" class="category-select">
           <option value="en">English</option>
@@ -401,7 +397,7 @@
       <div class="admin-card" style="margin-bottom:2rem;">
         <h3>💰 Balance Management</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Adjust user balances, add funds, or subtract balance</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-primary" onclick="adjustUserBalance()" style="cursor:pointer;padding:1rem;">
             💳 Adjust User Balance
           </button>
@@ -418,7 +414,7 @@
       <div class="admin-card" style="margin-bottom:2rem;">
         <h3>💳 Transaction Management</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Create manual transactions, deposits, withdrawals, and refunds</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-success" onclick="createManualTransaction()" style="cursor:pointer;padding:1rem;">
             ➕ Create Transaction
           </button>
@@ -429,7 +425,7 @@
       <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #3b82f6;">
         <h3>👥 User Management</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Manage user roles, delete users, and admin control</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-primary" onclick="deleteSpecificUser()" style="cursor:pointer;padding:1rem;">
             🗑️ Delete User
           </button>
@@ -449,7 +445,7 @@
       <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #f59e0b;">
         <h3>📊 Statistics & Revenue</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Reset dashboard statistics and revenue tracking</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-warning" onclick="resetDashboardStats()" style="cursor:pointer;padding:1rem;">
             📈 Reset Dashboard Stats
           </button>
@@ -463,7 +459,7 @@
       <div class="admin-card" style="margin-bottom:2rem;border-left:4px solid #ef4444;">
         <h3>🗑️ Reset Statistics</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Reset transaction history and audit logs</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-danger" onclick="resetAllStatistics()" style="cursor:pointer;padding:1rem;">
             🗑️ Reset All Transactions
           </button>
@@ -477,7 +473,7 @@
       <div class="admin-card" style="margin-bottom:2rem;border:2px solid #ef4444;border-left:4px solid #ef4444;">
         <h3 style="color:#ef4444;">🔥 DANGER ZONE - Complete Data Wipe</h3>
         <p style="color:#ef4444;margin-bottom:1.5rem;font-weight:500;">⚠️⚠️⚠️ WARNING: These actions are COMPLETELY IRREVERSIBLE!</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-danger" onclick="deleteAllProductsAndData()" style="cursor:pointer;padding:1rem;background:#dc2626;border-color:#dc2626;">
             🔥 DELETE EVERYTHING
           </button>
@@ -488,7 +484,7 @@
       <div class="admin-card" style="margin-bottom:2rem;">
         <h3>🔧 System Tools</h3>
         <p style="color:var(--muted);margin-bottom:1.5rem;">Monitor and maintain system health</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;">
           <button class="btn btn-info" onclick="getSystemHealth()" style="cursor:pointer;padding:1rem;">
             💻 System Health
           </button>
@@ -499,7 +495,7 @@
       <div class="admin-card">
         <h3>📖 Quick Reference</h3>
         <div style="background:var(--secondary);padding:1.5rem;border-radius:var(--radius);color:var(--muted);font-size:0.9rem;line-height:1.8;">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:2rem;">
             <div>
               <p><strong>💰 Balance Management:</strong></p>
               <p>• Adjust: Add/subtract balance</p>
@@ -596,7 +592,7 @@
       border-radius: 24px;
       max-width: 1200px;
       width: 100%;
-      max-height: 90vh;
+      max-height: calc(var(--visual-viewport-height, 100dvh) - 1.5rem);
       overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       z-index: 10000;
@@ -913,7 +909,7 @@
     
     .analytics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
       gap: 1.5rem;
     }
     
@@ -995,7 +991,7 @@
     .admin-detail-modal-content {
       max-width: 920px !important;
       width: 100%;
-      max-height: 88vh;
+      max-height: calc(var(--visual-viewport-height, 100dvh) - 1.5rem);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -1004,7 +1000,7 @@
     .admin-detail-modal-content .modal-body {
       overflow-y: auto;
       overscroll-behavior: contain;
-      max-height: calc(88vh - 48px);
+      max-height: calc(var(--visual-viewport-height, 100dvh) - 4.5rem);
       padding: 2rem;
     }
 
@@ -1374,7 +1370,7 @@
 
     .analytics-grid,
     .admin-modal-grid {
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     }
 
     @media (max-width: 1024px) {
@@ -1471,16 +1467,6 @@
         max-width: calc(100% - 1rem);
       }
     }
-    @media (max-width: 900px) {
-  .navbar-links { flex-direction: column; align-items: flex-start; }
-  .dropdown-menu { min-width: 140px; }
-}
-@media (max-width: 600px) {
-  .navbar-container { flex-direction: column; align-items: stretch; }
-  .navbar-logo { margin-bottom: 1rem; }
-  .navbar-links { flex-direction: column; align-items: stretch; }
-  .dropdown-menu { min-width: 120px; }
-}
   </style>
 
   <!-- Load main runtime first, then page script (main.js imports navbar.js) -->

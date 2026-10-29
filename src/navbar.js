@@ -8,24 +8,41 @@ import { i18n } from "./i18n.js";
 
 // Hamburger menu handled in main.js
 
-// No dropdown
-
 // Theme toggle handled in main.js
 
 // Language switcher handled in main.js
 
-// Dropdown toggle
+function setDropdownOpen(dropdown, open) {
+  dropdown.classList.toggle('open', open);
+  dropdown.querySelector('.dropdown-btn')?.setAttribute('aria-expanded', String(open));
+}
+
+// Shared by every page, including clicks on the button's SVG children.
 document.addEventListener('click', (e) => {
+  const button = e.target.closest('.dropdown-btn');
+  const selectedDropdown = button?.closest('.dropdown');
   const dropdowns = document.querySelectorAll('.dropdown');
   dropdowns.forEach(dropdown => {
-    if (!dropdown.contains(e.target)) {
-      dropdown.classList.remove('open');
+    if (dropdown !== selectedDropdown && (!dropdown.contains(e.target) || e.target.closest('a'))) {
+      setDropdownOpen(dropdown, false);
     }
   });
 
-  if (e.target.closest('.dropdown-btn')) {
-    const dropdown = e.target.closest('.dropdown');
-    dropdown.classList.toggle('open');
+  if (selectedDropdown) {
+    setDropdownOpen(selectedDropdown, !selectedDropdown.classList.contains('open'));
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.dropdown.open').forEach(dropdown => {
+    setDropdownOpen(dropdown, false);
+    dropdown.querySelector('.dropdown-btn')?.focus();
+  });
+  const notifications = document.getElementById('notificationsDropdown');
+  if (notifications?.style.display === 'block') {
+    notifications.style.display = 'none';
+    document.getElementById('notificationsBtn')?.setAttribute('aria-expanded', 'false');
   }
 });
 
@@ -284,6 +301,7 @@ document.addEventListener('click', (e) => {
     if (!dd) return;
     const open = dd.style.display === 'block';
     dd.style.display = open ? 'none' : 'block';
+    btn.setAttribute('aria-expanded', String(!open));
     if (!open) {
       // mark read
       notifState.unread = 0;
@@ -296,6 +314,7 @@ document.addEventListener('click', (e) => {
   const dropdown = document.getElementById('notificationsDropdown');
   if (dropdown && !dropdown.contains(e.target) && !e.target.closest('#notificationsBtn')) {
     dropdown.style.display = 'none';
+    document.getElementById('notificationsBtn')?.setAttribute('aria-expanded', 'false');
   }
 });
 

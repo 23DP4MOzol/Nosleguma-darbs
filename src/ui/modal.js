@@ -20,14 +20,6 @@ function injectModal() {
   `;
 
   document.body.appendChild(wrapper);
-
-  // inject small style to ensure visibility in dark mode
-  const style = document.createElement('style');
-  style.textContent = `
-    :root { --card-bg: #ffffff; --border: #e5e7eb; --primary: #2563eb; --secondary: #f3f4f6; --muted: #6b7280; }
-    @media (prefers-color-scheme: dark) { :root { --card-bg: #0b1220; --border: #1f2937; --primary: #60a5fa; --secondary: #111827; --muted: #9ca3af; } }
-  `;
-  document.head.appendChild(style);
 }
 
 function ensureInjected() {

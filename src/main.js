@@ -749,6 +749,16 @@ function initializeAuth() {
 function initializeNavigation() {
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const navbarLinks = document.querySelector('.navbar-links');
+  const updateViewport = () => document.documentElement.style.setProperty('--visual-viewport-height', (window.visualViewport?.height || window.innerHeight) + 'px');
+  updateViewport();
+  window.visualViewport?.addEventListener('resize', updateViewport);
+  window.addEventListener('resize', updateViewport);
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    const updateHeight = () => document.documentElement.style.setProperty('--navbar-height', navbar.offsetHeight + 'px');
+    updateHeight();
+    new ResizeObserver(updateHeight).observe(navbar);
+  }
 
   if (hamburgerBtn && navbarLinks) {
     // Make hamburger accessible and lock body scroll when open
@@ -761,7 +771,7 @@ function initializeNavigation() {
       const isActive = navbarLinks.classList.toggle('active');
       hamburgerBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
       // Lock body scroll when menu open on small screens
-      if (isActive && window.innerWidth <= 768) {
+      if (isActive && window.innerWidth <= 1024) {
         document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
       } else {
         document.body.style.overflow = ''; document.documentElement.style.overflow = '';
@@ -780,9 +790,18 @@ function initializeNavigation() {
     }
   });
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && navbarLinks?.classList.contains('active')) {
+      navbarLinks.classList.remove('active');
+      hamburgerBtn?.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = ''; document.documentElement.style.overflow = '';
+      hamburgerBtn?.focus();
+    }
+  });
+
   // Close navbar when resizing to desktop
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768 && navbarLinks) {
+    if (window.innerWidth > 1024 && navbarLinks) {
       navbarLinks.classList.remove('active');
       if (hamburgerBtn) hamburgerBtn.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = ''; document.documentElement.style.overflow = '';
@@ -3302,6 +3321,9 @@ function initializeBalancePage() {
 // ============================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Navigation must respond before any network requests complete.
+  initializeNavigation();
+
   // Load global platform settings first (banner + feature toggles)
   try {
     await loadAndApplyPlatformSettings();
@@ -3319,7 +3341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {}
 
   // Initialize common functionality
-  initializeNavigation();
   initializeAuth();
   // Theme is initialized automatically by theme.js
   themeManager.init(); // Ensure it's initialized

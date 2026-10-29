@@ -197,7 +197,6 @@ body {
   background: var(--bg);
   color: var(--fg);
   line-height: 1.6;
-  overflow-x: hidden;
 }
 
 /* =======================================================
@@ -2569,7 +2568,8 @@ html.light .hero-modern .stat-label {
    display: inline-block;
  }
 
- .dropdown-btn {
+ .dropdown-btn,
+ .btn-renew-listing {
    padding: 0.625rem 1.25rem;
    border-radius: 10px;
    background: var(--secondary);
@@ -2584,7 +2584,8 @@ html.light .hero-modern .stat-label {
    border: none;
  }
 
- .dropdown-btn:hover {
+ .dropdown-btn:hover,
+ .btn-renew-listing:hover {
    background: var(--primary);
    color: white;
    transform: translateY(-2px);
@@ -5723,8 +5724,7 @@ html.dark .balance-filter-btns .filter-btn:not(.active) {
 
 /* --- Global: prevent horizontal overflow --- */
 html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
+  max-width: 100%;
 }
 
 img, video, svg, iframe {
@@ -6142,4 +6142,174 @@ input, select, textarea, button {
   .quick-amounts {
     grid-template-columns: 1fr 1fr !important;
   }
+}
+
+/* Responsive layout contract: intrinsic content must fit its grid/flex track. */
+:where(main, .modal-content, .product-modal, .admin-main, .chat-modern) :where(div, section, article, form, label, fieldset) {
+  min-width: 0;
+}
+body { overflow-wrap: anywhere; }
+input, select, textarea { min-width: 0; }
+:where(button, .btn, .btn-nav, .btn-login, .btn-logout, .dropdown-item) { overflow-wrap: anywhere; }
+:where(main, .modal-content) :where(h1, h2, h3, p) { max-width: 100%; }
+.section-title { font-size: clamp(1.5rem, 4vw, 2.5rem); }
+.product-name, .product-description, .seller-name, .profile-name { overflow-wrap: anywhere; }
+.product-grid-modern { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.filter-tabs { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.settings-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.sell-form-section, .sell-preview-section { min-width: 0; }
+.balance-section { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important; }
+.product-meta, .product-footer, .profile-stats, .profile-review-header { flex-wrap: wrap; }
+.product-price { max-width: 100%; flex-wrap: wrap; }
+.order-product-info { flex: 1; min-width: 0; }
+.order-product-info h3, .order-product-info p { overflow-wrap: anywhere; }
+.order-product-image { flex-shrink: 0; }
+.order-detail-row { flex-wrap: wrap; }
+.order-detail-row > :last-child { margin-left: auto; text-align: right; }
+.profile-products { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+
+/* Keep desktop controls together; switch before translated links become crowded. */
+.navbar-container { position: relative; justify-content: space-between; gap: 1rem; }
+.navbar-logo, .navbar-links > *, .mobile-icons-row > .icon-btn { flex-shrink: 0; }
+.navbar-links { gap: 0.65rem; margin-left: auto; }
+.mobile-icons-row { width: auto; margin: 0; gap: 0.5rem; align-items: center; }
+.navbar :where(button, .icon-btn, .btn-nav, .dropdown-item, .btn-login, .btn-logout, select, .balance-badge) { min-height: 44px; }
+.navbar .icon-btn { min-width: 44px; }
+.navbar .dropdown-menu { max-width: calc(100vw - 2rem); }
+.notifications-dropdown {
+  position: fixed;
+  top: calc(var(--navbar-height, 72px) + 0.5rem);
+  right: 1rem;
+  left: auto;
+  width: min(360px, calc(100vw - 2rem));
+  max-height: min(480px, 65dvh);
+  overflow-y: auto;
+}
+.navbar .notifications-dropdown { left: auto !important; right: 1rem !important; width: min(360px, calc(100vw - 2rem)) !important; }
+
+/* Dialogs scroll within the visual viewport, including short landscape screens. */
+.modal, .product-modal, #globalConfirmModal { padding: 0.75rem; overflow-y: auto; }
+.modal-content, .admin-modal-content, .terms-modal-content, #globalConfirmContent {
+  min-width: 0;
+  max-width: 100%;
+  max-height: calc(100dvh - 1.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#globalConfirmContent { max-width: min(520px, 100% ) !important; }
+#globalConfirmTitle { padding-right: 2rem; overflow-wrap: anywhere; }
+#globalConfirmClose { min-width: 44px; min-height: 44px; }
+#globalConfirmContent > div:last-child { flex-wrap: wrap; }
+.modal-actions, .modal-product-actions, .profile-review-header { gap: 0.5rem; flex-wrap: wrap; }
+.modal-product-image { object-fit: contain !important; }
+.modal-content :where(input, select, textarea) { max-width: 100%; }
+.terms-container { width: min(900px, calc(100% - 2rem)); }
+.terms-title { font-size: clamp(1.5rem, 4vw, 2rem); }
+.admin-table-wrapper { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.admin-table-wrapper:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Chat panes own their scrolling; the composer remains in the visible pane. */
+.messaging-section { margin: 0 auto; padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.chat-modern { position: relative; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+.chat-main, .chat-sidebar, .chat-list, .chat-messages-area { min-height: 0; }
+.chat-list, .chat-messages-area { overflow-y: auto; overscroll-behavior: contain; }
+.chat-header-bar, .chat-input-area { flex-shrink: 0; }
+.chat-user-info { min-width: 0; gap: 0.5rem; }
+.chat-user-info > div:last-child { min-width: 0; }
+.chat-user-name { overflow-wrap: anywhere; }
+.chat-header-actions, .chat-avatar, .message-avatar, .chat-input-area > button { flex-shrink: 0; }
+.chat-input-field { width: 0; flex: 1 1 0; }
+.messages-stack { min-width: 0; max-width: min(75%, 65ch); }
+.message-bubble-modern { overflow-wrap: anywhere; }
+.message-attachment img { width: auto; height: auto; max-height: 320px; object-fit: contain; }
+.chat-pin-btn, .chat-delete-btn { min-width: 44px; min-height: 44px; }
+
+@media (min-width: 1920px) {
+  .main-container:has(.product-grid-modern), .admin-section { width: min(calc(100% - 4rem), 1600px); max-width: 1600px; }
+}
+@media (max-width: 1024px) {
+  .navbar-container { flex-wrap: wrap; padding: 0.75rem 1rem; }
+  .hamburger-btn { display: flex; align-items: center; justify-content: center; margin-left: auto; width: 44px; height: 44px; }
+  .navbar .navbar-links {
+    position: absolute; top: 100%; left: 0; right: 0; width: 100%;
+    flex-direction: column; align-items: stretch; gap: 0.5rem;
+    margin: 0; padding: 0 1rem; max-height: 0; overflow: hidden;
+    visibility: hidden; pointer-events: none; border: 0;
+    background: var(--card-bg); box-shadow: var(--shadow-md); z-index: 1001;
+    transition: max-height 0.25s ease, padding 0.25s ease, visibility 0.25s;
+  }
+  .navbar .navbar-links.active {
+    max-height: calc(100dvh - var(--navbar-height, 72px)); padding: 1rem;
+    overflow-y: auto; visibility: visible; pointer-events: auto; overscroll-behavior: contain;
+  }
+  .navbar-links > :where(a, button, select) { width: 100%; text-align: center; justify-content: center; }
+  .navbar-links .mobile-icons-row { width: 100%; justify-content: center; }
+  #pagesDropdown { display: contents; }
+  #pagesDropdown .dropdown-btn { display: none !important; }
+  #pagesDropdown .dropdown-menu {
+    display: flex; flex-direction: column; position: static; visibility: visible; opacity: 1;
+    transform: none; box-shadow: none; border: 0; background: transparent; padding: 0; width: 100%; max-width: 100%;
+  }
+  #pagesDropdown .dropdown-item { width: 100%; text-align: center; margin: 0; padding: 0.65rem; }
+  .navbar-links .btn-sell span, .navbar-links .balance-badge span { display: inline !important; }
+}
+@media (max-width: 900px) {
+  .sell-container, .settings-layout { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 768px) {
+  .main-container, .container { padding: 1.5rem 0.75rem; }
+  :where(main, .modal-content) :where(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: 16px !important; }
+  :where(button, .btn, .icon-btn, .filter-tab, .delivery-tab) { min-height: 44px; }
+  .filter-tabs { flex-wrap: nowrap; }
+  .order-product { flex-direction: column; align-items: flex-start; }
+  .order-product-image { width: 96px; height: 96px; object-fit: contain; }
+  .order-product-info { width: 100%; }
+  .messaging-section { padding: 0.5rem; }
+  .chat-modern { height: calc(var(--visual-viewport-height, 100dvh) - var(--navbar-height, 72px) - 1rem) !important; max-height: none; grid-template-columns: minmax(0, 1fr); }
+  .chat-header-bar, .chat-input-area { padding: 0.75rem; gap: 0.5rem; }
+  .chat-header-bar { flex-wrap: wrap; }
+  .chat-header-actions { margin-left: auto; }
+  .chat-messages-area { padding: 0.75rem; gap: 1rem; }
+  .chat-sidebar.mobile-visible { position: absolute; inset: 0; }
+  .chat-input-area { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .message-actions { opacity: 1; }
+  .terms-container { padding: 1rem; }
+}
+@media (max-width: 520px) {
+  .sell-form-card { padding: 1rem !important; }
+  .sell-preview-section .preview-card, .settings-layout .product-card-modern { padding: 1rem !important; }
+  .settings-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-stats { gap: 1rem; }
+  .chat-avatar, .message-avatar { width: 32px; height: 32px; font-size: 0.875rem; }
+  .messages-stack { max-width: calc(100% - 44px); }
+}
+/* Constrain auxiliary dialogs and local data views as well as primary pages. */
+.new-chat-dialog { overflow-y: auto; }
+.new-chat-dialog > div { max-height: calc(var(--visual-viewport-height, 100dvh) - 2rem); overflow-y: auto; }
+.modal-content, .admin-modal-content, .terms-modal-content, #globalConfirmContent {
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 1.5rem);
+}
+@media (max-width: 768px) {
+  .admin-sidebar:not(.mobile-open) { visibility: hidden; pointer-events: none; }
+  .admin-sidebar.mobile-open { visibility: visible; }
+}
+@media (max-width: 600px) {
+  .navbar-container:not(:has(.navbar-links)) { flex-wrap: wrap; }
+  .navbar-container:not(:has(.navbar-links)) .mobile-icons-row { margin-left: auto; }
+  .product-preview-card { padding: 0.75rem !important; }
+  .preview-placeholder { padding: 1rem !important; }
+  #myListingsContainer { padding: 1rem !important; }
+  #myListingsContainer > div { grid-template-columns: minmax(0, 1fr) !important; }
+  #myListingsContainer > div > div:last-child { flex-wrap: wrap; }
+}
+
+.admin-modal-tabs { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+/* Delivery quotes need room for translated labels and an intact price. */
+.carrier-quote-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.carrier-quote-item .quote-value:not(.time) { white-space: nowrap; }
+.carrier-detail-header, .carrier-route { flex-wrap: wrap; }
+.checkout-product-image { object-fit: contain; }
+@media (max-width: 520px) {
+  .carrier-detail-panel { padding: 1rem; }
+  .carrier-detail-header a { flex-basis: 100%; }
 }
