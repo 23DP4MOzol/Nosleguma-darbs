@@ -4,6 +4,7 @@ import { showInfoModal, showConfirmModal, showPromptModal } from '../ui/modal.js
 import { getPlatformSettings, applyPlatformSettingsToWindow, renderPlatformWarningBanner } from '../platform-settings.js';
 import { fetchAuditLogs, purgeAuditLogsOlderThan, logAuditEvent } from '../audit.js';
 import { parseProductAttrs } from '../category-fields.js';
+import { safeMediaUrl } from '../html.js';
 
 // ============================
 // State Management
@@ -593,7 +594,7 @@ function showUserDetailModal(user, stats) {
         <div class="admin-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 200px), 1fr));gap:1.5rem;">
           ${stats.products.map(p => `
             <div class="admin-card">
-              <img src="${p.image_url || 'https://placehold.co/150/667eea/white?text=No+Image'}" style="width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:0.75rem;">
+              <img src="${escapeHtml(safeMediaUrl(p.image_url, 'https://placehold.co/150/667eea/white?text=No+Image'))}" style="width:100%;height:150px;object-fit:cover;border-radius:4px;margin-bottom:0.75rem;">
               <h4 style="margin:0 0 0.5rem;">${p.name}</h4>
               <div style="color:var(--muted);font-size:0.875rem;margin-bottom:0.75rem;">${p.condition || 'N/A'}</div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -834,7 +835,7 @@ function displayProducts(products) {
   
   tbody.innerHTML = products.map(p => `
     <tr>
-      <td><img src="${p.image_url || 'https://placehold.co/50/667eea/white?text=No+Image'}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>
+      <td><img src="${escapeHtml(safeMediaUrl(p.image_url, 'https://placehold.co/50/667eea/white?text=No+Image'))}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;"></td>
       <td>${escapeHtml(p.name)}</td>
       <td>${escapeHtml(p.seller?.username || p.seller?.email || 'Unknown')}</td>
       <td>€${parseFloat(p.price).toFixed(2)}</td>
@@ -1517,7 +1518,7 @@ function renderAdminChatMessageBody(message) {
   }
 
   const attachmentHtml = attachmentType.startsWith('image/')
-    ? `<div style="margin-top:0.5rem;"><img src="${attachmentUrl}" alt="${attachmentName}" style="max-width:220px;border-radius:10px;"></div><a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>`
+    ? `<div style="margin-top:0.5rem;"><img src="${escapeHtml(safeMediaUrl(attachmentUrl))}" alt="${escapeHtml(attachmentName)}" style="max-width:220px;border-radius:10px;"></div><a href="${escapeHtml(safeMediaUrl(attachmentUrl))}" target="_blank" rel="noopener noreferrer">${escapeHtml(attachmentName)}</a>`
     : `<a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>`;
 
   return `

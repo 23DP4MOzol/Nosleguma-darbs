@@ -6,6 +6,7 @@ import { fetchOmnivaBalticLockers } from '../lib/omniva-lockers.js';
 import { getPlatformSettings } from '../platform-settings.js';
 import { logAuditEvent } from '../audit.js';
 import { isListingExpired } from '../listing-utils.js';
+import { escapeHtml, safeMediaUrl } from '../html.js';
 
 // ============================
 // State
@@ -859,6 +860,7 @@ async function placeOrder() {
 
   // Check balance
   var ubRes = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+  if (ubRes.error) throw ubRes.error;
   var balance = parseFloat(ubRes.data ? ubRes.data.balance : 0);
   var totalAmount = parseFloat(orderData.total_amount);
 
@@ -884,7 +886,7 @@ async function placeOrder() {
     if (balRes.error) throw balRes.error;
 
     // 3. Record buyer transaction
-    await supabase.from('user_transactions').insert({
+    var buyerTxRes = await supabase.from('user_transactions').insert({
       user_id: currentUser.id,
       amount: -totalAmount,
       transaction_type: 'escrow_hold',
@@ -892,13 +894,14 @@ async function placeOrder() {
       reference_id: order.id,
       created_at: new Date().toISOString()
     });
+    if (buyerTxRes.error) throw buyerTxRes.error;
 
     // 4. Update order status
     //    Meetup: escrow (both parties must confirm)
     //    Shipping: paid (seller processes & ships, buyer confirms delivery to release)
     var nextStatus = selectedDeliveryMethod === 'meetup' ? 'escrow' : 'paid';
     var paymentStatus = selectedDeliveryMethod === 'meetup' ? 'escrowed' : 'paid';
-    await supabase.from('orders').update({
+    var orderStatusRes = await supabase.from('orders').update({
       order_status: nextStatus,
       status: nextStatus,
       payment_status: paymentStatus,
@@ -907,6 +910,7 @@ async function placeOrder() {
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', order.id);
+    if (orderStatusRes.error) throw orderStatusRes.error;
 
     // 5. Decrease product stock and set sold_at if fully sold
     if (product.stock !== undefined && product.stock !== null) {
@@ -919,7 +923,8 @@ async function placeOrder() {
         stockUpdate.sold_at = new Date().toISOString();
         stockUpdate.status = 'sold';
       }
-      await supabase.from('products').update(stockUpdate).eq('id', product.id);
+      var stockRes = await supabase.from('products').update(stockUpdate).eq('id', product.id);
+      if (stockRes.error) throw stockRes.error;
     }
 
     toast(t('co_order_created'), 'success');
@@ -1193,7 +1198,8 @@ function displayOrderDetails(order) {
   // Other user info
   content += '<div class="order-details-section"><h3>' + (isBuyer ? t('orders_seller_info') : t('orders_buyer_info')) + '</h3>' +
     '<div class="user-info">';
-  if (otherUser && otherUser.avatar_url) content += '<img src="' + otherUser.avatar_url + '" alt="Avatar" class="user-avatar">';
+  const otherUserAvatar = safeMediaUrl(otherUser?.avatar_url);
+  if (otherUserAvatar) content += '<img src="' + escapeHtml(otherUserAvatar) + '" alt="Avatar" class="user-avatar">';
   content += '<div><p><strong>' + t('orders_username') + ':</strong> ' + esc(otherUser ? (otherUser.username || 'N/A') : 'N/A') + '</p>' +
     '<p><strong>' + t('orders_email') + ':</strong> ' + esc(otherUser ? (otherUser.email || 'N/A') : 'N/A') + '</p>' +
     '<a href="chat.html?seller=' + (otherUser ? otherUser.id : '') + '" class="btn btn-secondary">\uD83D\uDCAC ' + t('orders_message') + '</a>' +
@@ -1235,9 +1241,13 @@ window.payOrder = async function(orderId) {
   try {
     var order = allOrders.find(function(o) { return o.id === orderId; });
     if (!order) throw new Error('Order not found');
+    if ((order.status || order.order_status) !== 'pending') {
+      throw new Error('This order is no longer awaiting payment');
+    }
 
     var totalAmount = parseFloat(order.total_amount || 0);
     var ubRes = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
+    if (ubRes.error) throw ubRes.error;
     var balance = parseFloat(ubRes.data ? ubRes.data.balance : 0);
 
     if (balance < totalAmount) {
@@ -1247,7 +1257,7 @@ window.payOrder = async function(orderId) {
 
     await supabase.from('users').update({ balance: balance - totalAmount }).eq('id', currentUser.id);
 
-    await supabase.from('user_transactions').insert({
+    var buyerTxRes = await supabase.from('user_transactions').insert({
       user_id: currentUser.id,
       amount: -totalAmount,
       transaction_type: 'escrow_hold',
@@ -1255,9 +1265,10 @@ window.payOrder = async function(orderId) {
       reference_id: order.product_id,
       created_at: new Date().toISOString()
     });
+    if (buyerTxRes.error) throw buyerTxRes.error;
 
     var nextStatus = order.delivery_method === 'meetup' ? 'escrow' : 'paid';
-    await supabase.from('orders').update({
+    var orderStatusRes = await supabase.from('orders').update({
       status: nextStatus,
       order_status: nextStatus,
       payment_status: 'paid',
@@ -1266,6 +1277,7 @@ window.payOrder = async function(orderId) {
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', orderId);
+    if (orderStatusRes.error) throw orderStatusRes.error;
 
     if (order.product_id) {
       const { data: product } = await supabase
@@ -1284,7 +1296,8 @@ window.payOrder = async function(orderId) {
           productUpdate.sold_at = new Date().toISOString();
           productUpdate.status = 'sold';
         }
-        await supabase.from('products').update(productUpdate).eq('id', order.product_id);
+        var stockRes = await supabase.from('products').update(productUpdate).eq('id', order.product_id);
+        if (stockRes.error) throw stockRes.error;
       }
     }
 
@@ -1483,11 +1496,13 @@ async function releaseEscrowToSeller(order) {
   if (latestOrder?.escrow_released) return;
 
   var selRes = await supabase.from('users').select('balance').eq('id', sellerId).single();
+  if (selRes.error) throw selRes.error;
   var sellerBalance = parseFloat(selRes.data ? selRes.data.balance : 0);
 
-  await supabase.from('users').update({ balance: sellerBalance + releaseAmount }).eq('id', sellerId);
+  var sellerUpdate = await supabase.from('users').update({ balance: sellerBalance + releaseAmount }).eq('id', sellerId);
+  if (sellerUpdate.error) throw sellerUpdate.error;
 
-  await supabase.from('user_transactions').insert({
+  var sellerTx = await supabase.from('user_transactions').insert({
     user_id: sellerId,
     amount: releaseAmount,
     transaction_type: 'escrow_release',
@@ -1495,6 +1510,7 @@ async function releaseEscrowToSeller(order) {
     reference_id: order.id || order.product_id,
     created_at: new Date().toISOString()
   });
+  if (sellerTx.error) throw sellerTx.error;
 
   // Also update local caches
   try {
@@ -1530,11 +1546,13 @@ if (cancelBtn) {
         if (totalAmount > 0) {
           // Refund buyer
           var buyerRes = await supabase.from('users').select('balance').eq('id', order.buyer_id).single();
+          if (buyerRes.error) throw buyerRes.error;
           var buyerBalance = parseFloat(buyerRes.data ? buyerRes.data.balance : 0);
 
-          await supabase.from('users').update({ balance: buyerBalance + totalAmount }).eq('id', order.buyer_id);
+          var buyerUpdate = await supabase.from('users').update({ balance: buyerBalance + totalAmount }).eq('id', order.buyer_id);
+          if (buyerUpdate.error) throw buyerUpdate.error;
 
-          await supabase.from('user_transactions').insert({
+          var refundTx = await supabase.from('user_transactions').insert({
             user_id: order.buyer_id,
             amount: totalAmount,
             transaction_type: 'refund',
@@ -1542,27 +1560,30 @@ if (cancelBtn) {
             reference_id: order.product_id,
             created_at: new Date().toISOString()
           });
+          if (refundTx.error) throw refundTx.error;
 
           // Restore stock and clear sold_at
           if (order.product_id) {
             var prodRes = await supabase.from('products').select('stock').eq('id', order.product_id).single();
             if (prodRes.data) {
-              await supabase.from('products').update({
+              var restoreStockRes = await supabase.from('products').update({
                 stock: (prodRes.data.stock || 0) + (order.quantity || 1),
                 sold_at: null,
                 status: 'active'
               }).eq('id', order.product_id);
+              if (restoreStockRes.error) throw restoreStockRes.error;
             }
           }
         }
       }
 
-      await supabase.from('orders').update({
+      var cancelRes = await supabase.from('orders').update({
         status: 'cancelled', order_status: 'cancelled',
         buyer_notes: reason || t('orders_cancelled_by_buyer'),
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', window.currentCancelOrderId);
+      if (cancelRes.error) throw cancelRes.error;
 
       toast(t('orders_cancelled_success'), 'success');
       closeCancelOrderModal();

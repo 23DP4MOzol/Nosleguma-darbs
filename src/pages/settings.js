@@ -2,6 +2,7 @@ import { supabase, getCurrentUser, logoutUser, uploadAvatar } from '../supabase.
 import { i18n } from '../i18n.js';
 import { themeManager } from '../theme.js';
 import { showInfoModal } from '../ui/modal.js';
+import { escapeHtml, safeMediaUrl } from '../html.js';
 
 // ============================
 // Authentication Check - Redirect guests to login
@@ -133,7 +134,7 @@ async function loadUserProfile() {
     const avatarImg = document.getElementById('userAvatar');
     const avatarText = document.getElementById('userAvatarText');
     const avatarUrlInput = document.getElementById('avatarUrlInput');
-    const avatarUrl = resolvedUserData?.avatar_url || currentUser.user_metadata?.avatar_url || '';
+    const avatarUrl = safeMediaUrl(resolvedUserData?.avatar_url || currentUser.user_metadata?.avatar_url || '');
 
     if (avatarUrl) {
       if (avatarImg) {
@@ -371,7 +372,7 @@ document.getElementById('previewProfileBtn')?.addEventListener('click', async ()
   const profileHtml = `
     <div class="profile-header">
       <div class="profile-avatar">
-        ${avatarUrl ? `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` : username.charAt(0).toUpperCase()}
+        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` : escapeHtml(username.charAt(0).toUpperCase())}
       </div>
       <h2 class="profile-name">${escapeHtml(username)}</h2>
       ${bio ? `<p class="profile-bio">${escapeHtml(bio)}</p>` : ''}
@@ -393,7 +394,7 @@ document.getElementById('previewProfileBtn')?.addEventListener('click', async ()
       <div class="profile-products">
         ${products.length > 0 ? products.map(product => `
           <div class="profile-product-card">
-            <img src="${product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image'}" alt="${escapeHtml(product.name)}" class="profile-product-image">
+            <img src="${escapeHtml(safeMediaUrl(product.image_url, 'https://placehold.co/200x150/667eea/white?text=No+Image'))}" alt="${escapeHtml(product.name)}" class="profile-product-image">
             <div class="profile-product-info">
               <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
               <div class="profile-product-price">€${parseFloat(product.price).toFixed(2)}</div>

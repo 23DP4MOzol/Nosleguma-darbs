@@ -535,9 +535,9 @@ html[data-theme="dark"] .search-input:focus {
 
 .navbar-logo::before {
   content: '';
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   background: url('../assets/vendly-logo.svg') center / contain no-repeat;
 }
 
@@ -2084,6 +2084,21 @@ html.light .hero-modern .stat-label {
   min-height: 52px;
   flex: 0 0 auto;
   font-size: 1rem;
+}
+
+.auth-page .auth-form input,
+.auth-page .auth-form select,
+.auth-page .auth-form textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.875rem 1rem;
+}
+
+.auth-page .auth-form input:focus,
+.auth-page .auth-form select:focus,
+.auth-page .auth-form textarea:focus {
+  outline: 3px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  outline-offset: 1px;
 }
 
 .chat-input-field:focus {

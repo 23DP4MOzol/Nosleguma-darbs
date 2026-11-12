@@ -185,7 +185,7 @@ export async function getBalance(userId) {
     return parseFloat(data?.balance || 0);
   } catch (error) {
     console.error('Error fetching balance:', error);
-    return 0;
+    throw error;
   }
 }
 
@@ -217,7 +217,7 @@ export async function updateBalance(userId, newBalance) {
     return true;
   } catch (error) {
     console.error('Error updating balance:', error);
-    return false;
+    throw error;
   }
 }
 

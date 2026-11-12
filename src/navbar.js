@@ -5,6 +5,7 @@
 // Import required modules
 import { supabase } from "./supabase.js";
 import { i18n } from "./i18n.js";
+import { escapeHtml } from "./html.js";
 
 // Hamburger menu handled in main.js
 
@@ -80,7 +81,7 @@ function addInPageNotification(item) {
   if (!list) return;
   const li = document.createElement('li');
   li.className = 'notification-item';
-  li.innerHTML = `<div class="notification-title">${item.title}</div><div class="notification-body">${item.body}</div><div class="notification-date">${new Date(item.created_at).toLocaleString()}</div>`;
+  li.innerHTML = `<div class="notification-title">${escapeHtml(item.title)}</div><div class="notification-body">${escapeHtml(item.body)}</div><div class="notification-date">${escapeHtml(new Date(item.created_at).toLocaleString())}</div>`;
   list.prepend(li);
 }
 
@@ -120,7 +121,7 @@ async function initNotifications() {
       notifState.list.forEach(item => {
         const li = document.createElement('li');
         li.className = 'notification-item';
-        li.innerHTML = `<div class="notification-title">${item.title}</div><div class="notification-body">${item.body}</div><div class="notification-date">${new Date(item.created_at).toLocaleString()}</div>`;
+        li.innerHTML = `<div class="notification-title">${escapeHtml(item.title)}</div><div class="notification-body">${escapeHtml(item.body)}</div><div class="notification-date">${escapeHtml(new Date(item.created_at).toLocaleString())}</div>`;
         list.appendChild(li);
       });
     }

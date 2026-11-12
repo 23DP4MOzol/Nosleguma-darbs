@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateListingData, getListingExpiryInfo, getListingFeeForDuration, isListingExpired } from '../src/listing-utils.js';
-import { escapeHtml } from '../src/html.js';
+import { escapeHtml, safeMediaUrl } from '../src/html.js';
 import { renderAttrBadges } from '../src/category-fields.js';
 
 test('Reject invalid prices before creating or updating a listing', () => {
@@ -29,6 +29,10 @@ test('Listings expire at their exact deadline', () => {
 });
 test('HTML escaping preserves text and protects quoted attributes', () => {
   assert.equal(escapeHtml('<img src="x" onerror=\'bad()\'>&'), '&lt;img src=&quot;x&quot; onerror=&#39;bad()&#39;&gt;&amp;');
+});
+test('Media URLs reject executable protocols before HTML rendering', () => {
+  assert.equal(safeMediaUrl('javascript:alert(1)', 'fallback.png'), 'fallback.png');
+  assert.equal(safeMediaUrl('https://cdn.example/image.png'), 'https://cdn.example/image.png');
 });
 test('Custom attribute values and unknown attribute labels cannot inject markup', () => {
   const html = renderAttrBadges('electronics', { '<img src=x>': '<script>bad()</script>' });
