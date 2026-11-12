@@ -8,6 +8,9 @@ console.log('login.js module loaded');
 
 const VERIFY_RESEND_UNLOCK_MS = 15 * 60 * 1000; // 15 minutes
 const VERIFY_STATE_STORAGE_KEY = 'vendly_verify_email_state';
+let resendCooldown = 0;
+let resendUnlockRemainingMs = 0;
+let resendUnlockInterval = null;
 
 function clearFallbackSession() {
   try { localStorage.removeItem('vendly_fallback_session'); } catch (e) {}
@@ -166,10 +169,6 @@ async function showLoginError(message, error) {
 // ============================
 // Resend Verification Email with Countdown
 // ============================
-let resendCooldown = 0;
-let resendUnlockRemainingMs = 0;
-let resendUnlockInterval = null;
-
 function setResendUnlockRemainingMs(ms) {
   resendUnlockRemainingMs = Math.max(0, ms || 0);
   if (resendUnlockInterval) {
@@ -359,6 +358,12 @@ document.getElementById('backToLoginLink')?.addEventListener('click', (e) => {
   e.preventDefault();
   document.getElementById('loginForm').style.display = 'flex';
   document.getElementById('forgotPasswordForm').style.display = 'none';
+});
+
+document.getElementById('backToLoginFromVerify')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('loginForm').style.display = 'flex';
+  document.getElementById('resendVerificationForm').style.display = 'none';
 });
 
 // Forgot password form submission

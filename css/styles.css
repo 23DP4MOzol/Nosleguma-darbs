@@ -2061,6 +2061,19 @@ html.light .hero-modern .stat-label {
   transition: var(--transition);
 }
 
+/* Authentication forms use a vertical layout, so fields should not inherit
+   the flexible sizing used by the horizontal chat composer. */
+.auth-form {
+  width: 100%;
+}
+
+.auth-page .auth-form .chat-input-field {
+  width: 100%;
+  min-height: 52px;
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
 .chat-input-field:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);

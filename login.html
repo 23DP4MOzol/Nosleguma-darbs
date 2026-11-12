@@ -110,13 +110,13 @@
   </div>
 </nav>
 
-  <main class="main-container" style="max-width: 400px; margin-top: 8rem;">
+  <main class="main-container auth-page" style="max-width: 400px; margin-top: 8rem;">
     <section class="section-header-centered">
       <h2 class="section-title" data-i18n="welcome_back">Welcome Back</h2>
       <p class="section-subtitle" data-i18n="login_account">Log in to your marketplace account</p>
     </section>
 
-    <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <form id="loginForm" class="auth-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
        <input type="email" id="emailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
        <div style="position: relative; display: flex; align-items: center;">
          <input type="password" id="passwordInput" placeholder="Password" data-i18n-placeholder="password" class="chat-input-field" required style="padding-right: 3rem;">
@@ -137,7 +137,7 @@
     </form>
 
     <!-- Forgot Password Form -->
-    <form id="forgotPasswordForm" style="display: none; flex-direction: column; gap: 1.5rem;">
+    <form id="forgotPasswordForm" class="auth-form" style="display: none; flex-direction: column; gap: 1.5rem;">
        <p style="text-align: center; color: var(--fg);">Enter your email address and we'll send you a link to reset your password.</p>
        <input type="email" id="resetEmailInput" placeholder="Email Address" data-i18n-placeholder="email_address" class="chat-input-field" required>
        <button type="submit" class="btn-buy-now" data-i18n="send_reset_link">Send Reset Link</button>
@@ -147,7 +147,7 @@
     </form>
 
     <!-- Resend Verification Form -->
-    <div id="resendVerificationForm" style="display: none; flex-direction: column; gap: 1.5rem; text-align: center;">
+    <div id="resendVerificationForm" class="auth-form" style="display: none; flex-direction: column; gap: 1.5rem; text-align: center;">
        <h2 style="color: var(--fg);">Email Not Verified</h2>
        <p style="color: var(--muted);">Please verify your email address to log in.</p>
        <p style="color: var(--muted);">Check your spam folder if you don't see the email.</p>
