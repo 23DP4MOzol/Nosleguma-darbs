@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateListingData, getListingExpiryInfo, isListingExpired } from '../src/listing-utils.js';
+import { validateListingData, getListingExpiryInfo, getListingFeeForDuration, isListingExpired } from '../src/listing-utils.js';
 import { escapeHtml } from '../src/html.js';
 import { renderAttrBadges } from '../src/category-fields.js';
 
@@ -14,6 +14,12 @@ test('Stock must be a finite non-negative integer', () => {
 });
 test('Empty listing names are rejected', () => {
   assert.throws(() => validateListingData({ name: '  ' }));
+});
+test('Listing fees increase by duration and stay within supported bounds', () => {
+  assert.equal(getListingFeeForDuration(1), 0.5);
+  assert.equal(getListingFeeForDuration(2), 1);
+  assert.equal(getListingFeeForDuration(3), 1.5);
+  assert.equal(getListingFeeForDuration(99), 1.5);
 });
 test('Listings expire at their exact deadline', () => {
   const now = Date.parse('2026-10-28T12:00:00Z');

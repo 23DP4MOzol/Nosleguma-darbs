@@ -199,14 +199,20 @@ export async function updateBalance(userId, newBalance) {
     
     if (error) throw error;
 
-    // Sync local/session caches so UI (navbar) reflects new balance immediately
-    try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
+    // Only update browser caches for the authenticated user. Renewal also
+    // credits the admin account, which must not overwrite the user's cache.
     try {
-      const cached = JSON.parse(sessionStorage.getItem('vendly_balance_cache') || '{}');
-      cached.balance = newBalance;
-      if (!cached.userId) cached.userId = userId;
-      sessionStorage.setItem('vendly_balance_cache', JSON.stringify(cached));
-    } catch (e) {}
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id === userId) {
+        localStorage.setItem('vendly_balance', String(newBalance));
+        const cached = JSON.parse(sessionStorage.getItem('vendly_balance_cache') || '{}');
+        cached.balance = newBalance;
+        cached.userId = userId;
+        sessionStorage.setItem('vendly_balance_cache', JSON.stringify(cached));
+      }
+    } catch (cacheError) {
+      console.warn('Could not update balance cache:', cacheError);
+    }
 
     return true;
   } catch (error) {
@@ -475,7 +481,7 @@ export async function listProduct(productData, userId) {
     // Listing fee ranges from €0.50 to €1.00 based on price
     // Linear scale: €0-€100 = €0.50, €100+ = €1.00
     const duration = Math.min(3, Math.max(1, parseInt(productData.duration, 10) || 1));
-    const listingFee = 0;
+    const listingFee = getListingFeeForDuration(duration);
 
     // Check balance for listing fee
     const currentBalance = await getBalance(userId);
@@ -485,7 +491,9 @@ export async function listProduct(productData, userId) {
 
     // Deduct listing fee from user
     const newBalance = currentBalance - listingFee;
-    await updateBalance(userId, newBalance);
+    if (!await updateBalance(userId, newBalance)) {
+      throw new Error('Unable to update your balance for the listing fee');
+    }
 
     // Record listing fee transaction for user
     const { error: txError } = await supabase.from('user_transactions').insert({
@@ -523,7 +531,9 @@ export async function listProduct(productData, userId) {
     
     if (adminUser) {
       const adminBalance = parseFloat(adminUser.balance || 0);
-      await updateBalance(adminUser.id, adminBalance + listingFee);
+      if (!await updateBalance(adminUser.id, adminBalance + listingFee)) {
+        throw new Error('Unable to credit the listing fee to the admin account');
+      }
       
       // Record income for admin
       await supabase.from('user_transactions').insert({
@@ -1521,16 +1531,19 @@ export async function renewProductListing(productId, userId, durationMonths = 1)
     }
 
     const newBalance = currentBalance - listingFee;
-    await updateBalance(userId, newBalance);
+    if (!await updateBalance(userId, newBalance)) {
+      throw new Error('Unable to update your balance for the renewal fee');
+    }
     userBalanceUpdated = true;
 
-    await supabase.from('user_transactions').insert({
+    const { error: userTransactionError } = await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -listingFee,
       transaction_type: 'withdrawal',
       description: `Listing renewal fee for ${product.name}`,
       created_at: new Date().toISOString()
     });
+    if (userTransactionError) throw userTransactionError;
 
     const { data: adminByEmail } = await supabase
       .from('users')
@@ -1550,11 +1563,13 @@ export async function renewProductListing(productId, userId, durationMonths = 1)
       adminUser = adminByRole || null;
     }
 
-    if (adminUser) {
+    if (adminUser && adminUser.id !== userId) {
       const adminBalance = parseFloat(adminUser.balance || 0);
-      await updateBalance(adminUser.id, adminBalance + listingFee);
+      if (!await updateBalance(adminUser.id, adminBalance + listingFee)) {
+        throw new Error('Unable to credit the renewal fee to the admin account');
+      }
       adminBalanceUpdated = true;
-      await supabase.from('user_transactions').insert({
+      const { error: adminTransactionError } = await supabase.from('user_transactions').insert({
         user_id: adminUser.id,
         amount: listingFee,
         transaction_type: 'deposit',
@@ -1562,6 +1577,7 @@ export async function renewProductListing(productId, userId, durationMonths = 1)
         reference_id: userId,
         created_at: new Date().toISOString()
       });
+      if (adminTransactionError) throw adminTransactionError;
     }
 
     const now = Date.now();

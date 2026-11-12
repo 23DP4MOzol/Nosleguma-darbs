@@ -529,6 +529,18 @@ html[data-theme="dark"] .search-input:focus {
   transition: var(--transition);
 }
 
+.navbar-logo svg {
+  display: none;
+}
+
+.navbar-logo::before {
+  content: '';
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  background: url('../assets/vendly-logo.svg') center / contain no-repeat;
+}
+
 .navbar-logo:hover {
   transform: translateY(-1px);
 }
@@ -6189,6 +6201,51 @@ input, select, textarea { min-width: 0; }
 .navbar :where(button, .icon-btn, .btn-nav, .dropdown-item, .btn-login, .btn-logout, select, .balance-badge) { min-height: 44px; }
 .navbar .icon-btn { min-width: 44px; }
 .navbar .dropdown-menu { max-width: calc(100vw - 2rem); }
+
+/* Desktop navigation groups: branding and balance left, primary actions
+   centered, and account controls on the right. */
+@media (min-width: 1025px) {
+  .navbar-container {
+    gap: 0.65rem;
+  }
+
+  .navbar-links {
+    display: contents;
+  }
+
+  .navbar-logo {
+    order: 1;
+    margin-right: 0.25rem;
+  }
+
+  .navbar-links > #balanceBadge {
+    order: 2;
+  }
+
+  .navbar-links > .btn-nav {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .navbar-links > .btn-sell,
+  .navbar-links > #pagesDropdown {
+    order: 4;
+  }
+
+  .navbar-links > #langSelect {
+    order: 5;
+    margin-left: auto;
+  }
+
+  .navbar-links > .mobile-icons-row {
+    order: 6;
+  }
+
+  .navbar-links > .btn-login,
+  .navbar-links > .btn-logout {
+    order: 7;
+  }
+}
 .notifications-dropdown {
   position: fixed;
   top: calc(var(--navbar-height, 72px) + 0.5rem);
