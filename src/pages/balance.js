@@ -393,13 +393,14 @@ if (withdrawBtn) {
       await updateBalance(user.id, newBalance);
       
       // Record withdrawal transaction
-      await supabase.from('user_transactions').insert({
+      const { error: withdrawalTransactionError } = await supabase.from('user_transactions').insert({
         user_id: user.id,
         amount: -amount,
         transaction_type: 'withdrawal',
         description: 'Withdrawal',
         created_at: new Date().toISOString()
       });
+      if (withdrawalTransactionError) throw withdrawalTransactionError;
       
       await loadUser();
       document.getElementById('fundAmount').value = '';

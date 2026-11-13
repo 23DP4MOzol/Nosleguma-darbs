@@ -19,6 +19,8 @@ export async function logAuditEvent(eventType, eventData = {}, extra = {}) {
       }
     }
 
+    if (!actorUserId) return;
+
     const payload = {
       event_type: String(eventType),
       event_data: eventData && typeof eventData === 'object' ? eventData : { value: eventData },

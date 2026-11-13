@@ -1255,7 +1255,8 @@ window.payOrder = async function(orderId) {
       return;
     }
 
-    await supabase.from('users').update({ balance: balance - totalAmount }).eq('id', currentUser.id);
+    var balanceUpdate = await supabase.from('users').update({ balance: balance - totalAmount }).eq('id', currentUser.id);
+    if (balanceUpdate.error) throw balanceUpdate.error;
 
     var buyerTxRes = await supabase.from('user_transactions').insert({
       user_id: currentUser.id,
@@ -1402,13 +1403,14 @@ if (confDelBtn) {
 
       await releaseEscrowToSeller(order);
 
-      await supabase.from('orders').update({
+      var deliveryUpdate = await supabase.from('orders').update({
         status: 'completed', order_status: 'completed',
         escrow_released: true,
         escrow_released_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', window.currentConfirmOrderId);
+      if (deliveryUpdate.error) throw deliveryUpdate.error;
 
       toast(t('orders_delivery_confirmed'), 'success');
       closeConfirmDeliveryModal();
@@ -1451,7 +1453,8 @@ window.confirmMeetup = async function(orderId) {
       }
       updateData.updated_at = new Date().toISOString();
 
-      await supabase.from('orders').update(updateData).eq('id', orderId);
+      var confirmationUpdate = await supabase.from('orders').update(updateData).eq('id', orderId);
+      if (confirmationUpdate.error) throw confirmationUpdate.error;
 
       var refreshRes = await supabase.from('orders')
         .select('meetup_confirmed_by_buyer, meetup_confirmed_by_seller, seller_id, total_amount, product_id, order_number, buyer_id')
@@ -1460,13 +1463,14 @@ window.confirmMeetup = async function(orderId) {
       var refreshed = refreshRes.data;
       if (refreshed && refreshed.meetup_confirmed_by_buyer && refreshed.meetup_confirmed_by_seller) {
         await releaseEscrowToSeller(Object.assign({}, order, refreshed));
-        await supabase.from('orders').update({
+        var meetupCompletion = await supabase.from('orders').update({
           status: 'completed', order_status: 'completed',
           escrow_released: true,
           escrow_released_at: new Date().toISOString(),
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }).eq('id', orderId);
+        if (meetupCompletion.error) throw meetupCompletion.error;
         toast(t('orders_escrow_released'), 'success');
       } else {
         toast(t('orders_meetup_waiting'), 'success');

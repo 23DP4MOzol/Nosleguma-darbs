@@ -1,6 +1,7 @@
 import { supabase, getOrCreateConversation, uploadImage } from '../supabase.js';
 import { i18n } from '../i18n.js';
 import { showConfirmModal, showInfoModal } from '../ui/modal.js';
+import { safeMediaUrl } from '../html.js';
 
 const t = (key) => i18n.t(key);
 const SUPPORT_THREAD_KEY = 'support-thread';
@@ -140,21 +141,23 @@ function formatMessageTime(value) {
 function renderAttachmentContent(message) {
   if (!message?.attachment_url) return '';
   const attachmentName = escapeHtml(message.attachment_name || 'Attachment');
-  const attachmentUrl = escapeHtml(message.attachment_url);
+  const attachmentUrl = safeMediaUrl(message.attachment_url);
+  if (!attachmentUrl) return '';
+  const safeAttachmentUrl = escapeHtml(attachmentUrl);
   const attachmentType = String(message.attachment_type || '');
 
   if (attachmentType.startsWith('image/')) {
     return `
       <div class="message-attachment">
-        <img src="${attachmentUrl}" alt="${attachmentName}">
-        <a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>
+        <img src="${safeAttachmentUrl}" alt="${attachmentName}">
+        <a href="${safeAttachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>
       </div>
     `;
   }
 
   return `
     <div class="message-attachment">
-      <a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>
+      <a href="${safeAttachmentUrl}" target="_blank" rel="noopener noreferrer">${attachmentName}</a>
     </div>
   `;
 }

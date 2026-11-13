@@ -4,6 +4,7 @@
 
 import { supabase, logoutUser } from './supabase.js';
 import { isPasswordRecovery } from './auth-navigation.js';
+import { safeMediaUrl } from './html.js';
 
 // Expose to window for debugging convenience (best-effort)
 try {
@@ -900,7 +901,7 @@ async function showUserProfile(userId) {
         <div class="profile-products">
           ${products?.map(product => `
             <div class="profile-product-card">
-              <img src="${escapeHtml(product.image_url || 'https://placehold.co/200x150/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" class="profile-product-image">
+              <img src="${escapeHtml(safeMediaUrl(product.image_url, 'https://placehold.co/200x150/667eea/white?text=No+Image'))}" alt="${escapeHtml(product.name)}" class="profile-product-image">
               <div class="profile-product-info">
                 <h4 class="profile-product-name">${escapeHtml(product.name)}</h4>
                 <div class="profile-product-price">€${formatListingPrice(product.price)}</div>
@@ -1026,22 +1027,12 @@ async function initializeIndexPage() {
       // Users count - count rows in users table (use id only)
       const usersResp = await supabase.from('users').select('id', { count: 'exact', head: true });
       
-      // Sellers count - count unique seller_id from products table
-      // Using RPC to count distinct values
-      const { data: sellerData, error: sellerError } = await supabase
-        .rpc('count_unique_sellers');
-      
-      // Fallback: if RPC doesn't exist, count manually
+      // Sellers count - count unique seller_id from products table.
       let sellersCount = 0;
-      if (sellerError || !sellerData) {
-        // Manual count of unique sellers
-        const { data: products } = await supabase.from('products').select('seller_id');
-        if (products) {
-          const uniqueSellers = new Set(products.map(p => p.seller_id));
-          sellersCount = uniqueSellers.size;
-        }
-      } else {
-        sellersCount = sellerData || 0;
+      const { data: products } = await supabase.from('products').select('seller_id');
+      if (products) {
+        const uniqueSellers = new Set(products.map(p => p.seller_id));
+        sellersCount = uniqueSellers.size;
       }
 
       const productsCount = productsResp.count || 0;
@@ -1050,9 +1041,7 @@ async function initializeIndexPage() {
       // Debug: log full responses for troubleshooting RLS / permission issues
       console.log('Stats full responses:', {
         productsResp,
-        usersResp,
-        sellerData,
-        sellerError
+        usersResp
       });
 
       const statsProductsEl = document.getElementById('statsProducts');
@@ -1512,7 +1501,7 @@ async function initializeIndexPage() {
     grid.innerHTML = '';
 
     productsToRender.forEach(product => {
-      const imageUrl = product.image_url || 'https://placehold.co/300x200/667eea/white?text=No+Image';
+      const imageUrl = safeMediaUrl(product.image_url, 'https://placehold.co/300x200/667eea/white?text=No+Image');
       const price = formatListingPrice(product.price);
       const stock = product.stock != null ? product.stock : 0;
       const categoryText = escapeHtml(getCategoryDisplayName(product.category || 'other', i18n.lang));
@@ -1848,7 +1837,7 @@ async function initializeIndexPage() {
     };
     
     const conditionText = product.condition ? product.condition.replace('_', ' ') : '';
-    const imageUrl = product.image_url || 'https://placehold.co/600x400/667eea/white?text=No+Image';
+    const imageUrl = safeMediaUrl(product.image_url, 'https://placehold.co/600x400/667eea/white?text=No+Image');
     const price = formatListingPrice(product.price);
     const { description: cleanDescription, attrs } = parseProductAttrs(product.description || '');
     const categoryLabel = getCategoryDisplayName(product.category, i18n.lang);
@@ -2711,7 +2700,7 @@ function initializeSettingsPage() {
        if (products && products.length > 0) {
          container.innerHTML = products.map(product => `
            <div class="product-card-modern" style="margin:0; display:flex; align-items:center; gap:1rem; padding:1rem;">
-             <img src="${escapeHtml(product.image_url || 'https://placehold.co/80x60/667eea/white?text=No+Image')}" alt="${escapeHtml(product.name)}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
+             <img src="${escapeHtml(safeMediaUrl(product.image_url, 'https://placehold.co/80x60/667eea/white?text=No+Image'))}" alt="${escapeHtml(product.name)}" style="width:80px; height:60px; object-fit:cover; border-radius:8px;">
              <div style="flex:1;">
                <h4 style="margin:0 0 0.5rem 0; font-size:1rem;">${escapeHtml(product.name)}</h4>
                <div style="font-size:0.875rem; color:var(--muted);">€${formatListingPrice(product.price)} • ${product.stock} in stock</div>

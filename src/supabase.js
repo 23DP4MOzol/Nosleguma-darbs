@@ -8,15 +8,16 @@ import './auth-navigation.js';
 // Get Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
 // Validate that credentials are provided
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!hasSupabaseConfig) {
   const missing = [];
   if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
   if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
   
-  console.error('❌ Missing Supabase environment variables:', missing.join(', '));
-  console.error('Please set these in your deployment platform or .env file.');
+  console.warn('Supabase is not configured:', missing.join(', '));
+  console.warn('Set these in your deployment platform or .env file to enable backend actions.');
 }
 
 // Debug: Log which credentials are being used
@@ -25,7 +26,12 @@ console.log('Supabase Anon Key configured:', !!supabaseAnonKey);
 
 // Configure Supabase client for static hosting (Cloudflare Pages)
 // This ensures session cookies are properly persisted and read
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// A local placeholder keeps public pages renderable in development without
+// pretending that backend actions are available.
+export const supabase = createClient(
+  supabaseUrl || 'http://127.0.0.1:54321',
+  supabaseAnonKey || 'development-missing-supabase-key',
+  {
   auth: {
     // Auto-refresh token before expiration (5 minutes before)
     autoRefreshToken: true,
@@ -39,7 +45,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Storage option - use localStorage
     storage: typeof window !== 'undefined' ? window.localStorage : undefined
   }
-});
+  }
+);
+
+export { hasSupabaseConfig };
 
 
 // ============================
@@ -314,9 +323,15 @@ export async function getProduct(productId) {
 
 // Purchase product with escrow
 export async function purchaseProduct(productId, userId) {
+  let product = null;
+  let currentBalance = null;
+  let buyerBalanceUpdated = false;
+  let productUpdated = false;
+  let sellerBalanceBefore = null;
+  let sellerBalanceUpdated = false;
   try {
     // Fetch product details
-    const product = await getProduct(productId);
+    product = await getProduct(productId);
     if (!product) throw new Error('Product not found');
 
     // Check if product is available
@@ -326,7 +341,7 @@ export async function purchaseProduct(productId, userId) {
     }
 
     // Get user balance
-    const currentBalance = await getBalance(userId);
+    currentBalance = await getBalance(userId);
     const price = parseFloat(product.price);
 
     if (currentBalance < price) throw new Error('Insufficient balance');
@@ -334,6 +349,7 @@ export async function purchaseProduct(productId, userId) {
     // Deduct balance (hold in escrow)
     const newBalance = currentBalance - price;
     await updateBalance(userId, newBalance);
+    buyerBalanceUpdated = true;
 
     // Update product (decrease stock, mark as sold)
     const newStock = product.stock - 1;
@@ -355,9 +371,10 @@ export async function purchaseProduct(productId, userId) {
       .eq('id', productId);
 
     if (productError) throw productError;
+    productUpdated = true;
 
     // Record purchase transaction for buyer
-    await supabase.from('user_transactions').insert({
+    const { error: buyerTransactionError } = await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -price,
       transaction_type: 'purchase',
@@ -365,14 +382,17 @@ export async function purchaseProduct(productId, userId) {
       reference_id: productId,
       created_at: new Date().toISOString()
     });
+    if (buyerTransactionError) throw buyerTransactionError;
 
     // Record sale for seller
     if (product.seller_id) {
       // Get seller balance and update it
       const sellerBalance = await getBalance(product.seller_id);
+      sellerBalanceBefore = sellerBalance;
       await updateBalance(product.seller_id, sellerBalance + price);
+      sellerBalanceUpdated = true;
       
-      await supabase.from('user_transactions').insert({
+      const { error: sellerTransactionError } = await supabase.from('user_transactions').insert({
         user_id: product.seller_id,
         amount: price,
         transaction_type: 'sale',
@@ -380,10 +400,36 @@ export async function purchaseProduct(productId, userId) {
         reference_id: productId,
         created_at: new Date().toISOString()
       });
+      if (sellerTransactionError) throw sellerTransactionError;
     }
 
     return { success: true };
   } catch (error) {
+    try {
+      if (sellerBalanceUpdated && product?.seller_id !== userId && sellerBalanceBefore !== null) {
+        await updateBalance(product.seller_id, sellerBalanceBefore);
+      }
+      if (productUpdated && product) {
+        const { error: productRollbackError } = await supabase
+          .from('products')
+          .update({
+            stock: product.stock,
+            status: product.status,
+            sold_at: product.sold_at || null,
+            is_reserved: product.is_reserved || false,
+            reserved_by: product.reserved_by || null,
+            reserved_at: product.reserved_at || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', productId);
+        if (productRollbackError) throw productRollbackError;
+      }
+      if (buyerBalanceUpdated && currentBalance !== null) {
+        await updateBalance(userId, currentBalance);
+      }
+    } catch (rollbackError) {
+      console.error('Failed to roll back purchase state:', rollbackError);
+    }
     console.error('Error purchasing product:', error);
     throw error;
   }
@@ -406,7 +452,7 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
     await updateBalance(userId, newBalance);
 
     // Record reserve fee transaction
-    await supabase.from('user_transactions').insert({
+    const { error: reserveTransactionError } = await supabase.from('user_transactions').insert({
       user_id: userId,
       amount: -fee,
       transaction_type: 'fee',
@@ -414,6 +460,7 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
       reference_id: productId,
       created_at: new Date().toISOString()
     });
+    if (reserveTransactionError) throw reserveTransactionError;
 
     // Update product reservation status
     const { error } = await supabase
@@ -426,7 +473,23 @@ export async function reserveProduct(productId, userId, fee = 0.20) {
       })
       .eq('id', productId);
 
-    if (error) throw error;
+    if (error) {
+      try {
+        await updateBalance(userId, currentBalance);
+        const { error: refundTransactionError } = await supabase.from('user_transactions').insert({
+          user_id: userId,
+          amount: fee,
+          transaction_type: 'refund',
+          description: `Refund: failed reserve fee for ${product.name}`,
+          reference_id: productId,
+          created_at: new Date().toISOString()
+        });
+        if (refundTransactionError) throw refundTransactionError;
+      } catch (rollbackError) {
+        console.error('Failed to refund reserve fee after reservation error:', rollbackError);
+      }
+      throw error;
+    }
     return true;
   } catch (error) {
     console.error('Error reserving product:', error);
@@ -503,7 +566,7 @@ export async function listProduct(productData, userId) {
       description: `Listing fee for ${productData.name}`,
       created_at: new Date().toISOString()
     });
-    if (txError) console.warn('Failed to record listing fee transaction:', txError);
+    if (txError) throw txError;
 
     // Sync local/session caches so UI reflects new balance
     try { localStorage.setItem('vendly_balance', String(newBalance)); } catch (e) {}
@@ -536,7 +599,7 @@ export async function listProduct(productData, userId) {
       }
       
       // Record income for admin
-      await supabase.from('user_transactions').insert({
+      const { error: adminTransactionError } = await supabase.from('user_transactions').insert({
         user_id: adminUser.id,
         amount: listingFee,
         transaction_type: 'deposit',
@@ -544,6 +607,7 @@ export async function listProduct(productData, userId) {
         reference_id: userId,
         created_at: new Date().toISOString()
       });
+      if (adminTransactionError) throw adminTransactionError;
     }
 
     // Insert product - match database schema

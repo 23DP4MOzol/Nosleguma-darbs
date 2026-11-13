@@ -203,7 +203,7 @@ async function checkAdminAuth() {
   }
 
   // Final deny
-  await showInfoModal('Access denied. Admin privileges required.', 'Access Denied');
+  void showInfoModal('Access denied. Admin privileges required.', 'Access Denied');
   window.location.href = 'index.html';
   return false;
 }
