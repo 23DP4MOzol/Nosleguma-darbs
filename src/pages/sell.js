@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Initialize Language from localStorage
 // ============================
 function initializeLanguage() {
-  const savedLang = localStorage.getItem('lang') || 'en';
+  const savedLang = localStorage.getItem('lang') || 'lv';
   const langSelect = document.getElementById('langSelect');
   if (langSelect) {
     langSelect.value = savedLang;

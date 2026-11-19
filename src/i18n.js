@@ -2,7 +2,7 @@
 // i18n.js - Internationalization module
 // =====================================
 export const i18n = {
-    lang: 'en', // default language
+    lang: 'lv', // default language
   
     // Translation dictionary
     strings: {
@@ -1520,6 +1520,9 @@ export const i18n = {
       }
       const languageChanged = self.lang !== lang;
       self.lang = lang;
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = lang;
+      }
       localStorage.setItem('language', lang);
       localStorage.setItem('lang', lang); // keep both keys in sync
   
@@ -1855,7 +1858,7 @@ export const i18n = {
   // Auto-apply translations and preferences on page load
   window.addEventListener('DOMContentLoaded', () => {
     // Load saved language preference (check both keys for compatibility)
-    const savedLang = localStorage.getItem('language') || localStorage.getItem('lang') || 'en';
+    const savedLang = localStorage.getItem('language') || localStorage.getItem('lang') || 'lv';
     i18n.setLang(savedLang);
   
     // Update language selector

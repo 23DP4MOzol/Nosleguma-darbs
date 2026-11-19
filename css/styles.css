@@ -5779,6 +5779,82 @@ input, select, textarea, button {
   max-width: 100%;
 }
 
+/* Consistent controls across native, inline, and component buttons. */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-buy-now,
+.btn-sell,
+.btn-login,
+.btn-logout {
+  font: inherit;
+  line-height: 1.25;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input[type="button"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible,
+input[type="file"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+input[type="file"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--primary-dark);
+}
+
+html[data-theme="dark"] input[type="file"],
+html.dark input[type="file"] {
+  background: var(--card-bg);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
 /* --- iOS form zoom fix (prevents zoom on input focus) --- */
 @media screen and (max-width: 768px) {
   input[type="text"],

@@ -129,7 +129,7 @@ function renderExpiryBadge(product) {
 // ============================
 
 function initializeLanguage() {
-  const savedLang = localStorage.getItem('lang') || 'en';
+  const savedLang = localStorage.getItem('lang') || 'lv';
   if (i18n && typeof i18n.setLang === 'function') {
     i18n.setLang(savedLang);
   }
