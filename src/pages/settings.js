@@ -463,12 +463,39 @@ const emailChangeTitle = document.getElementById('emailChangeModalTitle');
 const newEmailField = document.getElementById('newEmailField');
 const emailCodeField = document.getElementById('emailCodeField');
 const emailChangeButton = document.getElementById('saveEmailBtn');
+const resendEmailCodeButton = document.getElementById('resendEmailCodeBtn');
 let pendingEmailChange = '';
 let emailModalPreviousOverflow = '';
 let emailModalScrollY = 0;
+let resendTimer = null;
+let resendSecondsRemaining = 0;
+
+function stopResendTimer() {
+  if (resendTimer) clearInterval(resendTimer);
+  resendTimer = null;
+  resendSecondsRemaining = 0;
+}
+
+function startResendTimer() {
+  stopResendTimer();
+  resendSecondsRemaining = 60;
+  resendEmailCodeButton.disabled = true;
+  resendEmailCodeButton.textContent = `${i18n.t('resend_code')} (${resendSecondsRemaining}s)`;
+  resendTimer = setInterval(() => {
+    resendSecondsRemaining -= 1;
+    if (resendSecondsRemaining <= 0) {
+      stopResendTimer();
+      resendEmailCodeButton.disabled = false;
+      resendEmailCodeButton.textContent = i18n.t('resend_code');
+      return;
+    }
+    resendEmailCodeButton.textContent = `${i18n.t('resend_code')} (${resendSecondsRemaining}s)`;
+  }, 1000);
+}
 
 function closeEmailChangeModal() {
   if (emailChangeModal) emailChangeModal.hidden = true;
+  stopResendTimer();
   document.documentElement.classList.remove('email-modal-open');
   document.body.classList.remove('email-modal-open');
   document.body.style.position = '';
@@ -481,9 +508,16 @@ function closeEmailChangeModal() {
   if (emailChangeCode) emailChangeCode.value = '';
   if (newEmailField) newEmailField.hidden = false;
   if (emailCodeField) emailCodeField.hidden = true;
+  if (resendEmailCodeButton) {
+    resendEmailCodeButton.hidden = true;
+    resendEmailCodeButton.disabled = false;
+    resendEmailCodeButton.textContent = i18n.t('resend_code');
+  }
+  if (emailChangeCode) emailChangeCode.disabled = false;
+  if (emailChangeButton) emailChangeButton.disabled = false;
   if (emailChangeTitle) emailChangeTitle.textContent = i18n.t('change_email');
-  if (emailChangeMessage) emailChangeMessage.textContent = i18n.t('email_change_enter_new');
-  if (emailChangeButton) emailChangeButton.textContent = i18n.t('send_email_change');
+  if (emailChangeMessage) emailChangeMessage.hidden = true;
+  if (emailChangeButton) emailChangeButton.textContent = i18n.t('confirm');
 }
 
 document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
@@ -491,6 +525,7 @@ document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
   emailModalPreviousOverflow = document.body.style.overflow;
   emailModalScrollY = window.scrollY;
   emailChangeModal.hidden = false;
+  emailChangeMessage.hidden = true;
   document.documentElement.classList.add('email-modal-open');
   document.body.classList.add('email-modal-open');
   document.body.style.position = 'fixed';
@@ -503,7 +538,10 @@ document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
 document.querySelectorAll('[data-email-modal-close]').forEach(element => {
   element.addEventListener('click', closeEmailChangeModal);
 });
-document.getElementById('cancelEmailBtn')?.addEventListener('click', closeEmailChangeModal);
+
+emailChangeCode?.addEventListener('input', () => {
+  emailChangeButton.disabled = !emailChangeCode.value.trim();
+});
 
 emailChangeButton?.addEventListener('click', async () => {
   const currentUser = await checkAuth();
@@ -526,9 +564,13 @@ emailChangeButton?.addEventListener('click', async () => {
       pendingEmailChange = newEmail;
       newEmailField.hidden = true;
       emailCodeField.hidden = false;
+      emailChangeMessage.hidden = false;
       emailChangeTitle.textContent = i18n.t('confirm_email');
       emailChangeMessage.textContent = `${i18n.t('confirm_email_message')} ${pendingEmailChange}`;
+      emailChangeButton.disabled = true;
       emailChangeButton.textContent = i18n.t('confirm');
+      resendEmailCodeButton.hidden = false;
+      startResendTimer();
       emailChangeCode?.focus();
       return;
     }
@@ -551,8 +593,24 @@ emailChangeButton?.addEventListener('click', async () => {
     await showInfoModal(`${i18n.t('email_change_failed')}: ${error.message}`, i18n.t('error'));
   } finally {
     emailChangeButton.disabled = false;
-    if (pendingEmailChange) emailChangeButton.textContent = i18n.t('confirm');
-    else emailChangeButton.textContent = i18n.t('send_email_change');
+    if (pendingEmailChange) {
+      emailChangeButton.textContent = i18n.t('confirm');
+      emailChangeButton.disabled = !emailChangeCode?.value.trim();
+    }
+    else emailChangeButton.textContent = i18n.t('confirm');
+  }
+});
+
+resendEmailCodeButton?.addEventListener('click', async () => {
+  if (!pendingEmailChange || resendSecondsRemaining > 0) return;
+  resendEmailCodeButton.disabled = true;
+  try {
+    const { error } = await supabase.auth.updateUser({ email: pendingEmailChange });
+    if (error) throw error;
+    startResendTimer();
+  } catch (error) {
+    resendEmailCodeButton.disabled = false;
+    await showInfoModal(`${i18n.t('email_change_failed')}: ${error.message}`, i18n.t('error'));
   }
 });
 

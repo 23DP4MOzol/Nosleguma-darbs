@@ -5969,6 +5969,12 @@ body.email-modal-open {
   line-height: 1.3;
 }
 
+.email-change-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 @media (max-width: 520px) {
   .email-change-modal-content {
     padding: 1.5rem;
