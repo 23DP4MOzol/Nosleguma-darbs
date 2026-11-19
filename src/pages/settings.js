@@ -484,6 +484,11 @@ function clearEmailChangeError() {
   }
 }
 
+function isReservedTestEmail(email) {
+  const domain = email.split('@')[1]?.toLowerCase();
+  return domain === 'example.com' || domain === 'example.net' || domain === 'example.org' || domain === 'invalid' || domain === 'localhost';
+}
+
 function stopResendTimer() {
   if (resendTimer) clearInterval(resendTimer);
   resendTimer = null;
@@ -577,6 +582,10 @@ emailChangeButton?.addEventListener('click', async () => {
         showEmailChangeError(i18n.t('email_same_as_current'));
         return;
       }
+      if (isReservedTestEmail(newEmail)) {
+        showEmailChangeError(i18n.t('email_real_address_required'));
+        return;
+      }
       emailChangeButton.textContent = i18n.t('sending');
       const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
@@ -609,7 +618,10 @@ emailChangeButton?.addEventListener('click', async () => {
     await supabase.auth.signOut();
     window.location.href = `login.html?email=${encodeURIComponent(pendingEmailChange)}&reason=email_changed`;
   } catch (error) {
-    showEmailChangeError(`${i18n.t('email_change_failed')}: ${error.message}`);
+    const message = /invalid.*email|email.*invalid/i.test(error?.message || '')
+      ? i18n.t('email_real_address_required')
+      : `${i18n.t('email_change_failed')}: ${error.message}`;
+    showEmailChangeError(message);
   } finally {
     emailChangeButton.disabled = false;
     if (pendingEmailChange) {
@@ -629,7 +641,10 @@ resendEmailCodeButton?.addEventListener('click', async () => {
     startResendTimer();
   } catch (error) {
     resendEmailCodeButton.disabled = false;
-    showEmailChangeError(`${i18n.t('email_change_failed')}: ${error.message}`);
+    const message = /invalid.*email|email.*invalid/i.test(error?.message || '')
+      ? i18n.t('email_real_address_required')
+      : `${i18n.t('email_change_failed')}: ${error.message}`;
+    showEmailChangeError(message);
   }
 });
 
