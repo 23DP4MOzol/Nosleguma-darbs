@@ -459,6 +459,7 @@ const emailChangeModal = document.getElementById('emailChangeModal');
 const newEmailInput = document.getElementById('newEmailInput');
 const emailChangeCode = document.getElementById('emailChangeCode');
 const emailChangeMessage = document.getElementById('emailChangeModalMessage');
+const emailChangeTitle = document.getElementById('emailChangeModalTitle');
 const newEmailField = document.getElementById('newEmailField');
 const emailCodeField = document.getElementById('emailCodeField');
 const emailChangeButton = document.getElementById('saveEmailBtn');
@@ -480,6 +481,7 @@ function closeEmailChangeModal() {
   if (emailChangeCode) emailChangeCode.value = '';
   if (newEmailField) newEmailField.hidden = false;
   if (emailCodeField) emailCodeField.hidden = true;
+  if (emailChangeTitle) emailChangeTitle.textContent = i18n.t('change_email');
   if (emailChangeMessage) emailChangeMessage.textContent = i18n.t('email_change_enter_new');
   if (emailChangeButton) emailChangeButton.textContent = i18n.t('send_email_change');
 }
@@ -524,8 +526,9 @@ emailChangeButton?.addEventListener('click', async () => {
       pendingEmailChange = newEmail;
       newEmailField.hidden = true;
       emailCodeField.hidden = false;
-      emailChangeMessage.textContent = i18n.t('email_change_code_sent');
-      emailChangeButton.textContent = i18n.t('confirm_email_change');
+      emailChangeTitle.textContent = i18n.t('confirm_email');
+      emailChangeMessage.textContent = `${i18n.t('confirm_email_message')} ${pendingEmailChange}`;
+      emailChangeButton.textContent = i18n.t('confirm');
       emailChangeCode?.focus();
       return;
     }
@@ -548,7 +551,7 @@ emailChangeButton?.addEventListener('click', async () => {
     await showInfoModal(`${i18n.t('email_change_failed')}: ${error.message}`, i18n.t('error'));
   } finally {
     emailChangeButton.disabled = false;
-    if (pendingEmailChange) emailChangeButton.textContent = i18n.t('confirm_email_change');
+    if (pendingEmailChange) emailChangeButton.textContent = i18n.t('confirm');
     else emailChangeButton.textContent = i18n.t('send_email_change');
   }
 });

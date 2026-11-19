@@ -5963,8 +5963,9 @@ body.email-modal-open {
 
 .email-change-modal-actions button {
   flex: 1;
-  min-height: 3.25rem;
-  padding: 0.8rem 1rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.3;
 }
 
