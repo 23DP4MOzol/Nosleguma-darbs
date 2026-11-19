@@ -563,9 +563,9 @@ document.querySelectorAll('[data-email-modal-close]').forEach(element => {
 });
 
 emailChangeCode?.addEventListener('input', () => {
-  emailChangeCode.value = emailChangeCode.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 6);
+  emailChangeCode.value = emailChangeCode.value.replace(/\D/g, '').slice(0, 6);
   clearEmailChangeError();
-  emailChangeButton.disabled = !/^[A-Za-z0-9]{6}$/.test(emailChangeCode.value);
+  emailChangeButton.disabled = !/^\d{6}$/.test(emailChangeCode.value);
 });
 
 emailChangeButton?.addEventListener('click', async () => {
@@ -606,7 +606,7 @@ emailChangeButton?.addEventListener('click', async () => {
     }
 
     const token = emailChangeCode?.value.trim();
-    if (!/^[A-Za-z0-9]{6}$/.test(token || '')) {
+    if (!/^\d{6}$/.test(token || '')) {
       showEmailChangeError(i18n.t('email_code_required'));
       return;
     }
@@ -628,7 +628,7 @@ emailChangeButton?.addEventListener('click', async () => {
     emailChangeButton.disabled = false;
     if (pendingEmailChange) {
       emailChangeButton.textContent = i18n.t('confirm');
-      emailChangeButton.disabled = !/^[A-Za-z0-9]{6}$/.test(emailChangeCode?.value.trim() || '');
+      emailChangeButton.disabled = !/^\d{6}$/.test(emailChangeCode?.value.trim() || '');
     }
     else emailChangeButton.textContent = i18n.t('confirm');
   }

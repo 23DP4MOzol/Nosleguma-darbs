@@ -320,7 +320,7 @@
     </label>
     <label id="emailCodeField" class="email-change-field" hidden>
       <span data-i18n="email_verification_code">Verification code</span>
-      <input type="text" id="emailChangeCode" inputmode="text" autocomplete="one-time-code" maxlength="6" pattern="[A-Za-z0-9]{6}" data-i18n-placeholder="email_code_placeholder" placeholder="Enter the 6-character code from your email">
+      <input type="text" id="emailChangeCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" data-i18n-placeholder="email_code_placeholder" placeholder="Enter the 6-digit code from your email">
     </label>
     <div class="email-change-modal-actions">
       <button type="button" id="resendEmailCodeBtn" class="btn-secondary" hidden data-i18n="resend_code">Resend code</button>
