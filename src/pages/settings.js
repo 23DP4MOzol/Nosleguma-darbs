@@ -556,6 +556,8 @@ document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
   newEmailInput?.focus();
 });
 
+newEmailInput?.addEventListener('input', clearEmailChangeError);
+
 document.querySelectorAll('[data-email-modal-close]').forEach(element => {
   element.addEventListener('click', closeEmailChangeModal);
 });
