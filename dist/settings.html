@@ -6,9 +6,9 @@
   <title data-i18n="settings_title">Vendly - Settings</title>
   <link rel="icon" href="./assets/vendly-logo-BDlpTmf3.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/settings-D8_vdr1-.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-D55w0TkV.js">
-  <link rel="stylesheet" crossorigin href="./assets/main-DiYBQDAB.css">
+  <script type="module" crossorigin src="./assets/settings-DfSGFM3p.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-DVAdoyx_.js">
+  <link rel="stylesheet" crossorigin href="./assets/main-Bd5yGGfk.css">
 </head>
 <body>
 
@@ -187,13 +187,13 @@
         <!-- Notification Preferences -->
         <label style="display: block; margin-bottom: 1rem;">
           <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="notifications_title">Notifications</span>
-          <div style="display:flex; flex-direction: column; gap:0.5rem;">
-            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifOrders" checked> <span data-i18n="notification_orders">Orders</span></label>
-            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifReviews" checked> <span data-i18n="notification_reviews">Reviews</span></label>
-            <label style="display:flex; gap:0.5rem; align-items:center;"><input type="checkbox" id="notifComments" checked> <span data-i18n="notification_comments">Comments</span></label>
-            <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-              <button id="requestNotifPermissionBtn" class="btn-secondary" style="flex:1;" data-i18n="request_browser_permission">Request Browser Permission</button>
-              <button id="testNotifBtn" class="btn-secondary" style="flex:1;" data-i18n="test_notification">Send Test Notification</button>
+          <div class="settings-notification-options">
+            <label class="settings-checkbox-row"><input type="checkbox" id="notifOrders" checked> <span data-i18n="notification_orders">Orders</span></label>
+            <label class="settings-checkbox-row"><input type="checkbox" id="notifReviews" checked> <span data-i18n="notification_reviews">Reviews</span></label>
+            <label class="settings-checkbox-row"><input type="checkbox" id="notifComments" checked> <span data-i18n="notification_comments">Comments</span></label>
+            <div class="settings-notification-actions">
+              <button id="requestNotifPermissionBtn" class="btn-secondary" data-i18n="request_browser_permission">Request Browser Permission</button>
+              <button id="testNotifBtn" class="btn-secondary" data-i18n="test_notification">Send Test Notification</button>
             </div>
           </div>
         </label>
@@ -220,7 +220,7 @@
 
         <!-- Change Password Button (shown when not editing) -->
         <div id="changePasswordBtnContainer" style="margin-top: 1rem;">
-          <button id="showChangePasswordBtn" style="width: 100%; padding: 0.875rem; background: var(--secondary); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; font-weight: 600; cursor: pointer;" data-i18n="change_password">🔐 Change Password</button>
+          <button id="showChangePasswordBtn" class="settings-password-button" data-i18n="change_password">🔐 Change Password</button>
         </div>
 
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
