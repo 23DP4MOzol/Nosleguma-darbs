@@ -165,17 +165,8 @@
         
         <label style="display: block; margin-bottom: 1rem;">
           <span style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--fg);" data-i18n="email">Email</span>
-          <div class="account-email-control">
-            <input type="email" id="userEmail" class="chat-input-field" readonly aria-readonly="true">
-            <button type="button" id="changeEmailBtn" class="btn-secondary" data-i18n="change_email">Change email</button>
-          </div>
-          <div id="changeEmailSection" class="account-email-change" hidden>
-            <input type="email" id="newEmailInput" class="chat-input-field" data-i18n-placeholder="new_email_placeholder" placeholder="New email address" autocomplete="email">
-            <div class="account-email-actions">
-              <button type="button" id="cancelEmailBtn" class="btn-secondary" data-i18n="cancel">Cancel</button>
-              <button type="button" id="saveEmailBtn" class="btn-primary" data-i18n="send_email_change">Send change request</button>
-            </div>
-          </div>
+          <input type="email" id="userEmail" class="chat-input-field account-email-display" readonly aria-readonly="true">
+          <button type="button" id="changeEmailBtn" class="btn-secondary account-email-button" data-i18n="change_email">Change email</button>
         </label>
 
         <label style="display: block; margin-bottom: 1rem;">
@@ -315,6 +306,27 @@
     </div>
   </div>
 </main>
+
+<div id="emailChangeModal" class="email-change-modal" hidden role="dialog" aria-modal="true" aria-labelledby="emailChangeModalTitle">
+  <div class="email-change-modal-overlay" data-email-modal-close></div>
+  <div class="email-change-modal-content">
+    <button type="button" class="email-change-modal-close" data-email-modal-close aria-label="Close">×</button>
+    <h3 id="emailChangeModalTitle" data-i18n="change_email">Change email</h3>
+    <p id="emailChangeModalMessage" class="email-change-modal-message" data-i18n="email_change_enter_new">Enter your new email address.</p>
+    <label id="newEmailField" class="email-change-field">
+      <span data-i18n="new_email">New email</span>
+      <input type="email" id="newEmailInput" data-i18n-placeholder="new_email_placeholder" placeholder="New email address" autocomplete="email">
+    </label>
+    <label id="emailCodeField" class="email-change-field" hidden>
+      <span data-i18n="email_verification_code">Verification code</span>
+      <input type="text" id="emailChangeCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" data-i18n-placeholder="email_code_placeholder" placeholder="Enter the code from your email">
+    </label>
+    <div class="email-change-modal-actions">
+      <button type="button" id="cancelEmailBtn" class="btn-secondary" data-i18n="cancel">Cancel</button>
+      <button type="button" id="saveEmailBtn" class="btn-primary" data-i18n="send_email_change">Send code</button>
+    </div>
+  </div>
+</div>
 
 <!-- User Profile Preview Modal -->
 <div id="profilePreviewModal" class="product-modal" style="display:none;">

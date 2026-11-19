@@ -455,49 +455,84 @@ document.getElementById('userThemeToggle')?.addEventListener('click', () => {
   themeManager.toggle();
 });
 
+const emailChangeModal = document.getElementById('emailChangeModal');
+const newEmailInput = document.getElementById('newEmailInput');
+const emailChangeCode = document.getElementById('emailChangeCode');
+const emailChangeMessage = document.getElementById('emailChangeModalMessage');
+const newEmailField = document.getElementById('newEmailField');
+const emailCodeField = document.getElementById('emailCodeField');
+const emailChangeButton = document.getElementById('saveEmailBtn');
+let pendingEmailChange = '';
+
+function closeEmailChangeModal() {
+  if (emailChangeModal) emailChangeModal.hidden = true;
+  pendingEmailChange = '';
+  if (newEmailInput) newEmailInput.value = '';
+  if (emailChangeCode) emailChangeCode.value = '';
+  if (newEmailField) newEmailField.hidden = false;
+  if (emailCodeField) emailCodeField.hidden = true;
+  if (emailChangeMessage) emailChangeMessage.textContent = i18n.t('email_change_enter_new');
+  if (emailChangeButton) emailChangeButton.textContent = i18n.t('send_email_change');
+}
+
 document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
-  const section = document.getElementById('changeEmailSection');
-  const input = document.getElementById('newEmailInput');
-  if (!section) return;
-  section.hidden = false;
-  input?.focus();
+  if (!emailChangeModal) return;
+  emailChangeModal.hidden = false;
+  newEmailInput?.focus();
 });
 
-document.getElementById('cancelEmailBtn')?.addEventListener('click', () => {
-  const section = document.getElementById('changeEmailSection');
-  const input = document.getElementById('newEmailInput');
-  if (section) section.hidden = true;
-  if (input) input.value = '';
+document.querySelectorAll('[data-email-modal-close]').forEach(element => {
+  element.addEventListener('click', closeEmailChangeModal);
 });
+document.getElementById('cancelEmailBtn')?.addEventListener('click', closeEmailChangeModal);
 
-document.getElementById('saveEmailBtn')?.addEventListener('click', async () => {
-  const input = document.getElementById('newEmailInput');
-  const button = document.getElementById('saveEmailBtn');
-  const newEmail = input?.value.trim().toLowerCase();
-  if (!newEmail || !input?.checkValidity()) {
-    await showInfoModal(i18n.t('invalid_email'), i18n.t('error'));
-    return;
-  }
-  if (newEmail === (document.getElementById('userEmail')?.value || '').toLowerCase()) {
-    await showInfoModal(i18n.t('email_same_as_current'), i18n.t('error'));
-    return;
-  }
+emailChangeButton?.addEventListener('click', async () => {
   const currentUser = await checkAuth();
   if (!currentUser) return;
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = i18n.t('sending');
+  emailChangeButton.disabled = true;
   try {
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (!pendingEmailChange) {
+      const newEmail = newEmailInput?.value.trim().toLowerCase();
+      if (!newEmail || !newEmailInput?.checkValidity()) {
+        await showInfoModal(i18n.t('invalid_email'), i18n.t('error'));
+        return;
+      }
+      if (newEmail === (document.getElementById('userEmail')?.value || '').toLowerCase()) {
+        await showInfoModal(i18n.t('email_same_as_current'), i18n.t('error'));
+        return;
+      }
+      emailChangeButton.textContent = i18n.t('sending');
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) throw error;
+      pendingEmailChange = newEmail;
+      newEmailField.hidden = true;
+      emailCodeField.hidden = false;
+      emailChangeMessage.textContent = i18n.t('email_change_code_sent');
+      emailChangeButton.textContent = i18n.t('confirm_email_change');
+      emailChangeCode?.focus();
+      return;
+    }
+
+    const token = emailChangeCode?.value.trim();
+    if (!token) {
+      await showInfoModal(i18n.t('email_code_required'), i18n.t('error'));
+      return;
+    }
+    emailChangeButton.textContent = i18n.t('verifying');
+    const { error } = await supabase.auth.verifyOtp({
+      email: pendingEmailChange,
+      token,
+      type: 'email_change'
+    });
     if (error) throw error;
-    await showInfoModal(i18n.t('email_change_requested'), i18n.t('success'));
-    input.value = '';
-    document.getElementById('changeEmailSection').hidden = true;
+    await supabase.auth.signOut();
+    window.location.href = `login.html?email=${encodeURIComponent(pendingEmailChange)}&reason=email_changed`;
   } catch (error) {
     await showInfoModal(`${i18n.t('email_change_failed')}: ${error.message}`, i18n.t('error'));
   } finally {
-    button.disabled = false;
-    button.textContent = originalText;
+    emailChangeButton.disabled = false;
+    if (pendingEmailChange) emailChangeButton.textContent = i18n.t('confirm_email_change');
+    else emailChangeButton.textContent = i18n.t('send_email_change');
   }
 });
 
