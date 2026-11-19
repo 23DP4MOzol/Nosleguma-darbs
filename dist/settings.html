@@ -6,9 +6,9 @@
   <title data-i18n="settings_title">Vendly - Settings</title>
   <link rel="icon" href="./assets/vendly-logo-BDlpTmf3.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/settings-C83-HJHL.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/main-de_JRTji.js">
-  <link rel="stylesheet" crossorigin href="./assets/main-4rc7lD9C.css">
+  <script type="module" crossorigin src="./assets/settings-BsRZdfL_.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/main-BX6U9HlC.js">
+  <link rel="stylesheet" crossorigin href="./assets/main-C49nN702.css">
 </head>
 <body>
 
@@ -314,6 +314,7 @@
   <div class="email-change-modal-content">
     <button type="button" class="email-change-modal-close" data-email-modal-close aria-label="Close">×</button>
     <h3 id="emailChangeModalTitle" data-i18n="change_email">Change email</h3>
+    <div id="emailChangeError" class="email-change-error" hidden role="alert"></div>
     <p id="emailChangeModalMessage" class="email-change-modal-message" data-i18n="email_change_enter_new">Enter your new email address.</p>
     <label id="newEmailField" class="email-change-field">
       <span data-i18n="new_email">New email</span>
@@ -321,7 +322,7 @@
     </label>
     <label id="emailCodeField" class="email-change-field" hidden>
       <span data-i18n="email_verification_code">Verification code</span>
-      <input type="text" id="emailChangeCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" data-i18n-placeholder="email_code_placeholder" placeholder="Enter the code from your email">
+      <input type="text" id="emailChangeCode" inputmode="text" autocomplete="one-time-code" maxlength="6" pattern="[A-Za-z0-9]{6}" data-i18n-placeholder="email_code_placeholder" placeholder="Enter the 6-character code from your email">
     </label>
     <div class="email-change-modal-actions">
       <button type="button" id="resendEmailCodeBtn" class="btn-secondary" hidden data-i18n="resend_code">Resend code</button>
