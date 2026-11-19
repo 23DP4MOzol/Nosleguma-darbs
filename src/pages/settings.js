@@ -463,9 +463,11 @@ const newEmailField = document.getElementById('newEmailField');
 const emailCodeField = document.getElementById('emailCodeField');
 const emailChangeButton = document.getElementById('saveEmailBtn');
 let pendingEmailChange = '';
+let emailModalPreviousOverflow = '';
 
 function closeEmailChangeModal() {
   if (emailChangeModal) emailChangeModal.hidden = true;
+  document.body.style.overflow = emailModalPreviousOverflow;
   pendingEmailChange = '';
   if (newEmailInput) newEmailInput.value = '';
   if (emailChangeCode) emailChangeCode.value = '';
@@ -477,7 +479,9 @@ function closeEmailChangeModal() {
 
 document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
   if (!emailChangeModal) return;
+  emailModalPreviousOverflow = document.body.style.overflow;
   emailChangeModal.hidden = false;
+  document.body.style.overflow = 'hidden';
   newEmailInput?.focus();
 });
 
