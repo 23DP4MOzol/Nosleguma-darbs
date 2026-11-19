@@ -117,7 +117,8 @@ async function loadUserProfile() {
         prefs = {
           orders: resolvedUserData?.notify_orders !== undefined ? !!resolvedUserData.notify_orders : undefined,
           reviews: resolvedUserData?.notify_reviews !== undefined ? !!resolvedUserData.notify_reviews : undefined,
-          comments: resolvedUserData?.notify_comments !== undefined ? !!resolvedUserData.notify_comments : undefined
+          comments: resolvedUserData?.notify_comments !== undefined ? !!resolvedUserData.notify_comments : undefined,
+          swaps: undefined
         };
       }
 
@@ -126,6 +127,7 @@ async function loadUserProfile() {
         if (typeof prefs.orders !== 'undefined') document.getElementById('notifOrders').checked = !!prefs.orders;
         if (typeof prefs.reviews !== 'undefined') document.getElementById('notifReviews').checked = !!prefs.reviews;
         if (typeof prefs.comments !== 'undefined') document.getElementById('notifComments').checked = !!prefs.comments;
+        if (typeof prefs.swaps !== 'undefined') document.getElementById('swapAlert').checked = !!prefs.swaps;
       }
     } catch (e) {
       console.warn('Could not load notification prefs from server', e);
@@ -233,7 +235,8 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       const prefs = {
         orders: !!document.getElementById('notifOrders')?.checked,
         reviews: !!document.getElementById('notifReviews')?.checked,
-        comments: !!document.getElementById('notifComments')?.checked
+        comments: !!document.getElementById('notifComments')?.checked,
+        swaps: !!document.getElementById('swapAlert')?.checked
       };
       updates.notification_preferences = prefs; // attempt to save JSON/object
       // also set legacy boolean columns for compatibility
@@ -452,6 +455,52 @@ document.getElementById('userThemeToggle')?.addEventListener('click', () => {
   themeManager.toggle();
 });
 
+document.getElementById('changeEmailBtn')?.addEventListener('click', () => {
+  const section = document.getElementById('changeEmailSection');
+  const input = document.getElementById('newEmailInput');
+  if (!section) return;
+  section.hidden = false;
+  input?.focus();
+});
+
+document.getElementById('cancelEmailBtn')?.addEventListener('click', () => {
+  const section = document.getElementById('changeEmailSection');
+  const input = document.getElementById('newEmailInput');
+  if (section) section.hidden = true;
+  if (input) input.value = '';
+});
+
+document.getElementById('saveEmailBtn')?.addEventListener('click', async () => {
+  const input = document.getElementById('newEmailInput');
+  const button = document.getElementById('saveEmailBtn');
+  const newEmail = input?.value.trim().toLowerCase();
+  if (!newEmail || !input?.checkValidity()) {
+    await showInfoModal(i18n.t('invalid_email'), i18n.t('error'));
+    return;
+  }
+  if (newEmail === (document.getElementById('userEmail')?.value || '').toLowerCase()) {
+    await showInfoModal(i18n.t('email_same_as_current'), i18n.t('error'));
+    return;
+  }
+  const currentUser = await checkAuth();
+  if (!currentUser) return;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = i18n.t('sending');
+  try {
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) throw error;
+    await showInfoModal(i18n.t('email_change_requested'), i18n.t('success'));
+    input.value = '';
+    document.getElementById('changeEmailSection').hidden = true;
+  } catch (error) {
+    await showInfoModal(`${i18n.t('email_change_failed')}: ${error.message}`, i18n.t('error'));
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+});
+
 // ============================
 
 // ============================
@@ -462,28 +511,48 @@ function loadNotificationPrefs() {
   document.getElementById('notifOrders').checked = true;
   document.getElementById('notifReviews').checked = true;
   document.getElementById('notifComments').checked = true;
+  document.getElementById('swapAlert').checked = true;
 }
 
 async function saveNotificationPrefs() {
   const prefs = {
     orders: !!document.getElementById('notifOrders')?.checked,
     reviews: !!document.getElementById('notifReviews')?.checked,
-    comments: !!document.getElementById('notifComments')?.checked
+    comments: !!document.getElementById('notifComments')?.checked,
+    swaps: !!document.getElementById('swapAlert')?.checked
   };
 
   // Persist server-side when user is signed in
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('users').update({
+    let targetColumn = 'id';
+    let targetValue = user.id;
+    const { data: rowById } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!rowById && user.email) {
+      const { data: rowByEmail } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      if (rowByEmail) {
+        targetColumn = 'email';
+        targetValue = user.email;
+      }
+    }
+    const { error } = await supabase.from('users').update({
       notification_preferences: prefs,
       notify_orders: prefs.orders,
       notify_reviews: prefs.reviews,
       notify_comments: prefs.comments,
       updated_at: new Date().toISOString()
-    }).eq('id', user.id);
+    }).eq(targetColumn, targetValue);
+    if (error) throw error;
   } catch (e) {
-    // Ignore server save errors (older schemas may not have columns)
     console.warn('Could not persist notification prefs to server', e?.message || e);
   }
 }
@@ -491,6 +560,7 @@ async function saveNotificationPrefs() {
 document.getElementById('notifOrders')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
 document.getElementById('notifReviews')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
 document.getElementById('notifComments')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
+document.getElementById('swapAlert')?.addEventListener('change', () => saveNotificationPrefs().catch(()=>{}));
 
 document.getElementById('requestNotifPermissionBtn')?.addEventListener('click', async () => {
   if (!('Notification' in window)) {
@@ -511,40 +581,21 @@ document.getElementById('requestNotifPermissionBtn')?.addEventListener('click', 
 
 document.getElementById('testNotifBtn')?.addEventListener('click', () => {
   try {
-    // add an in-page test notification and browser notification if permitted
+    // Use one delivery channel at a time so a test click creates one notification.
     const title = i18n.t ? i18n.t('test_notification') : 'Test notification';
     const body = i18n.t ? i18n.t('test_notification') : 'This is a test notification from Vendly.';
     // Add to in-page list
-    try { window.dispatchEvent(new CustomEvent('vendly_test_notification', { detail: { title, body } })); } catch (e) {}
-    if (Notification && Notification.permission === 'granted') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
       new Notification(title, { body });
     } else {
-      showInfoModal(i18n.t ? i18n.t('notifications_blocked') : 'Notifications not granted. Use "Request Browser Permission" first.', i18n.t ? i18n.t('notifications_title') : 'Info');
+      try { window.dispatchEvent(new CustomEvent('vendly_test_notification', { detail: { title, body } })); } catch (e) {}
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        showInfoModal(i18n.t ? i18n.t('notifications_blocked') : 'Notifications not granted. Use "Request Browser Permission" first.', i18n.t ? i18n.t('notifications_title') : 'Info');
+      }
     }
   } catch (e) {
     console.warn('Test notification failed', e);
   }
-});
-
-// Listen for programmatic test events to add to in-page list (navbar listens for realtime but test uses this)
-window.addEventListener('vendly_test_notification', (e) => {
-  try {
-    const { title, body } = e.detail || {};
-    const list = document.getElementById('notificationsList');
-    if (list) {
-      const li = document.createElement('li');
-      li.className = 'notification-item';
-      li.innerHTML = `<div class="notification-title">${title}</div><div class="notification-body">${body}</div><div class="notification-date">${new Date().toLocaleString()}</div>`;
-      list.prepend(li);
-      // update badge via DOM directly
-      const badge = document.getElementById('notifBadge');
-      if (badge) {
-        const current = parseInt(badge.textContent || '0', 10) || 0;
-        badge.style.display = 'inline-block';
-        badge.textContent = String(current + 1);
-      }
-    }
-  } catch (e) {}
 });
 
 // initialize preferences UI

@@ -128,7 +128,7 @@ async function initNotifications() {
     updateNotifBadge();
 
     // Read user notification preferences from server-side users table (defaults to enabled)
-    let prefs = { orders: true, reviews: true, comments: true };
+    let prefs = { orders: true, reviews: true, comments: true, swaps: true };
     try {
       const { data: userPrefsRow } = await supabase
         .from('users')
@@ -143,13 +143,15 @@ async function initNotifications() {
         prefs = {
           orders: parsed?.orders !== false,
           reviews: parsed?.reviews !== false,
-          comments: parsed?.comments !== false
+          comments: parsed?.comments !== false,
+          swaps: parsed?.swaps !== false
         };
       } else {
         prefs = {
           orders: userPrefsRow?.notify_orders !== false,
           reviews: userPrefsRow?.notify_reviews !== false,
-          comments: userPrefsRow?.notify_comments !== false
+          comments: userPrefsRow?.notify_comments !== false,
+          swaps: true
         };
       }
     } catch (e) {

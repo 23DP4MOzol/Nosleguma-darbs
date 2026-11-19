@@ -1,6 +1,19 @@
 // =====================================
 // i18n.js - Internationalization module
 // =====================================
+const LANGUAGE_PREFERENCE_KEY = 'vendly_language_preference';
+
+// Migrate visitors who have the old English default saved but never chose a
+// language themselves. Explicit language choices remain persistent.
+try {
+  if (localStorage.getItem(LANGUAGE_PREFERENCE_KEY) !== '1') {
+    localStorage.setItem('language', 'lv');
+    localStorage.setItem('lang', 'lv');
+  }
+} catch (e) {
+  // Storage may be unavailable in restricted browser contexts.
+}
+
 export const i18n = {
     lang: 'lv', // default language
   
@@ -1525,6 +1538,7 @@ export const i18n = {
       }
       localStorage.setItem('language', lang);
       localStorage.setItem('lang', lang); // keep both keys in sync
+      localStorage.setItem(LANGUAGE_PREFERENCE_KEY, '1');
   
       // Translate all elements with data-i18n
       try {
@@ -1855,6 +1869,34 @@ export const i18n = {
     listing_disabled: "Sludin\u0101jumi atsp\u0113joti"
   });
   
+  Object.assign(i18n.strings.en, {
+    change_email: "Change email",
+    new_email_placeholder: "New email address",
+    send_email_change: "Send change request",
+    email_change_requested: "A confirmation link was sent to your new email address. Confirm it to finish changing your email.",
+    email_change_failed: "Could not request an email change",
+    email_same_as_current: "Enter a different email address.",
+    invalid_email: "Enter a valid email address.",
+    swap_notifications: "Swap notifications",
+    swap_notifications_desc: "Notify me about offers and responses for future item swaps.",
+    error: "Error",
+    success: "Success"
+  });
+
+  Object.assign(i18n.strings.lv, {
+    change_email: "Mainīt e-pastu",
+    new_email_placeholder: "Jaunā e-pasta adrese",
+    send_email_change: "Nosūtīt maiņas pieprasījumu",
+    email_change_requested: "Apstiprinājuma saite nosūtīta uz jauno e-pasta adresi. Apstipriniet to, lai pabeigtu e-pasta maiņu.",
+    email_change_failed: "Neizdevās pieprasīt e-pasta maiņu",
+    email_same_as_current: "Ievadiet citu e-pasta adresi.",
+    invalid_email: "Ievadiet derīgu e-pasta adresi.",
+    swap_notifications: "Maiņas paziņojumi",
+    swap_notifications_desc: "Paziņot par piedāvājumiem un atbildēm saistībā ar preču maiņu.",
+    error: "Kļūda",
+    success: "Sekmīgi"
+  });
+
   // Auto-apply translations and preferences on page load
   window.addEventListener('DOMContentLoaded', () => {
     // Load saved language preference (check both keys for compatibility)

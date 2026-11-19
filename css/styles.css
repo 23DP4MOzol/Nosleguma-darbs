@@ -5848,6 +5848,41 @@ input[type="file"]::file-selector-button:hover {
   background: var(--primary-dark);
 }
 
+.account-email-control {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.account-email-control input {
+  flex: 1;
+  min-width: 0;
+  background: var(--secondary);
+  color: var(--muted);
+}
+
+.account-email-change {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.account-email-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.account-email-actions > button {
+  flex: 1;
+}
+
+@media (max-width: 520px) {
+  .account-email-control,
+  .account-email-actions {
+    flex-direction: column;
+  }
+}
+
 html[data-theme="dark"] input[type="file"],
 html.dark input[type="file"] {
   background: var(--card-bg);
