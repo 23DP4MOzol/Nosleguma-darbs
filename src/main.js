@@ -1068,7 +1068,7 @@ async function initializeIndexPage() {
     maxPrice: '',
     location: '',
     condition: '',
-    stock: '',
+    
     availability: '',
     brand: '',
     color: '',
@@ -1352,25 +1352,6 @@ async function initializeIndexPage() {
     // Condition filter
     if (currentFilters.condition) {
       filteredProducts = filteredProducts.filter(p => (p.condition || '') === currentFilters.condition);
-    }
-
-    // Stock filter
-    if (currentFilters.stock) {
-      filteredProducts = filteredProducts.filter(p => {
-        const stock = parseInt(p.stock || 0);
-        switch (currentFilters.stock) {
-          case 'in_stock':
-            return stock > 0;
-          case 'low_stock':
-            return stock >= 1 && stock <= 5;
-          case 'high_stock':
-            return stock >= 10;
-          case 'out_of_stock':
-            return stock === 0;
-          default:
-            return true;
-        }
-      });
     }
 
     // Availability filter
@@ -2104,7 +2085,7 @@ async function initializeIndexPage() {
     currentFilters.maxPrice = document.getElementById('maxPrice')?.value || '';
     currentFilters.location = document.getElementById('locationFilter')?.value || '';
     currentFilters.condition = document.getElementById('conditionFilter')?.value || '';
-    currentFilters.stock = document.getElementById('stockFilter')?.value || '';
+    
     currentFilters.availability = document.getElementById('availabilityFilter')?.value || '';
     currentFilters.brand = document.getElementById('brandFilter')?.value || '';
     currentFilters.color = document.getElementById('colorFilter')?.value || '';
@@ -2135,7 +2116,7 @@ async function initializeIndexPage() {
         maxPrice: '',
         location: '',
         condition: '',
-        stock: '',
+        
         availability: '',
         brand: '',
         color: '',
@@ -2150,7 +2131,7 @@ async function initializeIndexPage() {
         if (el) el.value = '';
       });
 
-      const selects = ['locationFilter', 'conditionFilter', 'stockFilter', 'availabilityFilter', 'dateFilter', 'sortFilter', 'categoryFilter'];
+      const selects = ['locationFilter', 'conditionFilter',  'availabilityFilter', 'dateFilter', 'sortFilter', 'categoryFilter'];
       selects.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = id === 'sortFilter' ? 'newest' : '';
@@ -2207,7 +2188,7 @@ async function initializeIndexPage() {
             maxPrice: 'maxPrice',
             location: 'locationFilter',
             condition: 'conditionFilter',
-            stock: 'stockFilter',
+            
             availability: 'availabilityFilter',
             brand: 'brandFilter',
             color: 'colorFilter',
@@ -2331,7 +2312,7 @@ async function initializeIndexPage() {
     'categoryFilter',
     'locationFilter',
     'conditionFilter',
-    'stockFilter',
+    
     'availabilityFilter',
     'dateFilter',
     'sortFilter'
